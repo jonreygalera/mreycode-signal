@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       payload: {
-        sessions: getRandomInt(500, 6000),
+        sessions: getRandomInt(-6000, 6000),
       },
     });
   }

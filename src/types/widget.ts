@@ -21,5 +21,16 @@ export interface WidgetConfig {
   suffix?: string;
   isTemp?: boolean;
   abbreviate?: boolean;
-  color?: 'up' | 'down' | 'muted' | 'foreground';
+  color?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+  colorRules?: {
+    aboveZero?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+    belowZero?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+    atZero?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+    // Highly flexible custom rules
+    rules?: Array<{
+      condition: 'above' | 'below' | 'at';
+      value: number;
+      color: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+    }>;
+  };
 }

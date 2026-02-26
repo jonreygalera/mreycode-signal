@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { abbreviateNumber } from "@/lib/format";
+import { getStatusColor } from "@/lib/color";
+import { WidgetConfig } from "@/types/widget";
 
 export function AnimatedStat({
   value,
@@ -14,6 +16,7 @@ export function AnimatedStat({
   size = "md",
   abbreviate = false,
   color,
+  colorRules,
 }: {
   value: number;
   prefix?: string;
@@ -22,7 +25,8 @@ export function AnimatedStat({
   sourceUrl?: string;
   size?: "md" | "lg";
   abbreviate?: boolean;
-  color?: 'up' | 'down' | 'muted' | 'foreground';
+  color?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+  colorRules?: WidgetConfig['colorRules'];
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -41,6 +45,10 @@ export function AnimatedStat({
     });
   }, [springValue]);
 
+  const resolvedColor = useMemo(() => {
+    return getStatusColor(displayValue, { color, colorRules } as any);
+  }, [displayValue, color, colorRules]);
+
   return (
     <div className={cn(
       "flex flex-col gap-2 w-fit h-full",
@@ -56,11 +64,13 @@ export function AnimatedStat({
           className={cn(
             "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
             size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
-            color === 'up' && "text-up",
-            color === 'down' && "text-down",
-            color === 'muted' && "text-muted",
-            color === 'foreground' && "text-foreground",
-            !color && "text-foreground"
+            resolvedColor === 'up' && "text-up",
+            resolvedColor === 'down' && "text-down",
+            resolvedColor === 'muted' && "text-muted",
+            resolvedColor === 'foreground' && "text-foreground",
+            resolvedColor === 'warning' && "text-warning",
+            resolvedColor === 'info' && "text-info",
+            !resolvedColor && "text-foreground"
           )}
         >
           {abbreviate ? abbreviateNumber(displayValue) : displayValue.toLocaleString()}
@@ -103,6 +113,7 @@ export function StaticStringStat({
   size = "md",
   abbreviate = false,
   color,
+  colorRules,
 }: {
   value: string;
   prefix?: string;
@@ -111,7 +122,8 @@ export function StaticStringStat({
   sourceUrl?: string;
   size?: "md" | "lg";
   abbreviate?: boolean;
-  color?: 'up' | 'down' | 'muted' | 'foreground';
+  color?: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
+  colorRules?: WidgetConfig['colorRules'];
 }) {
   const displayValue = useMemo(() => {
     if (abbreviate && !isNaN(Number(value))) {
@@ -119,6 +131,10 @@ export function StaticStringStat({
     }
     return value;
   }, [value, abbreviate]);
+
+  const resolvedColor = useMemo(() => {
+    return getStatusColor(value, { color, colorRules } as any);
+  }, [value, color, colorRules]);
 
   return (
     <div className={cn(
@@ -135,11 +151,13 @@ export function StaticStringStat({
           className={cn(
             "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
             size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
-            color === 'up' && "text-up",
-            color === 'down' && "text-down",
-            color === 'muted' && "text-muted",
-            color === 'foreground' && "text-foreground",
-            !color && "text-foreground"
+            resolvedColor === 'up' && "text-up",
+            resolvedColor === 'down' && "text-down",
+            resolvedColor === 'muted' && "text-muted",
+            resolvedColor === 'foreground' && "text-foreground",
+            resolvedColor === 'warning' && "text-warning",
+            resolvedColor === 'info' && "text-info",
+            !resolvedColor && "text-foreground"
           )}
         >
           {displayValue}

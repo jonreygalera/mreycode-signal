@@ -158,6 +158,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 size={isMaximizedView ? "lg" : "md"}
                 abbreviate={config.abbreviate}
                 color={config.color}
+                colorRules={config.colorRules}
               />
             )}
             {config.type === "stat" && typeof parsedData !== "number" && (
@@ -170,6 +171,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 size={isMaximizedView ? "lg" : "md"}
                 abbreviate={config.abbreviate}
                 color={config.color}
+                colorRules={config.colorRules}
               />
             )}
             {config.type === "line" && Array.isArray(parsedData) && (

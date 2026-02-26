@@ -14,6 +14,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Total visits on jonreygalera.vercel.app',
     refreshInterval: 5000, 
+    color: 'up'
   },
   {
     id: 'mrey-ai-vercel-app-total-visits',
@@ -39,9 +40,14 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: "sm",
     description: "Baguio City PH Temperature",
     refreshInterval: 3600000,
-    source: "Open-Meteo",
-    sourceUrl: "https://open-meteo.com/",
-    suffix: "°C"
+    sourceUrl: "https://api.open-meteo.com/v1/forecast?latitude=16.4023&longitude=120.5960&current_weather=true",
+    suffix: "°C",
+    colorRules: {
+      rules: [
+        { condition: 'below', value: 18, color: 'up' },   // Nice & Cold (Green)
+        { condition: 'above', value: 25, color: 'down' }, // Too Hot (Red)
+      ]
+    }
   },
   {
     id: 'philippines-population',
@@ -72,6 +78,11 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Current random number',
     refreshInterval: 3000, 
+    colorRules: {
+      aboveZero: "up",      // Green if profit
+      belowZero: "down",    // Red if loss
+      atZero: "muted"       // Gray if neutral
+    } 
   },
   {
     id: 'gold-futures-chart',
@@ -128,6 +139,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     description: 'Total confirmed COVID-19 recoveries worldwide',
     refreshInterval: 3600000,
     abbreviate: true,
+    color: 'info',
     source: 'disease.sh',
     sourceUrl: 'https://disease.sh/v3/covid-19/all',
   },
@@ -142,6 +154,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     description: 'Total active COVID-19 cases worldwide',
     refreshInterval: 3600000,
     abbreviate: true,
+    color: 'warning',
     source: 'disease.sh',
     sourceUrl: 'https://disease.sh/v3/covid-19/all',
   },
