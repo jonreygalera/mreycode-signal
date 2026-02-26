@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download } from "lucide-react";
@@ -68,6 +69,8 @@ export function Header() {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            <Clock />
+            <div className="h-6 w-px bg-border mx-2 hidden sm:block" />
             {isInstallable && (
               <>
                 <button

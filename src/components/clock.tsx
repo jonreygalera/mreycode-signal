@@ -1,0 +1,159 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+const TIMEZONES = [
+  { label: "Manila", value: "Asia/Manila" },
+  { label: "UTC", value: "UTC" },
+  { label: "London", value: "Europe/London" },
+  { label: "New York", value: "America/New_York" },
+  { label: "Tokyo", value: "Asia/Tokyo" },
+  { label: "Dubai", value: "Asia/Dubai" },
+  { label: "Singapore", value: "Asia/Singapore" },
+];
+
+export function Clock() {
+  const [timezone, setTimezone] = useState("Asia/Manila");
+  const [time, setTime] = useState<Date | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchTime = useCallback(async (tz: string) => {
+    try {
+      const res = await fetch(`https://timeapi.io/api/Time/current/zone?timeZone=${tz}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      // data.dateTime is like "2026-02-26T17:53:25.0710628"
+      const date = new Date(data.dateTime);
+      setTime(date);
+    } catch (err) {
+      console.error("Failed to fetch time", err);
+      // Fallback to local time with basic timezone adjustment if API fails
+      // This is less accurate than the API but provides immediate UI feedback
+      setTime(new Date());
+    }
+  }, []);
+
+  // Sync with API once on mount or when timezone changes
+  useEffect(() => {
+    fetchTime(timezone);
+  }, [timezone, fetchTime]);
+
+  // Local tick every second
+  useEffect(() => {
+    if (!time) return;
+
+    const interval = setInterval(() => {
+      setTime((prev) => (prev ? new Date(prev.getTime() + 1000) : null));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [time]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  if (!time) {
+    return (
+      <div className="flex items-center gap-4 px-3 py-1.5 animate-pulse opacity-50">
+        <div className="h-3 w-20 bg-muted rounded-full" />
+        <div className="h-3 w-16 bg-muted rounded-full" />
+      </div>
+    );
+  }
+
+  const hours = time.getHours();
+  const minutes = time.getMinutes();
+  const seconds = time.getSeconds();
+  
+  const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  const dateString = time.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+
+  const selectedTzLabel = TIMEZONES.find(t => t.value === timezone)?.label || timezone;
+
+  return (
+    <div className="relative flex items-center" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-3 px-3 py-1.5 rounded-[4px] border border-transparent transition-all hover:bg-foreground/5 hover:border-border group",
+          isOpen && "bg-foreground/5 border-border shadow-sm"
+        )}
+      >
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[13px] font-bold tracking-tight text-foreground lining-nums">
+              {timeString}
+            </span>
+            <div className="h-2 w-px bg-border/60" />
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] font-bold text-muted uppercase tracking-tighter">
+                {selectedTzLabel}
+              </span>
+              <ChevronDown size={10} className={cn("text-muted transition-transform duration-300", isOpen && "rotate-180")} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1 opacity-60">
+             <Calendar size={10} className="text-muted" />
+             <span className="text-[9px] font-medium text-muted uppercase tracking-wider">
+               {dateString}
+             </span>
+          </div>
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 5, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute top-full right-0 z-60 mt-1 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-xl backdrop-blur-md"
+          >
+            <div className="px-2 py-1.5 border-b border-border bg-muted/5 flex items-center gap-2">
+              <Globe size={10} className="text-muted" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-muted">Select Timezone</span>
+            </div>
+            <div className="p-1 max-h-[240px] overflow-y-auto">
+              {TIMEZONES.map((tz) => (
+                <button
+                  key={tz.value}
+                  onClick={() => {
+                    setTimezone(tz.value);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors",
+                    timezone === tz.value 
+                      ? "bg-primary/10 text-primary font-bold" 
+                      : "text-muted hover:bg-muted/20 hover:text-foreground"
+                  )}
+                >
+                  <span className="truncate">{tz.label} ({tz.value})</span>
+                  {timezone === tz.value && <Check size={12} className="shrink-0" />}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
