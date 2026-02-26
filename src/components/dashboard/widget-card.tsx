@@ -9,6 +9,7 @@ import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import { Loader2, Maximize2, ExternalLink, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const fetcher = async ({ url, method, headers, body }: any) => {
   const res = await fetch(url, {
@@ -184,6 +185,17 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
       </div>
     </>
   );
+
+  const pathname = usePathname();
+  const isIframe = pathname?.includes("/iframe");
+
+  if (isIframe) {
+    return (
+      <div className="flex h-full w-full flex-col bg-panel p-4 overflow-hidden">
+        {renderContent(true)}
+      </div>
+    );
+  }
 
   return (
     <>

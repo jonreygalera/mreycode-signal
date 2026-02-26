@@ -1,8 +1,12 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { usePathname } from "next/navigation";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,11 +17,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "mreycode-signal",
-  description: "A single-page, elegant, bento-style metrics dashboard.",
-};
 
 export default function RootLayout({
   children,
@@ -35,12 +34,26 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
-            {children}
-          </main>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <MainWrapper>{children}</MainWrapper>
+          </div>
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+function MainWrapper({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isIframe = pathname?.includes('/iframe');
+  
+  return (
+    <main className={cn(
+      "mx-auto w-full max-w-7xl flex-1 focus:outline-none",
+      isIframe ? "max-w-none px-0 pt-0" : "px-4 pt-16 sm:px-6 lg:px-8"
+    )}>
+      {children}
+    </main>
   );
 }

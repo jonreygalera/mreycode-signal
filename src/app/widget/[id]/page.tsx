@@ -17,13 +17,19 @@ export default function WidgetPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-10 flex flex-col">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <Link 
           href="/" 
           className="inline-flex items-center gap-2 text-muted hover:text-foreground transition-colors group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium uppercase tracking-wider">Back to Dashboard</span>
+        </Link>
+        <Link
+          href={`/widget/${id}/iframe`}
+          className="text-xs font-mono text-muted hover:text-foreground border border-border px-2 py-1 rounded"
+        >
+          View Iframe Mode
         </Link>
       </div>
       

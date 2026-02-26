@@ -1,6 +1,14 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
+  const pathname = usePathname();
+  const isIframe = pathname?.includes("/iframe");
+
+  if (isIframe) return null;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-panel">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
