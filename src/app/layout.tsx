@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { BackToTop } from "@/components/back-to-top";
 import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <MainWrapper>{children}</MainWrapper>
+            <BackToTop />
           </div>
         </ThemeProvider>
       </body>

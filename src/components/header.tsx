@@ -19,7 +19,7 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border bg-panel">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity active:scale-[0.98]">
             <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-foreground text-panel shadow-sm">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@ export function Header() {
             <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
               {appConfig.name}
             </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <Link
               href="/docs"
