@@ -1,14 +1,24 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useEffect, use, useMemo } from "react";
 import { notFound, useSearchParams } from "next/navigation";
 import { dashboardWidgets } from "@/config/dashboard";
 import { WidgetCard } from "@/components/dashboard/widget-card";
+import { useTheme } from "next-themes";
 
 export default function WidgetIframePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
+  const { setTheme } = useTheme();
+  
+  const themeParam = searchParams.get('theme') || 'dark';
   const widget = dashboardWidgets.find((w) => w.id === id);
+
+  useEffect(() => {
+    if (themeParam === 'light' || themeParam === 'dark') {
+      setTheme(themeParam);
+    }
+  }, [themeParam, setTheme]);
 
   if (!widget) {
     return notFound();
