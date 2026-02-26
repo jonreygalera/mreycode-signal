@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download } from "lucide-react";
 import { appConfig } from "@/config/app";
 import Link from "next/link";
 
@@ -39,6 +39,16 @@ export function Header() {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            <a
+              href={appConfig.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+            >
+              <Download size={14} />
+              Install
+            </a>
+            <div className="h-4 w-px bg-border mx-1" />
             <Link
               href="/docs"
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
