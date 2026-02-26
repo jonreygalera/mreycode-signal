@@ -1,7 +1,7 @@
 export const appConfig = {
   name: "mreycode-signal",
   version: "1.0.0",
-  description: "A single-page, elegant, bento-style metrics dashboard.",
+  description: "A single-page, elegant, bento-style metrics dashboard supporting iframe integration per widget.",
   github: "https://github.com/jonreygalera/mreycode-signal",
   developer: {
     name: "jonreygalera",
