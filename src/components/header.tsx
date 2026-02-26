@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download } from "lucide-react";
 import { appConfig } from "@/config/app";
@@ -10,8 +10,37 @@ import Link from "next/link";
 
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === "accepted") {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    }
+  };
 
   if (isIframe) return null;
 
@@ -39,14 +68,26 @@ export function Header() {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            {isInstallable && (
+              <>
+                <button
+                  onClick={handleInstallClick}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors animate-pulse-subtle"
+                >
+                  <Download size={14} />
+                  Install App
+                </button>
+                <div className="h-4 w-px bg-border mx-1" />
+              </>
+            )}
             <a
               href={appConfig.github}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
             >
-              <Download size={14} />
-              Install
+              <ExternalLink size={14} />
+              Clone
             </a>
             <div className="h-4 w-px bg-border mx-1" />
             <Link
