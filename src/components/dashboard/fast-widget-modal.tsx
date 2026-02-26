@@ -16,6 +16,8 @@ const CONFIG_DOCS = [
   { key: "refreshInterval", type: "number", description: "Auto-refresh time in milliseconds" },
   { key: "prefix / suffix", type: "string", description: "Currency or units ($, °C, %)" },
   { key: "abbreviate", type: "boolean", description: "Shorten large numbers (1M, 5K)" },
+  { key: "source", type: "string", description: "Custom label for data source" },
+  { key: "sourceUrl", type: "string", description: "Link to the human-readable source page" },
   { key: "color", type: "string", description: "'up', 'down', 'warning', 'info', 'muted'" },
   { key: "colorRules", type: "object", description: "Dynamic color based on value thresholds" },
 ];

@@ -209,6 +209,8 @@ export function WidgetCard({
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
+                source={sourceLabel}
+                sourceUrl={config.sourceUrl}
                 className="pt-2 pb-1"
               />
             )}
@@ -218,6 +220,8 @@ export function WidgetCard({
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
+                source={sourceLabel}
+                sourceUrl={config.sourceUrl}
                 className="pt-2 pb-1"
               />
             )}
@@ -227,6 +231,8 @@ export function WidgetCard({
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
+                source={sourceLabel}
+                sourceUrl={config.sourceUrl}
                 className="pt-2 pb-1"
               />
             )}
