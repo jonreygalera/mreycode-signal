@@ -59,20 +59,6 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 3000, 
   },
   {
-    id: 'revenue-chart',
-    type: 'area',
-    label: 'Revenue Overview',
-    api: '/api/mock?type=chart-revenue',
-    method: 'GET',
-    responsePath: 'result.series',
-    xKey: 'day',
-    yKey: 'revenue',
-    size: 'lg',
-    description: 'Daily revenue generated in the last 7 days',
-    prefix: '$',
-    refreshInterval: 30000, 
-  },
-  {
     id: 'gold-futures-chart',
     type: 'line',
     label: 'Gold Futures (GC=F) - 5m',
@@ -86,24 +72,5 @@ export const dashboardWidgets: WidgetConfig[] = [
     prefix: '$',
     refreshInterval: 300000, // 5 minutes matching candle interval
     source: 'finance.yahoo.com',
-  },
-  {
-    id: 'traffic-sources',
-    type: 'bar',
-    label: 'Traffic Sources',
-    api: '/api/mock',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      metric: 'traffic-sources',
-    },
-    responsePath: 'stats.trafficData',
-    xKey: 'source',
-    yKey: 'visits',
-    size: 'md',
-    description: 'Breakdown of site visits by source',
-    refreshInterval: 15000, 
   }
 ];

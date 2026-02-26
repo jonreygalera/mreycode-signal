@@ -60,17 +60,17 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
     }
   }, [config.api, config.source]);
 
-  // Map size to Flex widths for charts (charts need constraints)
+  // Map size to Flex layouts for charts (charts need stretch limits)
   const sizeClasses = {
-    sm: "w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33%-0.75rem)] min-w-[300px]",
-    md: "w-full md:w-[calc(50%-0.5rem)] min-w-[400px]",
-    lg: "w-full lg:w-[calc(66%-1rem)] min-h-[300px]",
-    xl: "w-full min-h-[400px]",
+    sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33%-0.75rem)] min-w-[300px]",
+    md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[400px]",
+    lg: "flex-grow basis-full lg:basis-[calc(66%-1rem)] min-h-[300px]",
+    xl: "flex-grow basis-full min-h-[400px]",
   };
 
   const isStat = config.type === "stat";
   const currentSizeClass = isStat 
-    ? "flex-none w-fit h-fit min-w-[240px]" 
+    ? "flex-grow basis-auto h-fit min-w-[240px]" 
     : sizeClasses[config.size || "sm"];
 
   return (
@@ -98,7 +98,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center min-h-[100px] w-full mt-2">
+      <div className="flex flex-1 items-center justify-center w-full mt-2 min-h-0 relative">
         {isLoading && (
           <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -111,7 +111,10 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
           </div>
         )}
         {!isLoading && !error && parsedData !== null && parsedData !== undefined && (
-          <div className="flex h-full w-full flex-col justify-end">
+          <div className={cn(
+            "flex w-full flex-col justify-end",
+            config.type === "stat" ? "h-full" : "absolute inset-0 pt-10" 
+          )}>
             {config.type === "stat" && typeof parsedData === "number" && (
               <AnimatedStat
                 value={parsedData}
@@ -134,7 +137,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
-                className="mt-4"
+                className="pt-2 pb-1"
               />
             )}
             {config.type === "area" && Array.isArray(parsedData) && (
@@ -143,7 +146,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
-                className="mt-4"
+                className="pt-2 pb-1"
               />
             )}
             {config.type === "bar" && Array.isArray(parsedData) && (
@@ -152,7 +155,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 xKey={config.xKey || ""}
                 yKey={config.yKey || ""}
                 prefix={config.prefix}
-                className="mt-4"
+                className="pt-2 pb-1"
               />
             )}
           </div>
