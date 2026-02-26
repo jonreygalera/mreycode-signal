@@ -48,10 +48,22 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
   const handleSave = () => {
     try {
       const config = JSON.parse(configText);
+      
+      // Basic requirements
       if (!config.id || !config.type || !config.label) {
         setError("Invalid config: id, type, and label are required.");
         return;
       }
+
+      // Unique ID validation
+      const isRecordUpdate = initialConfig && initialConfig.config.id === config.id;
+      const isIdTaken = existingWidgets.some(w => w.id === config.id);
+
+      if (isIdTaken && !isRecordUpdate) {
+        setError(`The ID "${config.id}" is already taken. Please use a unique identifier.`);
+        return;
+      }
+
       onSave(config, afterId);
       setConfigText("");
       setAfterId(null);
