@@ -71,9 +71,10 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
   };
 
   const isStat = config.type === "stat";
-  const currentSizeClass = isStat 
-    ? "flex-grow basis-auto h-fit min-w-[240px]" 
-    : sizeClasses[config.size || "sm"];
+  const currentSizeClass = sizeClasses[config.size || (isStat ? "sm" : "sm")];
+  const finalSizeClass = isStat 
+    ? cn(currentSizeClass, "min-h-0 h-auto min-w-[240px]") 
+    : currentSizeClass;
 
   const renderContent = (isMaximizedView = false) => (
     <>
@@ -227,7 +228,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
         whileHover={{ y: -4 }}
         className={cn(
           "group relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel p-4 transition-colors hover:border-muted",
-          currentSizeClass,
+          finalSizeClass,
           !isStat && "@container"
         )}
       >

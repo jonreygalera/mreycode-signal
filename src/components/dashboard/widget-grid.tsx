@@ -27,7 +27,7 @@ export function WidgetGrid({ configs }: { configs: WidgetConfig[] }) {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex flex-wrap items-start gap-4">
+      <div className="flex flex-wrap items-stretch gap-4">
         {configs.slice(0, visibleCount).map((config, index) => (
           <WidgetCard key={config.id} config={config} index={index} />
         ))}
