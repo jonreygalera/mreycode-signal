@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
   // We check the requested metric from body
-  if (body.metric === 'active-sessions') {
+  if (body.metric === 'random-number') {
     // Requires a fake token to demonstrate header usage
     if (authHeader !== 'Bearer mreycode-signal-demo') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       payload: {
-        sessions: getRandomInt(500, 2000),
+        sessions: getRandomInt(500, 6000),
       },
     });
   }

@@ -1,10 +1,11 @@
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { dashboardWidgets } from "@/config/dashboard";
 import type { Metadata } from 'next';
+import { appConfig } from "@/config/app";
 
 export const metadata: Metadata = {
-  title: "mreycode-signal",
-  description: "A single-page, elegant, bento-style metrics dashboard.",
+  title: appConfig.name,
+  description: appConfig.description,
 };
 
 export default function Home() {

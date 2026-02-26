@@ -42,9 +42,9 @@ export const dashboardWidgets: WidgetConfig[] = [
     sourceUrl: 'https://restcountries.com/v3.1/name/philippines',
   },
   {
-    id: 'active-sessions',
+    id: 'random-number',
     type: 'stat',
-    label: 'Active Sessions',
+    label: 'Random Number',
     api: '/api/mock',
     method: 'POST',
     headers: {
@@ -52,11 +52,11 @@ export const dashboardWidgets: WidgetConfig[] = [
       'Content-Type': 'application/json',
     },
     body: {
-      metric: 'active-sessions',
+      metric: 'random-number',
     },
     responsePath: 'payload.sessions',
     size: 'sm',
-    description: 'Current active connections',
+    description: 'Current random number',
     refreshInterval: 3000, 
   },
   {
