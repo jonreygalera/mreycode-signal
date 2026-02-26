@@ -15,6 +15,7 @@ export interface WidgetConfig {
   size?: WidgetSize;
   refreshInterval?: number; // ms interval auto refresh (0 or undefined for no auto-refresh)
   description?: string;
+  source?: string;
   prefix?: string;
   suffix?: string;
 }

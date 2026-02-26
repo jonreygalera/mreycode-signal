@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
-import { AnimatedStat } from "./stat";
+import { AnimatedStat, StaticStringStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -37,6 +37,10 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
     fetcher,
     {
       refreshInterval: config.refreshInterval || 0,
+      revalidateOnFocus: true,     // Optional, nice for dashboard returning
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,      // Prevent identical rapid API spam
+      keepPreviousData: true,      // Smoothly transitions stats without flashing loaders
     }
   );
 
@@ -44,6 +48,17 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
     if (!data) return null;
     return getNestedProperty(data, config.responsePath);
   }, [data, config.responsePath]);
+
+  // Derive source label automatically if not explicitly provided
+  const sourceLabel = useMemo(() => {
+    if (config.source) return config.source;
+    try {
+      if (config.api.startsWith("/")) return "Local Network";
+      return new URL(config.api).hostname;
+    } catch (e) {
+      return "Unknown Source";
+    }
+  }, [config.api, config.source]);
 
   // Map size to Flex widths for charts (charts need constraints)
   const sizeClasses = {
@@ -102,14 +117,16 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 value={parsedData}
                 prefix={config.prefix}
                 suffix={config.suffix}
+                source={sourceLabel}
               />
             )}
             {config.type === "stat" && typeof parsedData !== "number" && (
-              <span 
-                className="font-mono text-4xl sm:text-[2.5rem] tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none"
-              >
-                {String(parsedData)}
-              </span>
+              <StaticStringStat 
+                value={String(parsedData)} 
+                prefix={config.prefix}
+                suffix={config.suffix}
+                source={sourceLabel} 
+              />
             )}
             {config.type === "line" && Array.isArray(parsedData) && (
               <WidgetLineChart

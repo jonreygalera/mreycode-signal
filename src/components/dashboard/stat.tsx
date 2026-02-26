@@ -7,10 +7,12 @@ export function AnimatedStat({
   value,
   prefix = "",
   suffix = "",
+  source = "",
 }: {
   value: number;
   prefix?: string;
   suffix?: string;
+  source?: string;
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -48,13 +50,54 @@ export function AnimatedStat({
           </span>
         )}
       </div>
-      {/* Mock change indicator for the aesthetic */}
-      <div className="flex items-center gap-1 mt-1 w-max">
-        <span className="text-up bg-up/10 text-[10px] px-1.5 py-0.5 rounded-[2px] font-semibold tracking-wide">
-          +{(Math.random() * 5 + 1).toFixed(2)}%
+      <div className="flex items-center gap-1.5 mt-1 w-max">
+        <span className="text-[10px] text-muted tracking-widest uppercase">
+          Source:
         </span>
-        <span className="text-[10px] text-muted tracking-wide uppercase">
-          Since last interval
+        <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
+          {source}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function StaticStringStat({
+  value,
+  prefix = "",
+  suffix = "",
+  source = "",
+}: {
+  value: string;
+  prefix?: string;
+  suffix?: string;
+  source?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 w-fit justify-end h-full">
+      <div className="flex items-baseline gap-1 whitespace-nowrap w-fit">
+        {prefix && (
+          <span className="text-xl font-semibold text-muted">
+            {prefix}
+          </span>
+        )}
+        <span 
+          className="text-4xl sm:text-[2.5rem] font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none"
+        >
+          {value}
+        </span>
+        {suffix && (
+          <span className="text-lg font-medium text-muted">
+            {suffix}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 mt-1 w-max">
+        <span className="text-[10px] text-muted tracking-widest uppercase">
+          Source:
+        </span>
+        <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
+          {source}
         </span>
       </div>
     </div>
