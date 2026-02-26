@@ -20,6 +20,86 @@ const CONFIG_DOCS = [
   { key: "colorRules", type: "object", description: "Dynamic color based on value thresholds" },
 ];
 
+const TEMPLATES = [
+  {
+    label: "Stat: Basic Metric",
+    config: {
+      id: "new-stat-widget",
+      label: "Response Time",
+      type: "stat",
+      api: "/api/mock",
+      responsePath: "payload.latency",
+      size: "sm",
+      suffix: "ms",
+      refreshInterval: 2000,
+      color: "info"
+    }
+  },
+  {
+    label: "Stat: Color Rules",
+    config: {
+      id: "new-stat-rules",
+      label: "Error Rate",
+      type: "stat",
+      api: "/api/mock",
+      responsePath: "payload.errors",
+      size: "sm",
+      suffix: "%",
+      refreshInterval: 5000,
+      colorRules: {
+        rules: [
+          { condition: "below", value: 5, color: "up" },
+          { condition: "above", value: 10, color: "down" }
+        ]
+      }
+    }
+  },
+  {
+    label: "Chart: Analytics Line",
+    config: {
+      id: "new-line-chart",
+      label: "User Activity",
+      type: "line",
+      api: "/api/mock",
+      responsePath: "series",
+      xKey: "timestamp",
+      yKey: "value",
+      size: "lg",
+      refreshInterval: 30000,
+      color: "up"
+    }
+  },
+  {
+    label: "Chart: Distribution Bar",
+    config: {
+      id: "new-bar-chart",
+      label: "Device Distribution",
+      type: "bar",
+      api: "/api/mock",
+      responsePath: "payload.distribution",
+      xKey: "category",
+      yKey: "count",
+      size: "md",
+      color: "info"
+    }
+  },
+  {
+    label: "Chart: Performance Area",
+    config: {
+      id: "new-area-chart",
+      label: "API Throughput",
+      type: "area",
+      api: "/api/mock",
+      responsePath: "history",
+      xKey: "time",
+      yKey: "reqs",
+      size: "lg",
+      refreshInterval: 10000,
+      color: "warning"
+    }
+  }
+];
+
 interface FastWidgetModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -143,6 +223,23 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                   <Terminal size={14} />
                   Widget Config (JSON)
                 </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <select 
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const template = TEMPLATES[parseInt(e.target.value)];
+                        const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
+                        setConfigText(JSON.stringify({ ...template.config, id: newId }, null, 2));
+                      }
+                    }}
+                    className="flex-1 bg-muted/20 border border-border/50 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all cursor-pointer outline-none"
+                  >
+                    <option value="">Select Template...</option>
+                    {TEMPLATES.map((t, i) => (
+                      <option key={i} value={i}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
                 <textarea
                   value={configText}
                   onChange={(e) => {
