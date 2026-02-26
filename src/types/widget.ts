@@ -16,6 +16,7 @@ export interface WidgetConfig {
   refreshInterval?: number; // ms interval auto refresh (0 or undefined for no auto-refresh)
   description?: string;
   source?: string;
+  sourceUrl?: string; // Links to the human-readable source page
   prefix?: string;
   suffix?: string;
 }

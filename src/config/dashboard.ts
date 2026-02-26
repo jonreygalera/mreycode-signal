@@ -39,6 +39,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Current population of the Philippines',
     refreshInterval: 3600000, // 1 hour (doesn't change fast)
+    sourceUrl: 'https://restcountries.com/v3.1/name/philippines',
   },
   {
     id: 'active-sessions',
@@ -72,5 +73,6 @@ export const dashboardWidgets: WidgetConfig[] = [
     prefix: '$',
     refreshInterval: 300000, // 5 minutes matching candle interval
     source: 'finance.yahoo.com',
+    sourceUrl: 'https://finance.yahoo.com/quote/GC=F',
   }
 ];

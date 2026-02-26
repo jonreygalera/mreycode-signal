@@ -8,11 +8,13 @@ export function AnimatedStat({
   prefix = "",
   suffix = "",
   source = "",
+  sourceUrl = "",
 }: {
   value: number;
   prefix?: string;
   suffix?: string;
   source?: string;
+  sourceUrl?: string;
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -54,9 +56,20 @@ export function AnimatedStat({
         <span className="text-[10px] text-muted tracking-widest uppercase">
           Source:
         </span>
-        <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
-          {source}
-        </span>
+        {sourceUrl ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-muted/10 text-muted hover:text-foreground text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide transition-colors cursor-pointer"
+          >
+            {source}
+          </a>
+        ) : (
+          <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
+            {source}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -67,11 +80,13 @@ export function StaticStringStat({
   prefix = "",
   suffix = "",
   source = "",
+  sourceUrl = "",
 }: {
   value: string;
   prefix?: string;
   suffix?: string;
   source?: string;
+  sourceUrl?: string;
 }) {
   return (
     <div className="flex flex-col gap-1 w-fit justify-end h-full">
@@ -96,9 +111,20 @@ export function StaticStringStat({
         <span className="text-[10px] text-muted tracking-widest uppercase">
           Source:
         </span>
-        <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
-          {source}
-        </span>
+        {sourceUrl ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-muted/10 text-muted hover:text-foreground text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide transition-colors cursor-pointer"
+          >
+            {source}
+          </a>
+        ) : (
+          <span className="bg-muted/10 text-muted text-[10px] px-1.5 py-0.5 rounded-[2px] font-mono tracking-wide">
+            {source}
+          </span>
+        )}
       </div>
     </div>
   );
