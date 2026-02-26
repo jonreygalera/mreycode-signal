@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { abbreviateNumber } from "@/lib/format";
 
 export function AnimatedStat({
   value,
@@ -11,6 +12,7 @@ export function AnimatedStat({
   source,
   sourceUrl,
   size = "md",
+  abbreviate = false,
 }: {
   value: number;
   prefix?: string;
@@ -18,6 +20,7 @@ export function AnimatedStat({
   source?: string;
   sourceUrl?: string;
   size?: "md" | "lg";
+  abbreviate?: boolean;
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -53,7 +56,7 @@ export function AnimatedStat({
             size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
           )}
         >
-          {displayValue.toLocaleString()}
+          {abbreviate ? abbreviateNumber(displayValue) : displayValue.toLocaleString()}
         </motion.span>
         {suffix && (
           <span className="text-lg font-medium text-muted">
@@ -91,6 +94,7 @@ export function StaticStringStat({
   source,
   sourceUrl,
   size = "md",
+  abbreviate = false,
 }: {
   value: string;
   prefix?: string;
@@ -98,7 +102,15 @@ export function StaticStringStat({
   source?: string;
   sourceUrl?: string;
   size?: "md" | "lg";
+  abbreviate?: boolean;
 }) {
+  const displayValue = useMemo(() => {
+    if (abbreviate && !isNaN(Number(value))) {
+      return abbreviateNumber(Number(value));
+    }
+    return value;
+  }, [value, abbreviate]);
+
   return (
     <div className={cn(
       "flex flex-col gap-2 w-fit h-full",
@@ -116,7 +128,7 @@ export function StaticStringStat({
             size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
           )}
         >
-          {value}
+          {displayValue}
         </span>
         {suffix && (
           <span className="text-lg font-medium text-muted">

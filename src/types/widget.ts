@@ -20,4 +20,5 @@ export interface WidgetConfig {
   prefix?: string;
   suffix?: string;
   isTemp?: boolean;
+  abbreviate?: boolean;
 }
