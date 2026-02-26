@@ -64,8 +64,8 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
   }, [config.api, config.source]);
 
   const sizeClasses = {
-    sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33%-0.75rem)] min-w-[300px]",
-    md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[400px]",
+    sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33%-0.75rem)] min-w-[300px] min-h-[200px]",
+    md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[400px] min-h-[250px]",
     lg: "flex-grow basis-full lg:basis-[calc(66%-1rem)] min-h-[300px]",
     xl: "flex-grow basis-full min-h-[400px]",
   };
@@ -133,7 +133,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
         {!isLoading && !error && parsedData !== null && parsedData !== undefined && (
           <div className={cn(
             "flex w-full flex-col justify-end",
-            config.type === "stat" ? "h-full" : "absolute inset-0 pt-10" 
+            config.type === "stat" ? "h-full" : "absolute inset-0 pt-4" 
           )}>
             {config.type === "stat" && typeof parsedData === "number" && (
               <AnimatedStat

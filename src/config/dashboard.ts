@@ -74,5 +74,35 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 300000, // 5 minutes matching candle interval
     source: 'finance.yahoo.com',
     sourceUrl: 'https://finance.yahoo.com/quote/GC=F',
+  },
+  {
+    id: 'traffic-sources-bar',
+    type: 'bar',
+    label: 'Traffic Sources',
+    api: '/api/mock',
+    method: 'POST',
+    body: {
+      metric: 'traffic-sources',
+    },
+    responsePath: 'stats.trafficData',
+    xKey: 'source',
+    yKey: 'visits',
+    size: 'md',
+    description: 'Distribution of traffic sources',
+    refreshInterval: 10000,
+  },
+  {
+    id: 'revenue-trends-area',
+    type: 'area',
+    label: 'Revenue Trends',
+    api: '/api/mock?type=chart-revenue',
+    method: 'GET',
+    responsePath: 'result.series',
+    xKey: 'day',
+    yKey: 'revenue',
+    size: 'lg',
+    description: 'Weekly revenue growth visualization',
+    refreshInterval: 60000,
+    prefix: '$',
   }
 ];
