@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export function AnimatedStat({
   value,
   prefix = "",
   suffix = "",
-  source = "",
-  sourceUrl = "",
+  source,
+  sourceUrl,
+  size = "md",
 }: {
   value: number;
   prefix?: string;
   suffix?: string;
   source?: string;
   sourceUrl?: string;
+  size?: "md" | "lg";
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -34,7 +37,10 @@ export function AnimatedStat({
   }, [springValue]);
 
   return (
-    <div className="flex flex-col gap-1 w-fit justify-end h-full">
+    <div className={cn(
+      "flex flex-col gap-2 w-fit h-full",
+      size === "lg" ? "justify-center items-center mx-auto" : "justify-end items-start"
+    )}>
       <div className="flex items-baseline gap-1 whitespace-nowrap w-fit">
         {prefix && (
           <span className="text-xl font-semibold text-muted">
@@ -42,7 +48,10 @@ export function AnimatedStat({
           </span>
         )}
         <motion.span 
-          className="text-4xl sm:text-[2.5rem] font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none"
+          className={cn(
+            "font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none",
+            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
+          )}
         >
           {displayValue.toLocaleString()}
         </motion.span>
@@ -79,17 +88,22 @@ export function StaticStringStat({
   value,
   prefix = "",
   suffix = "",
-  source = "",
-  sourceUrl = "",
+  source,
+  sourceUrl,
+  size = "md",
 }: {
   value: string;
   prefix?: string;
   suffix?: string;
   source?: string;
   sourceUrl?: string;
+  size?: "md" | "lg";
 }) {
   return (
-    <div className="flex flex-col gap-1 w-fit justify-end h-full">
+    <div className={cn(
+      "flex flex-col gap-2 w-fit h-full",
+      size === "lg" ? "justify-center items-center mx-auto" : "justify-end items-start"
+    )}>
       <div className="flex items-baseline gap-1 whitespace-nowrap w-fit">
         {prefix && (
           <span className="text-xl font-semibold text-muted">
@@ -97,7 +111,10 @@ export function StaticStringStat({
           </span>
         )}
         <span 
-          className="text-4xl sm:text-[2.5rem] font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none"
+          className={cn(
+            "font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none",
+            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
+          )}
         >
           {value}
         </span>

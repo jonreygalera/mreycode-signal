@@ -142,6 +142,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 suffix={config.suffix}
                 source={sourceLabel}
                 sourceUrl={config.sourceUrl}
+                size={isMaximizedView ? "lg" : "md"}
               />
             )}
             {config.type === "stat" && typeof parsedData !== "number" && (
@@ -151,6 +152,7 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
                 suffix={config.suffix}
                 source={sourceLabel}
                 sourceUrl={config.sourceUrl} 
+                size={isMaximizedView ? "lg" : "md"}
               />
             )}
             {config.type === "line" && Array.isArray(parsedData) && (
