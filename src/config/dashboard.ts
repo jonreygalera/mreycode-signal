@@ -2,6 +2,48 @@ import { WidgetConfig } from '../types/widget';
 
 export const dashboardWidgets: WidgetConfig[] = [
   {
+    id: 'jonreygalera-github-repos',
+    type: 'stat',
+    label: 'Jon Rey | GitHub Public Repos',
+    api: 'https://api.github.com/users/jonreygalera',
+    method: 'GET',
+    responsePath: 'public_repos',
+    size: 'sm',
+    description: 'Number of public repositories on GitHub',
+    refreshInterval: 0,
+    source: 'GitHub',
+    sourceUrl: 'https://github.com/jonreygalera?tab=repositories',
+    color: 'info'
+  },
+  {
+    id: 'jonreygalera-github-followers',
+    type: 'stat',
+    label: 'Jon Rey | GitHub Followers',
+    api: 'https://api.github.com/users/jonreygalera',
+    method: 'GET',
+    responsePath: 'followers',
+    size: 'sm',
+    description: 'Number of followers on GitHub',
+    refreshInterval: 0,
+    source: 'GitHub',
+    sourceUrl: 'https://github.com/jonreygalera?tab=followers',
+    color: 'up'
+  },
+  {
+    id: 'jonreygalera-github-following',
+    type: 'stat',
+    label: 'Jon Rey | GitHub Following',
+    api: 'https://api.github.com/users/jonreygalera',
+    method: 'GET',
+    responsePath: 'following',
+    size: 'sm',
+    description: 'Number of users followed on GitHub',
+    refreshInterval: 0,
+    source: 'GitHub',
+    sourceUrl: 'https://github.com/jonreygalera?tab=following',
+    color: 'muted'
+  },
+  {
     id: 'jonreygalera-vercel-app-total-visits',
     type: 'stat',
     label: 'jonreygalera.vercel.app Total Visits',
