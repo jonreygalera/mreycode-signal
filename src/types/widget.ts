@@ -19,4 +19,5 @@ export interface WidgetConfig {
   sourceUrl?: string; // Links to the human-readable source page
   prefix?: string;
   suffix?: string;
+  isTemp?: boolean;
 }

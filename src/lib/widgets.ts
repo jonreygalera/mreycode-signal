@@ -34,16 +34,18 @@ export const mergeWidgets = (baseConfigs: WidgetConfig[], tempWidgets: TempWidge
   // Sort temp widgets to maintain order if they refer to each other or original list
   // For simplicity, we just process them one by one
   tempWidgets.forEach(temp => {
+    const configWithFlag = { ...temp.config, isTemp: true };
+    
     if (!temp.afterId) {
-      result.unshift(temp.config);
+      result.unshift(configWithFlag);
       return;
     }
     
     const index = result.findIndex(w => w.id === temp.afterId);
     if (index !== -1) {
-      result.splice(index + 1, 0, temp.config);
+      result.splice(index + 1, 0, configWithFlag);
     } else {
-      result.push(temp.config);
+      result.push(configWithFlag);
     }
   });
   

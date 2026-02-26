@@ -6,7 +6,7 @@ import { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat, StaticStringStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -79,9 +79,20 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
     <>
       <div className="flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex flex-col">
-          <h3 className={cn("font-semibold uppercase tracking-wider text-muted", isMaximizedView ? "text-sm" : "text-xs")}>
-            {config.label}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className={cn("font-semibold uppercase tracking-wider text-muted", isMaximizedView ? "text-sm" : "text-xs")}>
+              {config.label}
+            </h3>
+            {config.isTemp && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-400/10 border border-yellow-400/20 rounded-[2px] shadow-[0_0_8px_rgba(250,204,21,0.1)]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-500"></span>
+                </span>
+                <span className="text-[8px] font-mono leading-none font-bold text-yellow-500/90 tracking-tighter">TEMP</span>
+              </div>
+            )}
+          </div>
           {config.description && (
             <p className={cn("text-muted/70 mt-0.5", isMaximizedView ? "text-xs" : "text-[10px] truncate max-w-[90%]")}>
               {config.description}
@@ -98,13 +109,15 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
               >
                 <Maximize2 size={14} />
               </button>
-              <Link
-                href={`/widget/${config.id}`}
-                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-                title="Open in new page"
-              >
-                <ExternalLink size={14} />
-              </Link>
+              {!config.isTemp && (
+                <Link
+                  href={`/widget/${config.id}`}
+                  className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                  title="Open in new page"
+                >
+                  <ExternalLink size={14} />
+                </Link>
+              )}
             </>
           )}
           {isMaximizedView && (
