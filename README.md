@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<p align="center"><a href="https://jonreygalera.vercel.app" target="_blank"><img src="https://raw.githubusercontent.com/jonreygalera/mreydocs/refs/heads/main/assets/logo.png" alt="Mreycode Logo"></a></p>
 
-## Getting Started
+# mreycode-signal
 
-First, run the development server:
+A single-page, elegant, bento-style metrics dashboard supporting iframe integration per widget. Built with a **Vibe Coding** approach using the **Google Antigravity IDE**.
+
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
+
+## 📖 Full Documentation
+
+For comprehensive setup guides, widget configurations, and iframe API details, please visit our official documentation:
+
+👉 **[mreycode-signal Documentation](https://github.com/jonreygalera/mreydocs/tree/main/mreycode-signal)**
+
+---
+
+## Quick Start
+
+### Installation
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Adding a Widget (Snippet)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open `src/config/dashboard.ts` and add a config object:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```typescript
+{
+  id: 'revenue-chart',
+  type: 'line',
+  label: 'Revenue',
+  api: '/api/revenue',
+  responsePath: 'result.series',
+  xKey: 'day',
+  yKey: 'revenue'
+}
+```
 
-## Learn More
+### Iframe Embedding (Snippet)
 
-To learn more about Next.js, take a look at the following resources:
+```html
+<iframe
+  src="https://your-domain.com/widget/[ID]/iframe?theme=dark"
+  width="100%"
+  height="400"
+  frameborder="0"
+></iframe>
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Credits
 
-## Deploy on Vercel
+- **Developer**: [jonreygalera](https://jonreygalera.vercel.app)
+- **Repo**: [github.com/jonreygalera/mreycode-signal](https://github.com/jonreygalera/mreycode-signal)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project created with **Google Antigravity IDE** using the Vibe Coding approach.
