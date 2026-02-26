@@ -114,7 +114,6 @@ export const dashboardWidgets: WidgetConfig[] = [
     description: 'Total confirmed COVID-19 deaths worldwide',
     refreshInterval: 3600000,
     abbreviate: true,
-    color: 'down',
     source: 'disease.sh',
     sourceUrl: 'https://disease.sh/v3/covid-19/all',
   },
