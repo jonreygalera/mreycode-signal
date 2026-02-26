@@ -21,4 +21,5 @@ export interface WidgetConfig {
   suffix?: string;
   isTemp?: boolean;
   abbreviate?: boolean;
+  color?: 'up' | 'down' | 'muted' | 'foreground';
 }

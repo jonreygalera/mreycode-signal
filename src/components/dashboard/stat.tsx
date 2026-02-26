@@ -13,6 +13,7 @@ export function AnimatedStat({
   sourceUrl,
   size = "md",
   abbreviate = false,
+  color,
 }: {
   value: number;
   prefix?: string;
@@ -21,6 +22,7 @@ export function AnimatedStat({
   sourceUrl?: string;
   size?: "md" | "lg";
   abbreviate?: boolean;
+  color?: 'up' | 'down' | 'muted' | 'foreground';
 }) {
   const [displayValue, setDisplayValue] = useState(0);
   const motionValue = useMotionValue(0);
@@ -52,8 +54,13 @@ export function AnimatedStat({
         )}
         <motion.span 
           className={cn(
-            "font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none",
-            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
+            "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
+            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+            color === 'up' && "text-up",
+            color === 'down' && "text-down",
+            color === 'muted' && "text-muted",
+            color === 'foreground' && "text-foreground",
+            !color && "text-foreground"
           )}
         >
           {abbreviate ? abbreviateNumber(displayValue) : displayValue.toLocaleString()}
@@ -95,6 +102,7 @@ export function StaticStringStat({
   sourceUrl,
   size = "md",
   abbreviate = false,
+  color,
 }: {
   value: string;
   prefix?: string;
@@ -103,6 +111,7 @@ export function StaticStringStat({
   sourceUrl?: string;
   size?: "md" | "lg";
   abbreviate?: boolean;
+  color?: 'up' | 'down' | 'muted' | 'foreground';
 }) {
   const displayValue = useMemo(() => {
     if (abbreviate && !isNaN(Number(value))) {
@@ -124,8 +133,13 @@ export function StaticStringStat({
         )}
         <span 
           className={cn(
-            "font-mono font-medium tracking-tight text-foreground whitespace-nowrap transition-all duration-300 leading-none",
-            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]"
+            "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
+            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+            color === 'up' && "text-up",
+            color === 'down' && "text-down",
+            color === 'muted' && "text-muted",
+            color === 'foreground' && "text-foreground",
+            !color && "text-foreground"
           )}
         >
           {displayValue}
