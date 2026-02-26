@@ -29,6 +29,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Total visits on mrey-ai.vercel.app',
     refreshInterval: 5000, 
+    color: 'up'
   },
   {
     id: "baguio-city-ph-temperature",

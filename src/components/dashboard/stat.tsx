@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { abbreviateNumber } from "@/lib/format";
 import { getStatusColor } from "@/lib/color";
 import { WidgetConfig } from "@/types/widget";
+import { Tooltip } from "./tooltip";
 
 export function AnimatedStat({
   value,
@@ -60,21 +61,41 @@ export function AnimatedStat({
             {prefix}
           </span>
         )}
-        <motion.span 
-          className={cn(
-            "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
-            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
-            resolvedColor === 'up' && "text-up",
-            resolvedColor === 'down' && "text-down",
-            resolvedColor === 'muted' && "text-muted",
-            resolvedColor === 'foreground' && "text-foreground",
-            resolvedColor === 'warning' && "text-warning",
-            resolvedColor === 'info' && "text-info",
-            !resolvedColor && "text-foreground"
-          )}
-        >
-          {abbreviate ? abbreviateNumber(displayValue) : displayValue.toLocaleString()}
-        </motion.span>
+        {abbreviate ? (
+          <Tooltip content={displayValue.toLocaleString()}>
+            <motion.span 
+              className={cn(
+                "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none cursor-help",
+                size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+                resolvedColor === 'up' && "text-up",
+                resolvedColor === 'down' && "text-down",
+                resolvedColor === 'muted' && "text-muted",
+                resolvedColor === 'foreground' && "text-foreground",
+                resolvedColor === 'warning' && "text-warning",
+                resolvedColor === 'info' && "text-info",
+                !resolvedColor && "text-foreground"
+              )}
+            >
+              {abbreviateNumber(displayValue)}
+            </motion.span>
+          </Tooltip>
+        ) : (
+          <motion.span 
+            className={cn(
+              "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
+              size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+              resolvedColor === 'up' && "text-up",
+              resolvedColor === 'down' && "text-down",
+              resolvedColor === 'muted' && "text-muted",
+              resolvedColor === 'foreground' && "text-foreground",
+              resolvedColor === 'warning' && "text-warning",
+              resolvedColor === 'info' && "text-info",
+              !resolvedColor && "text-foreground"
+            )}
+          >
+            {displayValue.toLocaleString()}
+          </motion.span>
+        )}
         {suffix && (
           <span className="text-lg font-medium text-muted">
             {suffix}
@@ -147,21 +168,41 @@ export function StaticStringStat({
             {prefix}
           </span>
         )}
-        <span 
-          className={cn(
-            "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
-            size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
-            resolvedColor === 'up' && "text-up",
-            resolvedColor === 'down' && "text-down",
-            resolvedColor === 'muted' && "text-muted",
-            resolvedColor === 'foreground' && "text-foreground",
-            resolvedColor === 'warning' && "text-warning",
-            resolvedColor === 'info' && "text-info",
-            !resolvedColor && "text-foreground"
-          )}
-        >
-          {displayValue}
-        </span>
+        {abbreviate && !isNaN(Number(value)) ? (
+          <Tooltip content={Number(value).toLocaleString()}>
+            <span 
+              className={cn(
+                "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none cursor-help",
+                size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+                resolvedColor === 'up' && "text-up",
+                resolvedColor === 'down' && "text-down",
+                resolvedColor === 'muted' && "text-muted",
+                resolvedColor === 'foreground' && "text-foreground",
+                resolvedColor === 'warning' && "text-warning",
+                resolvedColor === 'info' && "text-info",
+                !resolvedColor && "text-foreground"
+              )}
+            >
+              {displayValue}
+            </span>
+          </Tooltip>
+        ) : (
+          <span 
+            className={cn(
+              "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
+              size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+              resolvedColor === 'up' && "text-up",
+              resolvedColor === 'down' && "text-down",
+              resolvedColor === 'muted' && "text-muted",
+              resolvedColor === 'foreground' && "text-foreground",
+              resolvedColor === 'warning' && "text-warning",
+              resolvedColor === 'info' && "text-info",
+              !resolvedColor && "text-foreground"
+            )}
+          >
+            {displayValue}
+          </span>
+        )}
         {suffix && (
           <span className="text-lg font-medium text-muted">
             {suffix}
