@@ -28,7 +28,17 @@ const fetcher = async ({ url, method, headers, body }: any) => {
   return res.json();
 };
 
-export function WidgetCard({ config, index }: { config: WidgetConfig; index: number }) {
+export function WidgetCard({ 
+  config, 
+  index,
+  onEdit,
+  onDelete
+}: { 
+  config: WidgetConfig; 
+  index: number;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}) {
   const [isMaximized, setIsMaximized] = useState(false);
 
   const { data, error, isLoading } = useSWR(
@@ -101,6 +111,24 @@ export function WidgetCard({ config, index }: { config: WidgetConfig; index: num
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {config.isTemp && (
+            <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
+              <button 
+                onClick={() => onEdit?.(config.id)}
+                className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
+                title="Edit configuration"
+              >
+                <Zap size={14} className="text-yellow-500/80" />
+              </button>
+              <button 
+                onClick={() => onDelete?.(config.id)}
+                className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
+                title="Delete widget"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {!isMaximizedView && (
             <>
               <button 

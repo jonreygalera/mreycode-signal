@@ -10,6 +10,7 @@ import { getTempWidgets, saveTempWidget, clearTempWidgets, mergeWidgets } from "
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
 
   useEffect(() => {
@@ -23,6 +24,24 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const handleSaveWidget = (config: WidgetConfig, afterId: string | null) => {
     saveTempWidget(config, afterId);
     setTempWidgets(getTempWidgets());
+    setWidgetToEdit(null);
+  };
+
+  const handleEditWidget = (id: string) => {
+    const widget = tempWidgets.find(w => w.config.id === id);
+    if (widget) {
+      setWidgetToEdit(widget);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleDeleteWidget = (id: string) => {
+    if (confirm("Delete this widget?")) {
+      const current = getTempWidgets();
+      const updated = current.filter(w => w.config.id !== id);
+      localStorage.setItem("mreycode_signal_temp_widgets", JSON.stringify(updated));
+      setTempWidgets(updated);
+    }
   };
 
   const handleClearAll = () => {
@@ -60,7 +79,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             </button>
           )}
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setWidgetToEdit(null);
+              setIsModalOpen(true);
+            }}
             className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95"
           >
             <Plus size={14} />
@@ -69,13 +91,21 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         </div>
       </motion.div>
       
-      <WidgetGrid configs={allWidgets} />
+      <WidgetGrid 
+        configs={allWidgets} 
+        onEdit={handleEditWidget}
+        onDelete={handleDeleteWidget}
+      />
 
       <FastWidgetModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setWidgetToEdit(null);
+        }}
         onSave={handleSaveWidget}
         existingWidgets={allWidgets}
+        initialConfig={widgetToEdit || undefined}
       />
     </div>
   );

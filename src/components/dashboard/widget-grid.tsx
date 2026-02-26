@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { WidgetConfig } from "@/types/widget";
 import { WidgetCard } from "./widget-card";
 
-export function WidgetGrid({ configs }: { configs: WidgetConfig[] }) {
+export function WidgetGrid({ 
+  configs, 
+  onEdit, 
+  onDelete 
+}: { 
+  configs: WidgetConfig[]; 
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}) {
   const [visibleCount, setVisibleCount] = useState(6);
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +37,13 @@ export function WidgetGrid({ configs }: { configs: WidgetConfig[] }) {
     <div className="flex flex-col gap-6 w-full">
       <div className="flex flex-wrap items-stretch gap-4">
         {configs.slice(0, visibleCount).map((config, index) => (
-          <WidgetCard key={config.id} config={config} index={index} />
+          <WidgetCard 
+            key={config.id} 
+            config={config} 
+            index={index} 
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </div>
       {visibleCount < configs.length && (

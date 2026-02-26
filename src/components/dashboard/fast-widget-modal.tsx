@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
@@ -25,13 +25,25 @@ interface FastWidgetModalProps {
   onClose: () => void;
   onSave: (config: WidgetConfig, afterId: string | null) => void;
   existingWidgets: WidgetConfig[];
+  initialConfig?: { config: WidgetConfig; afterId: string | null };
 }
 
-export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: FastWidgetModalProps) {
-  const [afterId, setAfterId] = useState<string | null>(null);
-  const [configText, setConfigText] = useState("");
+export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, initialConfig }: FastWidgetModalProps) {
+  const [afterId, setAfterId] = useState<string | null>(initialConfig?.afterId || null);
+  const [configText, setConfigText] = useState(initialConfig ? JSON.stringify(initialConfig.config, null, 2) : "");
   const [error, setError] = useState<string | null>(null);
   const [showDocs, setShowDocs] = useState(false);
+
+  // Sync state if initialConfig changes (when modal opens for a different widget)
+  useEffect(() => {
+    if (initialConfig) {
+      setAfterId(initialConfig.afterId);
+      setConfigText(JSON.stringify(initialConfig.config, null, 2));
+    } else {
+      setAfterId(null);
+      setConfigText("");
+    }
+  }, [initialConfig]);
 
   const handleSave = () => {
     try {
@@ -77,8 +89,12 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: Fa
                   <Plus size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight uppercase">Fast Widget</h2>
-                  <p className="text-xs text-muted/70">Create a temporary widget in local storage</p>
+                  <h2 className="text-lg font-semibold tracking-tight uppercase">
+                    {initialConfig ? "Edit Widget" : "Fast Widget"}
+                  </h2>
+                  <p className="text-xs text-muted/70">
+                    {initialConfig ? "Update existing widget configuration" : "Create a temporary widget in local storage"}
+                  </p>
                 </div>
               </div>
               <button

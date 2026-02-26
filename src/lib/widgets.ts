@@ -20,7 +20,16 @@ export const getTempWidgets = (): TempWidget[] => {
 
 export const saveTempWidget = (config: WidgetConfig, afterId: string | null) => {
   const current = getTempWidgets();
-  const updated = [...current, { config, afterId }];
+  const existingIndex = current.findIndex(w => w.config.id === config.id);
+  
+  let updated;
+  if (existingIndex !== -1) {
+    updated = [...current];
+    updated[existingIndex] = { config, afterId };
+  } else {
+    updated = [...current, { config, afterId }];
+  }
+  
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 };
 
