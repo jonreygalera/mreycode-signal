@@ -2,9 +2,23 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Save, Hash, Terminal } from "lucide-react";
+import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
+
+const CONFIG_DOCS = [
+  { key: "id", type: "string", description: "Unique identifier for the widget", required: true },
+  { key: "label", type: "string", description: "Display title shown on the card", required: true },
+  { key: "type", type: "'stat' | 'line' | 'bar' | 'area'", description: "Widget visualization style", required: true },
+  { key: "api", type: "string", description: "The URL endpoint to fetch data from", required: true },
+  { key: "responsePath", type: "string", description: "Dot-notation path to data (e.g., 'result.count')", required: true },
+  { key: "size", type: "'sm' | 'md' | 'lg' | 'xl'", description: "Horizontal width/grid span" },
+  { key: "refreshInterval", type: "number", description: "Auto-refresh time in milliseconds" },
+  { key: "prefix / suffix", type: "string", description: "Currency or units ($, °C, %)" },
+  { key: "abbreviate", type: "boolean", description: "Shorten large numbers (1M, 5K)" },
+  { key: "color", type: "string", description: "'up', 'down', 'warning', 'info', 'muted'" },
+  { key: "colorRules", type: "object", description: "Dynamic color based on value thresholds" },
+];
 
 interface FastWidgetModalProps {
   isOpen: boolean;
@@ -17,6 +31,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: Fa
   const [afterId, setAfterId] = useState<string | null>(null);
   const [configText, setConfigText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showDocs, setShowDocs] = useState(false);
 
   const handleSave = () => {
     try {
@@ -50,8 +65,12 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: Fa
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative w-full max-w-2xl bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className={cn(
+              "relative bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-row max-h-[90vh] transition-all duration-300",
+              showDocs ? "max-w-4xl" : "max-w-2xl w-full"
+            )}
           >
+            <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-between p-6 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-foreground/5 rounded-md text-foreground">
@@ -107,9 +126,18 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: Fa
                 />
                 {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
               </div>
+
+              <button
+                onClick={() => setShowDocs(!showDocs)}
+                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+                title="Toggle Configuration Dictionary"
+              >
+                {showDocs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                Configuration Dictionary
+              </button>
             </div>
 
-            <div className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-end gap-3">
+            <div className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-end gap-3 mt-auto">
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-muted hover:text-foreground transition-colors"
@@ -124,7 +152,37 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets }: Fa
                 Deploy Widget
               </button>
             </div>
-          </motion.div>
+          </div>
+
+          {showDocs && (
+            <div className="w-80 border-l border-border/50 bg-background/30 flex flex-col shrink-0">
+              <div className="p-6 border-b border-border/50 bg-panel">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                  <BookOpen size={14} />
+                  Dictionary
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {CONFIG_DOCS.map((doc) => (
+                  <div key={doc.key} className="space-y-1 p-2 hover:bg-foreground/5 rounded transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <code className="text-[11px] font-bold text-foreground bg-foreground/10 px-1 rounded">
+                        {doc.key}
+                      </code>
+                      {doc.required && (
+                        <span className="text-[8px] font-bold text-red-500 uppercase tracking-tighter">Required</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted italic font-mono leading-tight">{doc.type}</p>
+                    <p className="text-[11px] text-muted/80 leading-snug group-hover:text-foreground/80 transition-colors">
+                      {doc.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
         </div>
       )}
     </AnimatePresence>

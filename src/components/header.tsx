@@ -4,8 +4,9 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen } from "lucide-react";
 import { appConfig } from "@/config/app";
+import Link from "next/link";
 
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
@@ -38,6 +39,14 @@ export function Header() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/docs"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+            >
+              <BookOpen size={14} />
+              Docs
+            </Link>
+            <div className="h-4 w-px bg-border mx-1" />
             <button
               onClick={() => setShowAbout(true)}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
