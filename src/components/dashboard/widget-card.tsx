@@ -110,7 +110,7 @@ export function WidgetCard({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1">
           {config.isTemp && (
             <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
               <button 
@@ -259,9 +259,8 @@ export function WidgetCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
-        whileHover={{ y: -4 }}
         className={cn(
-          "group relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel p-4 transition-colors hover:border-muted",
+          "relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel p-4 transition-colors",
           finalSizeClass,
           !isStat && "@container"
         )}
