@@ -4,12 +4,16 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
-import { Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, Trash2, MonitorOff } from "lucide-react";
 import { FastWidgetModal } from "./fast-widget-modal";
 import { getTempWidgets, saveTempWidget, clearTempWidgets, mergeWidgets } from "@/lib/widgets";
+import { Clock } from "../clock";
+import { useTVMode } from "@/context/tv-mode-context";
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isTVMode, toggleTVMode } = useTVMode();
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
 
@@ -52,44 +56,58 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-32">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-row items-end justify-between border-b border-border pb-4"
-      >
-        <div className="flex flex-col">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
-            Metrics Overview
-          </h1>
-          <p className="text-sm text-muted">
-            Monitor key performance indicators
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {tempWidgets.length > 0 && (
+    <div className={cn("flex flex-col gap-4 pb-32", isTVMode && "pt-6")}>
+      {!isTVMode ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-row items-end justify-between border-b border-border pb-4"
+        >
+          <div className="flex flex-col">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
+              Metrics Overview
+            </h1>
+            <p className="text-sm text-muted">
+              Monitor key performance indicators
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {tempWidgets.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px]"
+                title="Clear temporary widgets"
+              >
+                <Trash2 size={14} />
+                Clear Temp
+              </button>
+            )}
             <button
-              onClick={handleClearAll}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px]"
-              title="Clear temporary widgets"
+              onClick={() => {
+                setWidgetToEdit(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95"
             >
-              <Trash2 size={14} />
-              Clear Temp
+              <Plus size={14} />
+              Fast Widget
             </button>
-          )}
-          <button
-            onClick={() => {
-              setWidgetToEdit(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95"
-          >
-            <Plus size={14} />
-            Fast Widget
-          </button>
+          </div>
+        </motion.div>
+      ) : (
+        <div className="flex items-center justify-between mb-4">
+           <button
+             onClick={toggleTVMode}
+             className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors border border-border/40 rounded-[2px] bg-panel/50 backdrop-blur-sm"
+             title="Exit TV Mode (Esc)"
+           >
+             <MonitorOff size={12} />
+             Exit TV Mode
+           </button>
+           <Clock />
         </div>
-      </motion.div>
+      )}
       
       <WidgetGrid 
         configs={allWidgets} 

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 import { appConfig } from "@/config/app";
+import { TVModeProvider } from "@/context/tv-mode-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,7 +54,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <TVModeProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </TVModeProvider>
         </ThemeProvider>
       </body>
     </html>

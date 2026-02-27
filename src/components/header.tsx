@@ -5,14 +5,16 @@ import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff } from "lucide-react";
 import { appConfig } from "@/config/app";
+import { useTVMode } from "@/context/tv-mode-context";
 import Link from "next/link";
 
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const { isTVMode, toggleTVMode } = useTVMode();
   
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
@@ -107,6 +109,15 @@ export function Header() {
             >
               <Info size={14} />
               About
+            </button>
+            <div className="h-4 w-px bg-border mx-1" />
+            <button
+              onClick={toggleTVMode}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              title={isTVMode ? "Exit TV Mode" : "Enter TV Mode"}
+            >
+              {isTVMode ? <MonitorOff size={14} /> : <Monitor size={14} />}
+              TV Mode
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
