@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe } from "lucide-react";
+import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ export function Clock() {
   const [timezone, setTimezone] = useState("Asia/Manila");
   const [time, setTime] = useState<Date | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchTime = useCallback(async (tz: string) => {
@@ -88,7 +89,7 @@ export function Clock() {
   const selectedTzLabel = TIMEZONES.find(t => t.value === timezone)?.label || timezone;
 
   return (
-    <div className="relative flex items-center" ref={dropdownRef}>
+    <div className="relative flex items-center gap-1" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -118,6 +119,14 @@ export function Clock() {
         </div>
       </button>
 
+      <button
+        onClick={() => setIsMaximized(true)}
+        className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground mr-1"
+        title="Maximize Clock"
+      >
+        <Maximize2 size={14} />
+      </button>
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -125,7 +134,7 @@ export function Clock() {
             animate={{ opacity: 1, y: 5, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full right-0 z-60 mt-1 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-xl backdrop-blur-md"
+            className="absolute top-full right-8 z-60 mt-1 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-xl backdrop-blur-md"
           >
             <div className="px-2 py-1.5 border-b border-border bg-muted/5 flex items-center gap-2">
               <Globe size={10} className="text-muted" />
@@ -151,6 +160,53 @@ export function Clock() {
                 </button>
               ))}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isMaximized && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center bg-background/90 backdrop-blur-xl"
+            onClick={() => setIsMaximized(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="flex flex-col items-center gap-8 p-12"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-[12rem] md:text-[20rem] font-mono font-black tracking-tighter text-foreground leading-none lining-nums drop-shadow-2xl">
+                  {timeString}
+                </span>
+                <div className="flex items-center gap-6 mt-4">
+                  <span className="text-4xl md:text-6xl font-black text-primary uppercase tracking-[0.2em]">
+                    {selectedTzLabel}
+                  </span>
+                  <div className="h-12 w-1 bg-border/40" />
+                  <div className="flex flex-col items-start">
+                    <div className="flex items-center gap-3">
+                      <Calendar size={32} className="text-muted" />
+                      <span className="text-3xl md:text-5xl font-bold text-muted uppercase tracking-widest italic opacity-80">
+                        {dateString}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setIsMaximized(false)}
+                className="absolute top-10 right-10 p-4 hover:bg-white/10 rounded-full transition-all text-muted hover:text-foreground group"
+              >
+                <X size={48} className="group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
