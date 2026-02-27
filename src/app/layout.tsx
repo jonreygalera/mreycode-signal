@@ -18,9 +18,54 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: appConfig.name,
+  metadataBase: new URL(appConfig.url),
+  title: {
+    default: appConfig.name,
+    template: `%s | ${appConfig.name}`,
+  },
   description: appConfig.description,
-  manifest: "/manifest", // Points to app/manifest.ts
+  keywords: appConfig.keywords,
+  authors: [{ name: appConfig.developer.name, url: appConfig.developer.website }],
+  creator: appConfig.developer.name,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: appConfig.url,
+    title: appConfig.name,
+    description: appConfig.description,
+    siteName: appConfig.name,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: appConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: appConfig.name,
+    description: appConfig.description,
+    images: ["/og-image.png"],
+    creator: appConfig.developer.twitter,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "/",
+  },
+  manifest: "/manifest",
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,6 +75,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
 };
+
 
 export const viewport: Viewport = {
   themeColor: "#000000",
