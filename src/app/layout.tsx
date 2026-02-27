@@ -85,6 +85,8 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { AlertProvider } from "@/context/alert-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -103,7 +105,9 @@ export default function RootLayout({
         >
           <TVModeProvider>
             <SettingsProvider>
-              <LayoutWrapper>{children}</LayoutWrapper>
+              <AlertProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </AlertProvider>
             </SettingsProvider>
           </TVModeProvider>
         </ThemeProvider>
@@ -111,3 +115,4 @@ export default function RootLayout({
     </html>
   );
 }
+

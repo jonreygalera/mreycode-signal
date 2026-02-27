@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
+import { useAlert } from "@/context/alert-context";
+
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +16,8 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { settings, updateSettings, resetSettings } = useSettings();
+  const { showAlert } = useAlert();
+
   const [localTimezone, setLocalTimezone] = useState(settings.timezone);
   const [localBgImage, setLocalBgImage] = useState(settings.backgroundImage);
   const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
@@ -42,9 +46,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("Image size should be less than 2MB for local storage performance.");
+        showAlert({
+          title: "File Too Large",
+          message: "Image size should be less than 2MB for local storage performance.",
+          type: "warning"
+        });
         return;
       }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -64,8 +73,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     onClose();
   };
 
-  const handleReset = () => {
-    if (confirm("Reset all settings to default?")) {
+  const handleReset = async () => {
+    const confirmed = await showAlert({
+      title: "Reset Settings",
+      message: "Are you sure you want to reset all settings to default? This will clear your custom background and timezone.",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Reset Everything",
+      cancelText: "Keep My Settings"
+    });
+
+    if (confirmed) {
       resetSettings();
       setLocalTimezone(DEFAULT_SETTINGS.timezone);
       setLocalBgImage(DEFAULT_SETTINGS.backgroundImage);
@@ -73,6 +91,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
+
 
   const removeImage = () => {
     setLocalBgImage(null);

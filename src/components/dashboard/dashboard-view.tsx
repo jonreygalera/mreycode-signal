@@ -11,10 +11,14 @@ import { getTempWidgets, saveTempWidget, clearTempWidgets, mergeWidgets } from "
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
+import { useAlert } from "@/context/alert-context";
+
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
+  const { showAlert } = useAlert();
+
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
 
@@ -40,8 +44,17 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     }
   };
 
-  const handleDeleteWidget = (id: string) => {
-    if (confirm("Delete this widget?")) {
+  const handleDeleteWidget = async (id: string) => {
+    const confirmed = await showAlert({
+      title: "Delete Widget",
+      message: "Are you sure you want to remove this widget from your dashboard?",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Delete",
+      cancelText: "Keep it"
+    });
+
+    if (confirmed) {
       const current = getTempWidgets();
       const updated = current.filter(w => w.config.id !== id);
       localStorage.setItem("mreycode_signal_temp_widgets", JSON.stringify(updated));
@@ -49,12 +62,22 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     }
   };
 
-  const handleClearAll = () => {
-    if (confirm("Clear all temporary widgets?")) {
+  const handleClearAll = async () => {
+    const confirmed = await showAlert({
+      title: "Clear All Widgets",
+      message: "This will remove all custom widgets you've added. This action cannot be undone.",
+      type: "error",
+      showCancel: true,
+      confirmText: "Clear All",
+      cancelText: "Cancel"
+    });
+
+    if (confirmed) {
       clearTempWidgets();
       setTempWidgets([]);
     }
   };
+
 
   return (
     <div className={cn("flex flex-col gap-4 pb-32", isTVMode && "pt-6")}>
