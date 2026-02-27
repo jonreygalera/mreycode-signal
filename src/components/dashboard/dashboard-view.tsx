@@ -5,9 +5,21 @@ import { motion } from "framer-motion";
 import { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, MonitorOff } from "lucide-react";
+import { Plus, Trash2, MonitorOff, RotateCcw } from "lucide-react";
 import { FastWidgetModal } from "./fast-widget-modal";
-import { getTempWidgets, saveTempWidget, clearTempWidgets, mergeWidgets } from "@/lib/widgets";
+import { HistoryModal } from "./history-modal";
+import { 
+  getTempWidgets, 
+  saveTempWidget, 
+  mergeWidgets,
+  getHistoryWidgets,
+  deleteTempWidget,
+  restoreWidgetFromHistory,
+  permadeleteFromHistory,
+  restoreAllHistory,
+  clearHistory,
+  TempWidget
+} from "@/lib/widgets";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
@@ -21,9 +33,12 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
+  const [historyWidgets, setHistoryWidgets] = useState<TempWidget[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     setTempWidgets(getTempWidgets());
+    setHistoryWidgets(getHistoryWidgets());
   }, []);
 
   const allWidgets = useMemo(() => {
@@ -47,7 +62,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const handleDeleteWidget = async (id: string) => {
     const confirmed = await showAlert({
       title: "Delete Widget",
-      message: "Are you sure you want to remove this widget from your dashboard?",
+      message: "Are you sure you want to remove this widget from your dashboard? It will be moved to history.",
       type: "warning",
       showCancel: true,
       confirmText: "Delete",
@@ -55,26 +70,61 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      const current = getTempWidgets();
-      const updated = current.filter(w => w.config.id !== id);
-      localStorage.setItem("mreycode_signal_temp_widgets", JSON.stringify(updated));
-      setTempWidgets(updated);
+      deleteTempWidget(id);
+      setTempWidgets(getTempWidgets());
+      setHistoryWidgets(getHistoryWidgets());
+    }
+  };
+
+  const handleRestoreFromHistory = (id: string) => {
+    restoreWidgetFromHistory(id);
+    setTempWidgets(getTempWidgets());
+    setHistoryWidgets(getHistoryWidgets());
+  };
+
+  const handlePermadelete = (id: string) => {
+    permadeleteFromHistory(id);
+    setHistoryWidgets(getHistoryWidgets());
+  };
+
+  const handleRestoreAllHistory = () => {
+    restoreAllHistory();
+    setTempWidgets(getTempWidgets());
+    setHistoryWidgets(getHistoryWidgets());
+    setIsHistoryOpen(false);
+  };
+
+  const handleClearHistory = async () => {
+    const confirmed = await showAlert({
+      title: "Empty Trash",
+      message: "Are you sure you want to permanently delete all widgets in history?",
+      type: "error",
+      showCancel: true,
+      confirmText: "Empty Bin",
+      cancelText: "Cancel"
+    });
+
+    if (confirmed) {
+      clearHistory();
+      setHistoryWidgets([]);
     }
   };
 
   const handleClearAll = async () => {
     const confirmed = await showAlert({
       title: "Clear All Widgets",
-      message: "This will remove all custom widgets you've added. This action cannot be undone.",
-      type: "error",
+      message: "This will move all custom widgets to history. This action can be undone from the recycle bin.",
+      type: "warning",
       showCancel: true,
       confirmText: "Clear All",
       cancelText: "Cancel"
     });
 
     if (confirmed) {
-      clearTempWidgets();
+      const current = getTempWidgets();
+      current.forEach(w => deleteTempWidget(w.config.id));
       setTempWidgets([]);
+      setHistoryWidgets(getHistoryWidgets());
     }
   };
 
@@ -105,6 +155,22 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               >
                 <Trash2 size={14} />
                 Clear Temp
+              </button>
+            )}
+            {historyWidgets.length > 0 && (
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="group flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-all border border-border/40 hover:border-border rounded-[4px] whitespace-nowrap bg-panel/30"
+                title="View deleted widgets"
+              >
+                <div className="relative">
+                  <RotateCcw size={14} className="group-hover:-rotate-45 transition-transform duration-300" />
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-foreground opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-foreground"></span>
+                  </span>
+                </div>
+                History
               </button>
             )}
             <button
@@ -151,6 +217,16 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         onSave={handleSaveWidget}
         existingWidgets={allWidgets}
         initialConfig={widgetToEdit || undefined}
+      />
+
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={historyWidgets}
+        onRestore={handleRestoreFromHistory}
+        onRestoreAll={handleRestoreAllHistory}
+        onDelete={handlePermadelete}
+        onClearAll={handleClearHistory}
       />
     </div>
   );

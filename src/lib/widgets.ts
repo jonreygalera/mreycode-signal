@@ -33,8 +33,67 @@ export const saveTempWidget = (config: WidgetConfig, afterId: string | null) => 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 };
 
-export const clearTempWidgets = () => {
-  localStorage.removeItem(STORAGE_KEY);
+const HISTORY_KEY = "mreycode_signal_widget_history";
+
+export const getHistoryWidgets = (): TempWidget[] => {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(HISTORY_KEY);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch (e) {
+    return [];
+  }
+};
+
+export const deleteTempWidget = (id: string, permanently = false) => {
+  const current = getTempWidgets();
+  const widgetToDelete = current.find(w => w.config.id === id);
+  
+  if (!widgetToDelete) return;
+
+  // Remove from current
+  const updated = current.filter(w => w.config.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+  // Add to history if not permanent
+  if (!permanently) {
+    const history = getHistoryWidgets();
+    if (!history.find(w => w.config.id === id)) {
+      const updatedHistory = [widgetToDelete, ...history];
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+    }
+  }
+};
+
+export const restoreWidgetFromHistory = (id: string) => {
+  const history = getHistoryWidgets();
+  const widgetToRestore = history.find(w => w.config.id === id);
+  
+  if (!widgetToRestore) return;
+
+  // Remove from history
+  const updatedHistory = history.filter(w => w.config.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+
+  // Add back to temp
+  saveTempWidget(widgetToRestore.config, widgetToRestore.afterId);
+};
+
+export const permadeleteFromHistory = (id: string) => {
+  const history = getHistoryWidgets();
+  const updatedHistory = history.filter(w => w.config.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+};
+
+export const restoreAllHistory = () => {
+  const history = getHistoryWidgets();
+  history.forEach(w => saveTempWidget(w.config, w.afterId));
+  localStorage.removeItem(HISTORY_KEY);
+};
+
+export const clearHistory = () => {
+  localStorage.removeItem(HISTORY_KEY);
 };
 
 export const mergeWidgets = (baseConfigs: WidgetConfig[], tempWidgets: TempWidget[]): WidgetConfig[] => {
