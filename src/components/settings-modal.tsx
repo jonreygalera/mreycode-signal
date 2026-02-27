@@ -16,6 +16,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [localTimezone, setLocalTimezone] = useState(settings.timezone);
   const [localBgImage, setLocalBgImage] = useState(settings.backgroundImage);
+  const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
@@ -33,6 +34,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     setLocalTimezone(settings.timezone);
     setLocalBgImage(settings.backgroundImage);
+    setLocalUseBgInClock(settings.useBgInClock);
     setPreviewImage(settings.backgroundImage);
   }, [settings, isOpen]);
 
@@ -57,6 +59,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     updateSettings({
       timezone: localTimezone,
       backgroundImage: localBgImage,
+      useBgInClock: localUseBgInClock,
     });
     onClose();
   };
@@ -66,6 +69,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       resetSettings();
       setLocalTimezone(DEFAULT_SETTINGS.timezone);
       setLocalBgImage(DEFAULT_SETTINGS.backgroundImage);
+      setLocalUseBgInClock(DEFAULT_SETTINGS.useBgInClock);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -217,6 +221,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                       </div>
                     </div>
+                    {previewImage && (
+                      <div className="mt-8 pt-6 border-t border-border/50">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={localUseBgInClock}
+                            onChange={(e) => setLocalUseBgInClock(e.target.checked)}
+                            className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 bg-background"
+                          />
+                          <span className="text-sm font-semibold text-foreground/80 group-hover:text-foreground transition-colors">
+                            Use this background also in clock maximize
+                          </span>
+                        </label>
+                        <p className="text-[10px] text-muted mt-1 ml-7">
+                          When checked, the atmospheric background will be visible during full-screen clock mode.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>

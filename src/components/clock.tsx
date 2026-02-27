@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings-context";
-
-
 
 export function Clock() {
   const { settings, updateSettings } = useSettings();
@@ -16,10 +15,12 @@ export function Clock() {
   const [time, setTime] = useState<Date | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
 
   useEffect(() => {
+    setMounted(true);
     try {
       // @ts-ignore
       const allTimezones = Intl.supportedValuesOf("timeZone");
@@ -34,34 +35,26 @@ export function Clock() {
       const res = await fetch(`https://timeapi.io/api/Time/current/zone?timeZone=${tz}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      // data.dateTime is like "2026-02-26T17:53:25.0710628"
       const date = new Date(data.dateTime);
       setTime(date);
     } catch (err) {
       console.error("Failed to fetch time", err);
-      // Fallback to local time with basic timezone adjustment if API fails
-      // This is less accurate than the API but provides immediate UI feedback
       setTime(new Date());
     }
   }, []);
 
-  // Sync with API once on mount or when timezone changes
   useEffect(() => {
     fetchTime(timezone);
   }, [timezone, fetchTime]);
 
-  // Local tick every second
   useEffect(() => {
     if (!time) return;
-
     const interval = setInterval(() => {
       setTime((prev) => (prev ? new Date(prev.getTime() + 1000) : null));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [time]);
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -84,9 +77,7 @@ export function Clock() {
   const hours = time.getHours();
   const minutes = time.getMinutes();
   const seconds = time.getSeconds();
-  
   const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  
   const dateString = time.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -94,6 +85,98 @@ export function Clock() {
   });
 
   const selectedTzLabel = timezone.split("/").pop()?.replace(/_/g, " ") || timezone;
+
+  const maximizedLayout = (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black overflow-hidden"
+      onClick={() => setIsMaximized(false)}
+    >
+      {/* Immersive Background Layer */}
+      {settings.useBgInClock && settings.backgroundImage ? (
+        <div className="absolute inset-0 z-0 text-white">
+          <motion.img 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 10, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
+            src={settings.backgroundImage} 
+            alt="Dashboard Background" 
+            className="w-full h-full object-cover opacity-50"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/20 to-black/80 backdrop-blur-[2px]" />
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-3xl" />
+      )}
+
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative z-10 flex flex-col items-center gap-12 p-12 text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col items-center gap-4 text-white">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="px-6 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md"
+          >
+            <span className="text-sm font-black text-primary uppercase tracking-[0.4em] lining-nums">
+              {selectedTzLabel}
+            </span>
+          </motion.div>
+
+          <span className={cn(
+            "text-[8rem] sm:text-[12rem] md:text-[20rem] lg:text-[24rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)]",
+            settings.useBgInClock && settings.backgroundImage ? "text-white" : "text-foreground"
+          )}>
+            {timeString}
+          </span>
+
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.8 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-4"
+          >
+            <Calendar size={24} className={cn(settings.useBgInClock && settings.backgroundImage ? "text-white/40" : "text-muted")} />
+            <span className={cn(
+              "text-xl sm:text-2xl md:text-4xl font-bold uppercase tracking-[0.2em] italic",
+              settings.useBgInClock && settings.backgroundImage ? "text-white/80" : "text-muted"
+            )}>
+              {dateString}
+            </span>
+          </motion.div>
+        </div>
+
+        <div className="flex flex-col items-center gap-6">
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+            <span className="text-[11px] font-bold text-white/40 uppercase tracking-[0.3em]">Powered by</span>
+            <a 
+              href="https://timeapi.io" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[11px] font-mono font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              TIMEAPI.IO
+            </a>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => setIsMaximized(false)}
+          className="absolute -top-10 md:fixed md:top-12 md:right-12 p-5 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white group active:scale-95"
+        >
+          <X size={48} className="group-hover:rotate-90 transition-transform duration-500" />
+        </button>
+      </motion.div>
+    </motion.div>
+  );
 
   return (
     <div className="relative flex items-center gap-1" ref={dropdownRef}>
@@ -171,66 +254,12 @@ export function Clock() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {isMaximized && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 flex items-center justify-center bg-background/90 backdrop-blur-xl"
-            onClick={() => setIsMaximized(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="flex flex-col items-center gap-8 p-12"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-col items-center">
-                <span className="text-[12rem] md:text-[20rem] font-mono font-black tracking-tighter text-foreground leading-none lining-nums drop-shadow-2xl">
-                  {timeString}
-                </span>
-                <div className="flex items-center gap-6 mt-4">
-                  <span className="text-4xl md:text-6xl font-black text-primary uppercase tracking-[0.2em]">
-                    {selectedTzLabel}
-                  </span>
-                  <div className="h-12 w-1 bg-border/40" />
-                  <div className="flex flex-col items-start">
-                    <div className="flex items-center gap-3">
-                      <Calendar size={32} className="text-muted" />
-                      <span className="text-3xl md:text-5xl font-bold text-muted uppercase tracking-widest italic opacity-80">
-                        {dateString}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 mt-8">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <span className="text-[10px] font-bold text-muted uppercase tracking-[0.3em]">Powered by</span>
-                  <a 
-                    href="https://timeapi.io" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-[10px] font-mono font-bold text-primary hover:underline"
-                  >
-                    TIMEAPI.IO
-                  </a>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => setIsMaximized(false)}
-                className="absolute top-10 right-10 p-4 hover:bg-white/10 rounded-full transition-all text-muted hover:text-foreground group"
-              >
-                <X size={48} className="group-hover:rotate-90 transition-transform duration-300" />
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {mounted && isMaximized && createPortal(
+        <AnimatePresence mode="wait">
+          {isMaximized && maximizedLayout}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
