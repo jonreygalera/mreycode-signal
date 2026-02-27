@@ -199,6 +199,20 @@ export function Clock() {
                   </div>
                 </div>
               </div>
+
+              <div className="flex flex-col items-center gap-2 mt-8">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-[0.3em]">Powered by</span>
+                  <a 
+                    href="https://timeapi.io" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-[10px] font-mono font-bold text-primary hover:underline"
+                  >
+                    TIMEAPI.IO
+                  </a>
+                </div>
+              </div>
               
               <button
                 onClick={() => setIsMaximized(false)}
