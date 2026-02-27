@@ -1,22 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-interface AppSettings {
-  timezone: string;
-  backgroundImage: string | null;
-}
+import { AppSettings, DEFAULT_SETTINGS } from "@/config/settings";
 
 interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetSettings: () => void;
 }
-
-const DEFAULT_SETTINGS: AppSettings = {
-  timezone: typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
-  backgroundImage: null,
-};
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 

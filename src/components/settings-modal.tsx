@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
+import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
 
 interface SettingsModalProps {
@@ -63,9 +64,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handleReset = () => {
     if (confirm("Reset all settings to default?")) {
       resetSettings();
-      setLocalTimezone(typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
-      setLocalBgImage(null);
-      setPreviewImage(null);
+      setLocalTimezone(DEFAULT_SETTINGS.timezone);
+      setLocalBgImage(DEFAULT_SETTINGS.backgroundImage);
+      setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
 

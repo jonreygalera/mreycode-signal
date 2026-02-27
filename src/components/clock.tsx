@@ -6,15 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings-context";
 
-const TIMEZONES = [
-  { label: "Manila", value: "Asia/Manila" },
-  { label: "UTC", value: "UTC" },
-  { label: "London", value: "Europe/London" },
-  { label: "New York", value: "America/New_York" },
-  { label: "Tokyo", value: "Asia/Tokyo" },
-  { label: "Dubai", value: "Asia/Dubai" },
-  { label: "Singapore", value: "Asia/Singapore" },
-];
+
 
 export function Clock() {
   const { settings, updateSettings } = useSettings();
@@ -25,6 +17,17 @@ export function Clock() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [timezones, setTimezones] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      const allTimezones = Intl.supportedValuesOf("timeZone");
+      setTimezones(allTimezones);
+    } catch (e) {
+      setTimezones(["UTC", "Asia/Manila", "America/New_York", "Europe/London", "Asia/Tokyo"]);
+    }
+  }, []);
 
   const fetchTime = useCallback(async (tz: string) => {
     try {
@@ -90,7 +93,7 @@ export function Clock() {
     year: "numeric"
   });
 
-  const selectedTzLabel = TIMEZONES.find(t => t.value === timezone)?.label || timezone;
+  const selectedTzLabel = timezone.split("/").pop()?.replace(/_/g, " ") || timezone;
 
   return (
     <div className="relative flex items-center gap-1" ref={dropdownRef}>
@@ -145,22 +148,22 @@ export function Clock() {
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted">Select Timezone</span>
             </div>
             <div className="p-1 max-h-[240px] overflow-y-auto">
-              {TIMEZONES.map((tz) => (
+              {timezones.map((tz) => (
                 <button
-                  key={tz.value}
-                  onClick={() => {
-                    setTimezone(tz.value);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors",
-                    timezone === tz.value 
-                      ? "bg-primary/10 text-primary font-bold" 
-                      : "text-muted hover:bg-muted/20 hover:text-foreground"
-                  )}
-                >
-                  <span className="truncate">{tz.label} ({tz.value})</span>
-                  {timezone === tz.value && <Check size={12} className="shrink-0" />}
+                   key={tz}
+                   onClick={() => {
+                     setTimezone(tz);
+                     setIsOpen(false);
+                   }}
+                   className={cn(
+                     "flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors",
+                     timezone === tz
+                       ? "bg-primary/10 text-primary font-bold" 
+                       : "text-muted hover:bg-muted/20 hover:text-foreground"
+                   )}
+                 >
+                   <span className="truncate">{tz.replace(/_/g, " ")}</span>
+                   {timezone === tz && <Check size={12} className="shrink-0" />}
                 </button>
               ))}
             </div>
