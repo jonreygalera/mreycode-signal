@@ -49,15 +49,30 @@ export function WidgetCard({
     const { isTemp, ...rawConfig } = config as any;
     const exportConfig = JSON.parse(JSON.stringify(rawConfig));
     
+    // Mask URL parameters: keeps meta like ?part=statistics, masks ?id=123 or ?key=abc
+    const maskUrlParams = (val: any) => {
+      if (typeof val !== 'string') return val;
+      return val.replace(/([?&][^=]+=)([^&#]*)/g, (match, prefix, value) => {
+        // Mask if contains non-alpha chars (likely IDs/secrets), is very long, 
+        // or explicitly matches sensitive parameter names
+        const isSensitive = /[^a-zA-Z]/.test(value) || value.length > 20 || /key|id|token|auth|secret/i.test(match);
+        return isSensitive ? `${prefix}***` : match;
+      });
+    };
+
+    if (exportConfig.api) exportConfig.api = maskUrlParams(exportConfig.api);
+    if (exportConfig.source) exportConfig.source = maskUrlParams(exportConfig.source);
+    if (exportConfig.sourceUrl) exportConfig.sourceUrl = maskUrlParams(exportConfig.sourceUrl);
+
     if (exportConfig.headers) {
       Object.keys(exportConfig.headers).forEach(key => {
-        exportConfig.headers[key] = "****";
+        exportConfig.headers[key] = "***";
       });
     }
     
     if (exportConfig.body && typeof exportConfig.body === 'object') {
       Object.keys(exportConfig.body).forEach(key => {
-        exportConfig.body[key] = "****";
+        exportConfig.body[key] = "***";
       });
     }
 
