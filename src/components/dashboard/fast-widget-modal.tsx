@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
+import { TEMPLATES } from "@/config/templates";
 
 const CONFIG_DOCS = [
   { key: "id", type: "string", description: "Unique identifier for the widget", required: true },
@@ -22,85 +23,7 @@ const CONFIG_DOCS = [
   { key: "colorRules", type: "object", description: "Dynamic color based on value thresholds" },
 ];
 
-const TEMPLATES = [
-  {
-    label: "Stat: Basic Metric",
-    config: {
-      id: "new-stat-widget",
-      label: "Response Time",
-      type: "stat",
-      api: "/api/mock",
-      responsePath: "payload.latency",
-      size: "sm",
-      suffix: "ms",
-      refreshInterval: 2000,
-      color: "info"
-    }
-  },
-  {
-    label: "Stat: Color Rules",
-    config: {
-      id: "new-stat-rules",
-      label: "Error Rate",
-      type: "stat",
-      api: "/api/mock",
-      responsePath: "payload.errors",
-      size: "sm",
-      suffix: "%",
-      refreshInterval: 5000,
-      colorRules: {
-        rules: [
-          { condition: "below", value: 5, color: "up" },
-          { condition: "above", value: 10, color: "down" }
-        ]
-      }
-    }
-  },
-  {
-    label: "Chart: Analytics Line",
-    config: {
-      id: "new-line-chart",
-      label: "User Activity",
-      type: "line",
-      api: "/api/mock",
-      responsePath: "series",
-      xKey: "timestamp",
-      yKey: "value",
-      size: "lg",
-      refreshInterval: 30000,
-      color: "up"
-    }
-  },
-  {
-    label: "Chart: Distribution Bar",
-    config: {
-      id: "new-bar-chart",
-      label: "Device Distribution",
-      type: "bar",
-      api: "/api/mock",
-      responsePath: "payload.distribution",
-      xKey: "category",
-      yKey: "count",
-      size: "md",
-      color: "info"
-    }
-  },
-  {
-    label: "Chart: Performance Area",
-    config: {
-      id: "new-area-chart",
-      label: "API Throughput",
-      type: "area",
-      api: "/api/mock",
-      responsePath: "history",
-      xKey: "time",
-      yKey: "reqs",
-      size: "lg",
-      refreshInterval: 10000,
-      color: "warning"
-    }
-  }
-];
+
 
 interface FastWidgetModalProps {
   isOpen: boolean;
