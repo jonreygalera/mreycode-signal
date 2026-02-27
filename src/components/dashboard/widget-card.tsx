@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
-import { AnimatedStat, StaticStringStat } from "./stat";
+import { AnimatedStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -85,8 +85,17 @@ export function WidgetCard({
 
   const parsedData = useMemo(() => {
     if (!data) return null;
-    return getNestedProperty(data, config.responsePath);
-  }, [data, config.responsePath]);
+    const value = getNestedProperty(data, config.responsePath);
+    
+    // Force stat value to a number if type is stat
+    // If not a number, default to 0
+    if (config.type === "stat") {
+      const numValue = Number(value);
+      return isNaN(numValue) ? 0 : numValue;
+    }
+
+    return value;
+  }, [data, config.responsePath, config.type]);
 
   const sourceLabel = useMemo(() => {
     if (config.source) return config.source;
@@ -218,26 +227,13 @@ export function WidgetCard({
             "flex w-full flex-col justify-end",
             config.type === "stat" ? "h-full" : "absolute inset-0 pt-4" 
           )}>
-            {config.type === "stat" && typeof parsedData === "number" && (
+            {config.type === "stat" && (
               <AnimatedStat
-                value={parsedData}
+                value={parsedData as number}
                 prefix={config.prefix}
                 suffix={config.suffix}
                 source={sourceLabel}
                 sourceUrl={config.sourceUrl}
-                size={isMaximizedView ? "lg" : "md"}
-                abbreviate={config.abbreviate}
-                color={config.color}
-                colorRules={config.colorRules}
-              />
-            )}
-            {config.type === "stat" && typeof parsedData !== "number" && (
-              <StaticStringStat 
-                value={String(parsedData)} 
-                prefix={config.prefix}
-                suffix={config.suffix}
-                source={sourceLabel}
-                sourceUrl={config.sourceUrl} 
                 size={isMaximizedView ? "lg" : "md"}
                 abbreviate={config.abbreviate}
                 color={config.color}
