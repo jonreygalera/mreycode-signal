@@ -5,7 +5,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
 import { SettingsModal } from "./settings-modal";
@@ -14,6 +14,7 @@ import Link from "next/link";
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
@@ -35,6 +36,11 @@ export function Header() {
     };
   }, []);
 
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     
@@ -48,6 +54,37 @@ export function Header() {
   };
 
   if (isIframe) return null;
+
+  const navItems = [
+    {
+      label: "Clone",
+      icon: <ExternalLink size={16} />,
+      href: appConfig.github,
+      external: true,
+      onClick: undefined
+    },
+    {
+      label: "Docs",
+      icon: <BookOpen size={16} />,
+      href: "/docs",
+      external: false,
+      onClick: undefined
+    },
+    {
+      label: "About",
+      icon: <Info size={16} />,
+      href: undefined,
+      external: false,
+      onClick: () => setShowAbout(true)
+    },
+    {
+      label: "Settings",
+      icon: <Settings size={16} />,
+      href: undefined,
+      external: false,
+      onClick: () => setShowSettings(true)
+    }
+  ];
 
   return (
     <>
@@ -72,72 +109,169 @@ export function Header() {
               {appConfig.name}
             </span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
             <Clock />
-            <div className="h-6 w-px bg-border mx-2 hidden md:block" />
+            <div className="h-6 w-px bg-border mx-2" />
+            
             {isInstallable && (
-              <>
-                <button
-                  onClick={handleInstallClick}
-                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors animate-pulse-subtle"
-                  title="Install App"
-                >
-                  <Download size={14} />
-                  <span className="hidden sm:inline">Install</span>
-                </button>
-                <div className="h-4 w-px bg-border mx-1" />
-              </>
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors animate-pulse-subtle"
+                title="Install App"
+              >
+                <Download size={14} />
+                <span className="hidden lg:inline">Install</span>
+              </button>
             )}
-            <a
-              href={appConfig.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-              title="Clone Repository"
-            >
-              <ExternalLink size={14} />
-              <span className="hidden sm:inline">Clone</span>
-            </a>
-            <div className="h-4 w-px bg-border mx-1 hidden md:block" />
-            <Link
-              href="/docs"
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-              title="Documentation"
-            >
-              <BookOpen size={14} />
-              Docs
-            </Link>
-            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-            <button
-              onClick={() => setShowAbout(true)}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-              title="About"
-            >
-              <Info size={14} />
-              <span className="hidden sm:inline">About</span>
-            </button>
-            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-            <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-              title="App Settings"
-            >
-              <Settings size={14} />
-              <span className="hidden sm:inline">Settings</span>
-            </button>
-            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+
+            {navItems.map((item) => (
+              item.href ? (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+                >
+                  {item.icon}
+                  <span className="hidden lg:inline">{item.label}</span>
+                </Link>
+              ) : (
+                <button
+                  key={item.label}
+                  onClick={item.onClick}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+                >
+                  {item.icon}
+                  <span className="hidden lg:inline">{item.label}</span>
+                </button>
+              )
+            ))}
+
+            <div className="h-4 w-px bg-border mx-1" />
             <button
               onClick={toggleTVMode}
-              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
               title={isTVMode ? "Exit TV Mode" : "Enter TV Mode"}
             >
               {isTVMode ? <MonitorOff size={14} /> : <Monitor size={14} />}
-              <span className="hidden sm:inline">TV Mode</span>
+              <span className="hidden lg:inline">TV Mode</span>
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
           </div>
+
+          {/* Mobile Bar Actions */}
+          <div className="flex md:hidden items-center gap-3">
+             <div className="scale-90 origin-right">
+               <Clock />
+             </div>
+             <button 
+               onClick={() => setIsMenuOpen(!isMenuOpen)}
+               className="p-2 -mr-2 text-muted hover:text-foreground transition-colors relative"
+             >
+               <AnimatePresence mode="wait">
+                 {isMenuOpen ? (
+                   <motion.div
+                     key="close"
+                     initial={{ rotate: -90, opacity: 0 }}
+                     animate={{ rotate: 0, opacity: 1 }}
+                     exit={{ rotate: 90, opacity: 0 }}
+                     transition={{ duration: 0.2 }}
+                   >
+                     <X size={20} />
+                   </motion.div>
+                 ) : (
+                   <motion.div
+                     key="menu"
+                     initial={{ rotate: 90, opacity: 0 }}
+                     animate={{ rotate: 0, opacity: 1 }}
+                     exit={{ rotate: -90, opacity: 0 }}
+                     transition={{ duration: 0.2 }}
+                   >
+                     <Menu size={20} />
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+             </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="md:hidden border-t border-border bg-panel overflow-hidden"
+            >
+              <div className="flex flex-col p-4 space-y-1">
+                {isInstallable && (
+                  <button
+                    onClick={() => {
+                      handleInstallClick();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-4 px-4 py-4 rounded-lg bg-primary/5 text-primary text-sm font-bold active:bg-primary/10 transition-colors"
+                  >
+                    <Download size={18} />
+                    Install System App
+                  </button>
+                )}
+
+                {navItems.map((item) => (
+                  item.href ? (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      target={item.external ? "_blank" : undefined}
+                      rel={item.external ? "noopener noreferrer" : undefined}
+                      className="flex items-center gap-4 px-4 py-4 rounded-lg text-foreground hover:bg-muted/10 transition-colors"
+                    >
+                      <span className="text-muted">{item.icon}</span>
+                      <span className="text-sm font-semibold uppercase tracking-tight">{item.label}</span>
+                      <ExternalLink size={12} className="ml-auto opacity-20" />
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        item.onClick?.();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center gap-4 px-4 py-4 rounded-lg text-foreground hover:bg-muted/10 text-left transition-colors"
+                    >
+                      <span className="text-muted">{item.icon}</span>
+                      <span className="text-sm font-semibold uppercase tracking-tight">{item.label}</span>
+                    </button>
+                  )
+                ))}
+
+                <button
+                  onClick={() => {
+                    toggleTVMode();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-4 px-4 py-4 rounded-lg text-foreground hover:bg-muted/10 text-left transition-colors"
+                >
+                  <span className="text-muted">{isTVMode ? <MonitorOff size={18} /> : <Monitor size={18} />}</span>
+                  <span className="text-sm font-semibold uppercase tracking-tight">
+                    {isTVMode ? "Exit TV Mode" : "Enter TV Mode"}
+                  </span>
+                </button>
+
+                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between px-4 py-2">
+                   <span className="text-xs font-bold text-muted uppercase tracking-widest">Theme Mode</span>
+                   <ThemeToggle />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
@@ -239,3 +373,4 @@ export function Header() {
     </>
   );
 }
+
