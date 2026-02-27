@@ -66,7 +66,7 @@ export function AnimatedStat({
             <motion.span 
               className={cn(
                 "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none cursor-help",
-                size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+                size === "lg" ? "text-5xl sm:text-7xl md:text-[6rem] lg:text-[8rem]" : "text-3xl sm:text-4xl md:text-[2.5rem]",
                 resolvedColor === 'up' && "text-up",
                 resolvedColor === 'down' && "text-down",
                 resolvedColor === 'muted' && "text-muted",
@@ -83,7 +83,7 @@ export function AnimatedStat({
           <motion.span 
             className={cn(
               "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
-              size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+              size === "lg" ? "text-5xl sm:text-7xl md:text-[6rem] lg:text-[8rem]" : "text-3xl sm:text-4xl md:text-[2.5rem]",
               resolvedColor === 'up' && "text-up",
               resolvedColor === 'down' && "text-down",
               resolvedColor === 'muted' && "text-muted",
@@ -173,7 +173,7 @@ export function StaticStringStat({
             <span 
               className={cn(
                 "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none cursor-help",
-                size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+                size === "lg" ? "text-5xl sm:text-7xl md:text-[6rem] lg:text-[8rem]" : "text-3xl sm:text-4xl md:text-[2.5rem]",
                 resolvedColor === 'up' && "text-up",
                 resolvedColor === 'down' && "text-down",
                 resolvedColor === 'muted' && "text-muted",
@@ -190,7 +190,7 @@ export function StaticStringStat({
           <span 
             className={cn(
               "font-mono font-medium tracking-tight whitespace-nowrap transition-all duration-300 leading-none",
-              size === "lg" ? "text-7xl sm:text-[6rem]" : "text-4xl sm:text-[2.5rem]",
+              size === "lg" ? "text-5xl sm:text-7xl md:text-[6rem] lg:text-[8rem]" : "text-3xl sm:text-4xl md:text-[2.5rem]",
               resolvedColor === 'up' && "text-up",
               resolvedColor === 'down' && "text-down",
               resolvedColor === 'muted' && "text-muted",

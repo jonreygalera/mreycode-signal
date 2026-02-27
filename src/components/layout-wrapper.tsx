@@ -26,7 +26,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       {!isTVMode && <Header />}
       <main className={cn(
         "mx-auto w-full max-w-7xl flex-1 focus:outline-none",
-        isIframe || isTVMode ? "max-w-none px-0 pt-0" : "px-4 pt-16 sm:px-6 lg:px-8"
+        isIframe || isTVMode ? "max-w-none px-0 pt-0" : "px-4 pt-[72px] sm:px-6 sm:pt-16 lg:px-8"
       )}>
         {children}
       </main>

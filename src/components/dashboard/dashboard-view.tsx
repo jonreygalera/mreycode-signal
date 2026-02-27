@@ -86,7 +86,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-row items-end justify-between border-b border-border pb-4"
+          className="flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
         >
           <div className="flex flex-col">
             <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
@@ -96,11 +96,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               Monitor key performance indicators
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {tempWidgets.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px]"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px] whitespace-nowrap"
                 title="Clear temporary widgets"
               >
                 <Trash2 size={14} />
@@ -112,7 +112,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 setWidgetToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95"
+              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap ml-auto sm:ml-0"
             >
               <Plus size={14} />
               Fast Widget

@@ -95,8 +95,8 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             className={cn(
-              "relative bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-row max-h-[90vh] transition-all duration-300",
-              showDocs ? "max-w-4xl" : "max-w-2xl w-full"
+              "relative bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[90vh] transition-all duration-300 w-full",
+              showDocs ? "max-w-4xl" : "max-w-2xl"
             )}
           >
             <div className="flex-1 flex flex-col min-w-0">
@@ -205,14 +205,14 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
           </div>
 
           {showDocs && (
-            <div className="w-80 border-l border-border/50 bg-background/30 flex flex-col shrink-0">
-              <div className="p-6 border-b border-border/50 bg-panel">
+            <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-border/50 bg-background/30 flex flex-col shrink-0 max-h-[40vh] md:max-h-none">
+              <div className="p-4 md:p-6 border-b border-border/50 bg-panel sticky top-0 z-10">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
                   <BookOpen size={14} />
                   Dictionary
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono">
                 {CONFIG_DOCS.map((doc) => (
                   <div key={doc.key} className="space-y-1 p-2 hover:bg-foreground/5 rounded transition-colors group">
                     <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                         <span className="text-[8px] font-bold text-red-500 uppercase tracking-tighter">Required</span>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted italic font-mono leading-tight">{doc.type}</p>
+                    <p className="text-[10px] text-muted italic leading-tight">{doc.type}</p>
                     <p className="text-[11px] text-muted/80 leading-snug group-hover:text-foreground/80 transition-colors">
                       {doc.description}
                     </p>

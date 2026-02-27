@@ -74,15 +74,16 @@ export function Header() {
           </Link>
           <div className="flex items-center gap-2">
             <Clock />
-            <div className="h-6 w-px bg-border mx-2 hidden sm:block" />
+            <div className="h-6 w-px bg-border mx-2 hidden md:block" />
             {isInstallable && (
               <>
                 <button
                   onClick={handleInstallClick}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors animate-pulse-subtle"
+                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors animate-pulse-subtle"
+                  title="Install App"
                 >
                   <Download size={14} />
-                  Install App
+                  <span className="hidden sm:inline">Install</span>
                 </button>
                 <div className="h-4 w-px bg-border mx-1" />
               </>
@@ -91,15 +92,17 @@ export function Header() {
               href={appConfig.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              title="Clone Repository"
             >
               <ExternalLink size={14} />
-              Clone
+              <span className="hidden sm:inline">Clone</span>
             </a>
-            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+            <div className="h-4 w-px bg-border mx-1 hidden md:block" />
             <Link
               href="/docs"
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              title="Documentation"
             >
               <BookOpen size={14} />
               Docs
@@ -107,28 +110,29 @@ export function Header() {
             <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <button
               onClick={() => setShowAbout(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              title="About"
             >
               <Info size={14} />
-              About
+              <span className="hidden sm:inline">About</span>
             </button>
-            <div className="h-4 w-px bg-border mx-1" />
+            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <button
               onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
               title="App Settings"
             >
               <Settings size={14} />
-              Settings
+              <span className="hidden sm:inline">Settings</span>
             </button>
-            <div className="h-4 w-px bg-border mx-1" />
+            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <button
               onClick={toggleTVMode}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
               title={isTVMode ? "Exit TV Mode" : "Enter TV Mode"}
             >
               {isTVMode ? <MonitorOff size={14} /> : <Monitor size={14} />}
-              TV Mode
+              <span className="hidden sm:inline">TV Mode</span>
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />

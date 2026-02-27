@@ -99,16 +99,16 @@ export function WidgetCard({
   }, [config.api, config.source]);
 
   const sizeClasses = {
-    sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33%-0.75rem)] min-w-[300px] min-h-[200px]",
-    md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[400px] min-h-[250px]",
-    lg: "flex-grow basis-full lg:basis-[calc(66%-1rem)] min-h-[300px]",
-    xl: "flex-grow basis-full min-h-[400px]",
+    sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.33%-0.75rem)] min-w-[280px] sm:min-w-[300px] min-h-[200px]",
+    md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[280px] md:min-w-[400px] min-h-[250px]",
+    lg: "flex-grow basis-full lg:basis-[calc(66.66%-1rem)] min-w-[280px] min-h-[300px]",
+    xl: "flex-grow basis-full min-w-[280px] min-h-[400px]",
   };
 
   const isStat = config.type === "stat";
   const currentSizeClass = sizeClasses[config.size || (isStat ? "sm" : "sm")];
   const finalSizeClass = isStat 
-    ? cn(currentSizeClass, "min-h-0 h-auto min-w-[240px]") 
+    ? cn(currentSizeClass, "min-h-0 h-auto min-w-0 sm:min-w-[240px]") 
     : currentSizeClass;
 
   const renderContent = (isMaximizedView = false) => (

@@ -136,7 +136,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-10">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10">
               {/* Timezone Section */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">

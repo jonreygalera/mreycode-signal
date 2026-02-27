@@ -142,7 +142,7 @@ export function Clock() {
           </motion.div>
 
           <span className={cn(
-            "text-[8rem] sm:text-[12rem] md:text-[20rem] lg:text-[24rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)]",
+            "text-[5rem] sm:text-[10rem] md:text-[16rem] lg:text-[20rem] xl:text-[24rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] transition-all",
             settings.useBgInClock && settings.backgroundImage ? "text-white" : "text-foreground"
           )}>
             {timeString}
