@@ -6,7 +6,7 @@ import { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat, StaticStringStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2 } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,6 +40,29 @@ export function WidgetCard({
   onDelete?: (id: string) => void;
 }) {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyConfig = () => {
+    // Deep clone to avoid mutating original config and strip runtime flags
+    const { isTemp, ...rawConfig } = config as any;
+    const exportConfig = JSON.parse(JSON.stringify(rawConfig));
+    
+    if (exportConfig.headers) {
+      Object.keys(exportConfig.headers).forEach(key => {
+        exportConfig.headers[key] = "****";
+      });
+    }
+    
+    if (exportConfig.body && typeof exportConfig.body === 'object') {
+      Object.keys(exportConfig.body).forEach(key => {
+        exportConfig.body[key] = "****";
+      });
+    }
+
+    navigator.clipboard.writeText(JSON.stringify(exportConfig, null, 2));
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const { data, error, isLoading } = useSWR(
     {
@@ -131,6 +154,13 @@ export function WidgetCard({
           )}
           {!isMaximizedView && (
             <>
+              <button
+                onClick={handleCopyConfig}
+                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                title="Copy widget config"
+              >
+                {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
+              </button>
               <button 
                 onClick={() => setIsMaximized(true)}
                 className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
@@ -150,12 +180,21 @@ export function WidgetCard({
             </>
           )}
           {isMaximizedView && (
-            <button 
-              onClick={() => setIsMaximized(false)}
-              className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-            >
-              <X size={20} />
-            </button>
+            <>
+              <button
+                onClick={handleCopyConfig}
+                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                title="Copy widget config"
+              >
+                {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
+              </button>
+              <button 
+                onClick={() => setIsMaximized(false)}
+                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+              >
+                <X size={20} />
+              </button>
+            </>
           )}
         </div>
       </div>
