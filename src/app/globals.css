@@ -43,3 +43,16 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+body.has-custom-bg {
+  background-color: transparent !important;
+}
+
+body.has-custom-bg .bg-panel {
+  background-color: rgba(var(--panel-rgb, 255, 255, 255), 0.7);
+  backdrop-filter: blur(12px);
+}
+
+.dark body.has-custom-bg .bg-panel {
+  background-color: rgba(19, 23, 34, 0.7);
+}

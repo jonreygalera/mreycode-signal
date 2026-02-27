@@ -5,13 +5,15 @@ import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
+import { SettingsModal } from "./settings-modal";
 import Link from "next/link";
 
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
@@ -94,21 +96,30 @@ export function Header() {
               <ExternalLink size={14} />
               Clone
             </a>
-            <div className="h-4 w-px bg-border mx-1" />
+            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <Link
               href="/docs"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
             >
               <BookOpen size={14} />
               Docs
             </Link>
-            <div className="h-4 w-px bg-border mx-1" />
+            <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
             <button
               onClick={() => setShowAbout(true)}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
             >
               <Info size={14} />
               About
+            </button>
+            <div className="h-4 w-px bg-border mx-1" />
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+              title="App Settings"
+            >
+              <Settings size={14} />
+              Settings
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <button
@@ -124,6 +135,8 @@ export function Header() {
           </div>
         </div>
       </header>
+
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
       <AnimatePresence>
         {showAbout && (

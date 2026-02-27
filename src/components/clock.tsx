@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/context/settings-context";
 
 const TIMEZONES = [
   { label: "Manila", value: "Asia/Manila" },
@@ -16,7 +17,10 @@ const TIMEZONES = [
 ];
 
 export function Clock() {
-  const [timezone, setTimezone] = useState("Asia/Manila");
+  const { settings, updateSettings } = useSettings();
+  const timezone = settings.timezone;
+  const setTimezone = (tz: string) => updateSettings({ timezone: tz });
+  
   const [time, setTime] = useState<Date | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
