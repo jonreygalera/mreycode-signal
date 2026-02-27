@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   }
 
   if (type === 'chart-revenue') {
-    const data = Array.from({ length: 7 }).map((_, i) => ({
+    const data = Array.from({ length: 48 }).map((_, i) => ({
       day: `Day ${i + 1}`,
       revenue: getRandomInt(1000, 5000),
     }));
@@ -65,6 +65,10 @@ export async function POST(request: Request) {
       { source: 'Direct', visits: getRandomInt(1000, 3000) },
       { source: 'Social', visits: getRandomInt(500, 1500) },
       { source: 'Referral', visits: getRandomInt(200, 800) },
+      ...Array.from({ length: 46 }).map((_, i) => ({
+        source: `Source ${i + 5}`,
+        visits: getRandomInt(10, 1000),
+      })),
     ];
     return NextResponse.json({
       stats: {

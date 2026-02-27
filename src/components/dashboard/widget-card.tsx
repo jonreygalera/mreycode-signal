@@ -6,7 +6,7 @@ import { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat, StaticStringStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X, Zap } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -125,7 +125,7 @@ export function WidgetCard({
                 className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
                 title="Delete widget"
               >
-                <X size={14} />
+                <Trash2 size={14} />
               </button>
             </div>
           )}
@@ -274,21 +274,17 @@ export function WidgetCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 md:p-10"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full h-full max-w-6xl bg-panel border border-border rounded-lg p-6 shadow-2xl flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="relative w-full h-full bg-panel border-0 p-6 shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {renderContent(true)}
             </motion.div>
-            <div 
-              className="absolute inset-0 -z-10" 
-              onClick={() => setIsMaximized(false)}
-            />
           </motion.div>
         )}
       </AnimatePresence>
