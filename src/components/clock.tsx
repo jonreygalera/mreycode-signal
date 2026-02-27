@@ -91,39 +91,50 @@ export function Clock() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black overflow-hidden"
+      className="fixed inset-0 z-9999 flex items-center justify-center bg-black overflow-hidden pointer-events-auto"
       onClick={() => setIsMaximized(false)}
     >
-      {/* Immersive Background Layer */}
+      {/* Immersive Background Layer - Performance Optimized */}
       {settings.useBgInClock && settings.backgroundImage ? (
-        <div className="absolute inset-0 z-0 text-white">
-          <motion.img 
-            initial={{ scale: 1.1 }}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
+          <motion.div 
+            className="w-full h-full"
+            initial={{ scale: 1.05 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 10, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
-            src={settings.backgroundImage} 
-            alt="Dashboard Background" 
-            className="w-full h-full object-cover opacity-50"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/20 to-black/80 backdrop-blur-[2px]" />
+            transition={{ 
+              duration: 20, 
+              ease: "linear", 
+              repeat: Infinity, 
+              repeatType: "reverse" 
+            }}
+            style={{ willChange: "transform" }}
+          >
+            <img 
+              src={settings.backgroundImage} 
+              alt="" 
+              className="w-full h-full object-cover opacity-50 select-none pointer-events-none"
+              style={{ transform: "translateZ(0)" }}
+            />
+          </motion.div>
+          <div className="absolute inset-0 bg-linear-to-br from-black/80 via-black/20 to-black/80 backdrop-blur-[1px]" />
         </div>
       ) : (
         <div className="absolute inset-0 bg-background/95 backdrop-blur-3xl" />
       )}
 
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        initial={{ scale: 0.95, opacity: 0, y: 10 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative z-10 flex flex-col items-center gap-12 p-12 text-center"
+        exit={{ scale: 0.95, opacity: 0, y: 10 }}
+        className="relative z-10 flex flex-col items-center gap-12 p-12 text-center select-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col items-center gap-4 text-white">
+        <div className="flex flex-col items-center gap-4">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="px-6 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md"
+            className="px-6 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-sm"
           >
             <span className="text-sm font-black text-primary uppercase tracking-[0.4em] lining-nums">
               {selectedTzLabel}
@@ -154,7 +165,7 @@ export function Clock() {
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-px w-24 bg-linear-to-r from-transparent via-primary/50 to-transparent" />
           <div className="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-[0.3em]">Powered by</span>
             <a 

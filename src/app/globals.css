@@ -49,8 +49,9 @@ body.has-custom-bg {
 }
 
 body.has-custom-bg .bg-panel {
-  background-color: rgba(var(--panel-rgb, 255, 255, 255), 0.7);
-  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  transform: translateZ(0);
 }
 
 .dark body.has-custom-bg .bg-panel {

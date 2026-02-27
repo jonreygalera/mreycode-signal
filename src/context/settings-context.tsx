@@ -36,13 +36,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (settings.backgroundImage) {
-      document.body.style.backgroundImage = `url(${settings.backgroundImage})`;
-      document.body.style.backgroundSize = "cover";
-      document.body.style.backgroundPosition = "center";
-      document.body.style.backgroundAttachment = "fixed";
       document.body.classList.add("has-custom-bg");
     } else {
-      document.body.style.backgroundImage = "";
       document.body.classList.remove("has-custom-bg");
     }
   }, [settings.backgroundImage]);
@@ -59,7 +54,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     <SettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>
       <div className="relative min-h-screen">
         {settings.backgroundImage && (
-          <div className="fixed inset-0 bg-background/40 backdrop-blur-[2px] pointer-events-none -z-10" />
+          <>
+            <div 
+              className="fixed inset-0 -z-20 pointer-events-none transition-opacity duration-1000"
+              style={{
+                backgroundImage: `url(${settings.backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                willChange: "transform",
+                transform: "translateZ(0)",
+              }}
+            />
+            <div className="fixed inset-0 bg-background/40 -z-10 pointer-events-none" />
+          </>
         )}
         <div className="relative z-0">
           {children}
