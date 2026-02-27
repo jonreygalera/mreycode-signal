@@ -9,6 +9,7 @@ import { Plus, Trash2, MonitorOff } from "lucide-react";
 import { FastWidgetModal } from "./fast-widget-modal";
 import { getTempWidgets, saveTempWidget, clearTempWidgets, mergeWidgets } from "@/lib/widgets";
 import { Clock } from "../clock";
+import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
@@ -105,7 +106,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
              <MonitorOff size={12} />
              Exit TV Mode
            </button>
-           <Clock />
+           <div className="flex items-center gap-4">
+             <ThemeToggle />
+             <Clock />
+           </div>
         </div>
       )}
       

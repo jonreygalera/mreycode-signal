@@ -10,6 +10,7 @@ import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check } from "l
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTVMode } from "@/context/tv-mode-context";
 
 const fetcher = async ({ url, method, headers, body }: any) => {
   const res = await fetch(url, {
@@ -41,6 +42,7 @@ export function WidgetCard({
 }) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const { isTVMode } = useTVMode();
 
   const handleCopyConfig = () => {
     // Deep clone to avoid mutating original config and strip runtime flags
@@ -168,7 +170,7 @@ export function WidgetCard({
               >
                 <Maximize2 size={14} />
               </button>
-              {!config.isTemp && (
+              {!config.isTemp && !isTVMode && (
                 <Link
                   href={`/widget/${config.id}`}
                   className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
