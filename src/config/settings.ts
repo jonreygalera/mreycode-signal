@@ -10,6 +10,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   timezone: typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
   backgroundImage: null,
   useBgInClock: false,
-  autoRefresh: false,
+  autoRefresh: true,
   refreshInterval: 60, // Default to 60 seconds
 };

@@ -10,6 +10,8 @@ import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
 import { SettingsModal } from "./settings-modal";
 import Link from "next/link";
+import { useSettings } from "@/context/settings-context";
+import { cn } from "@/lib/utils";
 
 export function Header() {
   const [showAbout, setShowAbout] = useState(false);
@@ -18,6 +20,8 @@ export function Header() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
+  const { settings } = useSettings();
+  const [timeLeft, setTimeLeft] = useState(settings.refreshInterval);
   
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
@@ -40,6 +44,20 @@ export function Header() {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  // Countdown timer for auto-refresh
+  useEffect(() => {
+    if (!settings.autoRefresh) {
+      setTimeLeft(settings.refreshInterval);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [settings.autoRefresh, settings.refreshInterval]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -78,8 +96,15 @@ export function Header() {
       onClick: () => setShowAbout(true)
     },
     {
-      label: "Refresh",
-      icon: <RotateCcw size={16} />,
+      label: settings.autoRefresh ? `Refreshing in ${timeLeft}s` : "Refresh",
+      icon: (
+        <div className="relative">
+          <RotateCcw size={16} />
+          {settings.autoRefresh && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-panel animate-pulse" />
+          )}
+        </div>
+      ),
       href: undefined,
       external: false,
       onClick: () => window.location.reload()
@@ -169,11 +194,26 @@ export function Header() {
             <div className="h-4 w-px bg-border mx-1" />
             <button
               onClick={() => window.location.reload()}
-              className="group flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all active:scale-95"
-              title="Hard Refresh Dashboard"
+              className={cn(
+                "group flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all active:scale-95",
+                settings.autoRefresh ? "bg-green-500/5 text-green-500 ring-1 ring-green-500/20" : "text-muted hover:text-foreground"
+              )}
+              title={settings.autoRefresh ? `Auto-refresh active: ${timeLeft}s remaining` : "Hard Refresh Dashboard"}
             >
-              <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
-              <span className="hidden lg:inline">Refresh</span>
+              <div className="relative">
+                <RotateCcw size={14} className={cn(
+                  "transition-transform duration-500",
+                  settings.autoRefresh ? "animate-[spin_4s_linear_infinite]" : "group-hover:rotate-180"
+                )} />
+                {settings.autoRefresh && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-panel animate-pulse" />
+                )}
+              </div>
+              {settings.autoRefresh && (
+                <span className="text-[10px] font-bold tabular-nums">
+                  {timeLeft}s
+                </span>
+              )}
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
