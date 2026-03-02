@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 // Route segment config
-export const runtime = 'edge';
+
 
 // Image metadata
 export const alt = 'mreycode-signal';
