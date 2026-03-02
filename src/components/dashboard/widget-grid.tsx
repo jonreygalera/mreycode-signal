@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
 import { WidgetCard } from "./widget-card";
-import { useSettings } from "@/context/settings-context";
 
 export function WidgetGrid({ 
   configs, 
@@ -18,7 +17,6 @@ export function WidgetGrid({
   maximizedWidgetId?: string | null;
   onMaximizeChange?: (id: string | null) => void;
 }) {
-  const { refreshKey } = useSettings();
   const [visibleCount, setVisibleCount] = useState(6);
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +42,7 @@ export function WidgetGrid({
       <div className="flex flex-wrap items-stretch gap-4">
         {configs.slice(0, visibleCount).map((config, index) => (
           <WidgetCard 
-            key={config.id + (config.refreshInterval ? "" : `-${refreshKey}`)} 
+            key={config.id} 
             config={config} 
             index={index} 
             onEdit={onEdit}
