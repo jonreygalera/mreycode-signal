@@ -7,6 +7,7 @@ import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
 import { FastWidgetModal } from "./fast-widget-modal";
 import { HistoryModal } from "./history-modal";
+import { WorkspaceModal } from "./workspace-modal";
 import { 
   getTempWidgets, 
   saveTempWidget, 
@@ -62,6 +63,13 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
   const [historyWidgets, setHistoryWidgets] = useState<TempWidget[]>([]);
+  const [workspaceModal, setWorkspaceModal] = useState<{
+    isOpen: boolean;
+    mode: 'add' | 'rename' | 'copy';
+    targetId?: string | null;
+    initialValue?: string;
+    title: string;
+  }>({ isOpen: false, mode: 'add', title: '' });
 
   const isModalOpen = searchParams.get("modal") === "new" || !!widgetToEdit;
   const isHistoryOpen = searchParams.get("widget") === "history";
@@ -185,63 +193,75 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     }
   };
 
-  const handleAddWorkspace = async () => {
-    const name = window.prompt("Enter workspace name:");
-    if (name && name.trim()) {
-      try {
-        const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
-        const newWS = { id, name: name.trim(), createdAt: Date.now() };
-        saveWorkspace(newWS);
-        setWorkspaces(getWorkspaces());
-        router.push(`/?workspace=${id}`);
-      } catch (e: any) {
-        showAlert({
-          title: "Workspace Error",
-          message: e.message,
-          type: "error"
-        });
-      }
+  const handleAddWorkspace = () => {
+    if (workspaces.length >= MAX_WORKSPACES) {
+      showAlert({
+        title: "Limit Reached",
+        message: `Maximum of ${MAX_WORKSPACES} workspaces allowed.`,
+        type: "error"
+      });
+      return;
     }
+    setWorkspaceModal({
+      isOpen: true,
+      mode: 'add',
+      title: 'Add New Workspace',
+      initialValue: ""
+    });
   };
 
   const handleRenameWorkspace = async (wsId: string) => {
     const ws = workspaces.find(w => w.id === wsId);
     if (!ws) return;
 
-    const newName = window.prompt("New workspace name:", ws.name);
-    if (newName && newName.trim() && newName.trim() !== ws.name) {
-      try {
-        updateWorkspace(wsId, newName.trim());
-        setWorkspaces(getWorkspaces());
-      } catch (e: any) {
-        showAlert({
-          title: "Rename Error",
-          message: e.message,
-          type: "error"
-        });
-      }
-    }
+    setWorkspaceModal({
+      isOpen: true,
+      mode: 'rename',
+      title: 'Rename Workspace',
+      initialValue: ws.name,
+      targetId: wsId
+    });
   };
 
   const handleCopyWorkspace = async (wsId: string | null) => {
     const ws = workspaces.find(w => w.id === wsId);
     const sourceName = ws ? ws.name : "Main Dashboard";
-    const name = window.prompt("New copied workspace name:", `${sourceName} - COPY`);
     
-    if (name && name.trim()) {
-      try {
+    setWorkspaceModal({
+      isOpen: true,
+      mode: 'copy',
+      title: 'Copy Workspace',
+      initialValue: `${sourceName} - COPY`,
+      targetId: wsId
+    });
+  };
+
+  const handleWorkspaceConfirm = (name: string) => {
+    const { mode, targetId } = workspaceModal;
+
+    try {
+      if (mode === 'add') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
-        duplicateWorkspace(wsId, newWS);
+        saveWorkspace(newWS);
         setWorkspaces(getWorkspaces());
         router.push(`/?workspace=${id}`);
-      } catch (e: any) {
-        showAlert({
-          title: "Copy Error",
-          message: e.message,
-          type: "error"
-        });
+      } else if (mode === 'rename' && targetId) {
+        updateWorkspace(targetId, name.trim());
+        setWorkspaces(getWorkspaces());
+      } else if (mode === 'copy') {
+        const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
+        const newWS = { id, name: name.trim(), createdAt: Date.now() };
+        duplicateWorkspace(targetId || null, newWS);
+        setWorkspaces(getWorkspaces());
+        router.push(`/?workspace=${id}`);
       }
+    } catch (e: any) {
+      showAlert({
+        title: "Workspace Error",
+        message: e.message,
+        type: "error"
+      });
     }
   };
 
@@ -476,6 +496,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         onRestoreAll={handleRestoreAllHistory}
         onDelete={handlePermadelete}
         onClearAll={handleClearHistory}
+      />
+
+      <WorkspaceModal
+        isOpen={workspaceModal.isOpen}
+        onClose={() => setWorkspaceModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={handleWorkspaceConfirm}
+        mode={workspaceModal.mode}
+        title={workspaceModal.title}
+        initialValue={workspaceModal.initialValue}
       />
     </div>
   );
