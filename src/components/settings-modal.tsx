@@ -21,6 +21,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localTimezone, setLocalTimezone] = useState(settings.timezone);
   const [localBgImage, setLocalBgImage] = useState(settings.backgroundImage);
   const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
+  const [localAutoRefresh, setLocalAutoRefresh] = useState(settings.autoRefresh);
+  const [localRefreshInterval, setLocalRefreshInterval] = useState(settings.refreshInterval);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
@@ -39,6 +41,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalTimezone(settings.timezone);
     setLocalBgImage(settings.backgroundImage);
     setLocalUseBgInClock(settings.useBgInClock);
+    setLocalAutoRefresh(settings.autoRefresh);
+    setLocalRefreshInterval(settings.refreshInterval);
     setPreviewImage(settings.backgroundImage);
   }, [settings, isOpen]);
 
@@ -69,6 +73,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       timezone: localTimezone,
       backgroundImage: localBgImage,
       useBgInClock: localUseBgInClock,
+      autoRefresh: localAutoRefresh,
+      refreshInterval: Math.max(30, localRefreshInterval),
     });
     onClose();
   };
@@ -88,6 +94,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalTimezone(DEFAULT_SETTINGS.timezone);
       setLocalBgImage(DEFAULT_SETTINGS.backgroundImage);
       setLocalUseBgInClock(DEFAULT_SETTINGS.useBgInClock);
+      setLocalAutoRefresh(DEFAULT_SETTINGS.autoRefresh);
+      setLocalRefreshInterval(DEFAULT_SETTINGS.refreshInterval);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -159,6 +167,69 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </option>
                     ))}
                   </select>
+                </div>
+              </section>
+
+              {/* Auto Refresh Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <RotateCcw className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Dashboard Automation</h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <label className="text-sm font-semibold text-foreground/80">Auto-refresh Dashboard</label>
+                        {localAutoRefresh && (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-[10px] font-bold text-green-500 uppercase tracking-wider animate-pulse">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted leading-relaxed">
+                        Enable automatic hard-refresh of the dashboard page.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={localAutoRefresh}
+                        onChange={(e) => setLocalAutoRefresh(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-muted/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary transition-all"></div>
+                    </label>
+                  </div>
+
+                  <AnimatePresence>
+                    {localAutoRefresh && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 border-t border-border/50">
+                          <label className="text-sm font-semibold text-foreground/80 block mb-1">Refresh Interval (Seconds)</label>
+                          <p className="text-xs text-muted leading-relaxed mb-4">
+                            Set the interval for automatic page refresh (Minimum 30 seconds).
+                          </p>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="number"
+                              min="30"
+                              value={localRefreshInterval}
+                              onChange={(e) => setLocalRefreshInterval(Number(e.target.value))}
+                              className="w-32 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            />
+                            <span className="text-xs font-bold text-muted uppercase tracking-widest">Seconds</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </section>
 

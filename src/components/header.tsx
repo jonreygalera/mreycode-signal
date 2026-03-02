@@ -5,7 +5,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu, RotateCcw } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
 import { SettingsModal } from "./settings-modal";
@@ -76,6 +76,13 @@ export function Header() {
       href: undefined,
       external: false,
       onClick: () => setShowAbout(true)
+    },
+    {
+      label: "Refresh",
+      icon: <RotateCcw size={16} />,
+      href: undefined,
+      external: false,
+      onClick: () => window.location.reload()
     },
     {
       label: "Settings",
@@ -158,6 +165,15 @@ export function Header() {
             >
               {isTVMode ? <MonitorOff size={14} /> : <Monitor size={14} />}
               <span className="hidden lg:inline">TV Mode</span>
+            </button>
+            <div className="h-4 w-px bg-border mx-1" />
+            <button
+              onClick={() => window.location.reload()}
+              className="group flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all active:scale-95"
+              title="Hard Refresh Dashboard"
+            >
+              <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+              <span className="hidden lg:inline">Refresh</span>
             </button>
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />

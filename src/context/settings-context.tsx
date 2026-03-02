@@ -42,6 +42,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.backgroundImage]);
 
+  useEffect(() => {
+    if (!settings.autoRefresh) return;
+
+    const intervalMs = Math.max(30, settings.refreshInterval) * 1000;
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+  }, [settings.autoRefresh, settings.refreshInterval]);
+
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
