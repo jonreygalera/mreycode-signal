@@ -27,6 +27,7 @@ export const appConfig = {
     "Recharts 3",
     "Framer Motion 12",
     "SWR 2.4",
-  ]
+  ],
+  statsApi: process.env.NEXT_PUBLIC_STATS_API ?? "https://api-mreyai.vercel.app",
 };
 

@@ -87,6 +87,7 @@ export const viewport: Viewport = {
 };
 
 import { AlertProvider } from "@/context/alert-context";
+import GuestTracker from "@/components/guest-tracker";
 
 export default function RootLayout({
   children,
@@ -108,6 +109,7 @@ export default function RootLayout({
             <SettingsProvider>
               <AlertProvider>
                 <SecurityProvider>
+                  <GuestTracker />
                   <LayoutWrapper>{children}</LayoutWrapper>
                 </SecurityProvider>
               </AlertProvider>
