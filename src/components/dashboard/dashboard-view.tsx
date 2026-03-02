@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+
+
 import { motion } from "framer-motion";
 import type { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
@@ -42,6 +44,29 @@ import { RefreshButton } from "../refresh-button";
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
   const { isTVMode, toggleTVMode } = useTVMode();
+
+  // TV‑mode auto‑hide header logic
+  const [showHeader, setShowHeader] = useState(true);
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!isTVMode) return;
+    const resetTimer = () => {
+      setShowHeader(true);
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = setTimeout(() => setShowHeader(false), 10000);
+    };
+    resetTimer();
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    return () => {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+    };
+  }, [isTVMode]);
   const { showAlert } = useAlert();
 
   const searchParams = useSearchParams();
@@ -337,7 +362,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
+          className="sticky top-[56px] z-10 bg-background dark:bg-background flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
         >
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -475,21 +500,31 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             </button>
           </div>
         </motion.div>
+      ) : showHeader ? (
+        <div className="sticky top-0 z-20 bg-background/80 dark:bg-background/80 backdrop-blur-lg shadow-md rounded-b-lg flex items-center justify-between px-4 py-2 mb-4">
+          <button
+            onClick={toggleTVMode}
+            className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors border border-border/40 rounded-[2px] bg-panel/50 backdrop-blur-sm"
+            title="Exit TV Mode (Esc)"
+          >
+            <MonitorOff size={12} />
+            Exit TV Mode
+          </button>
+          <div className="flex items-center gap-4">
+            <RefreshButton />
+            <ThemeToggle />
+            <Clock />
+          </div>
+        </div>
       ) : (
-        <div className="flex items-center justify-between mb-4">
-           <button
-             onClick={toggleTVMode}
-             className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors border border-border/40 rounded-[2px] bg-panel/50 backdrop-blur-sm"
-             title="Exit TV Mode (Esc)"
-           >
-             <MonitorOff size={12} />
-             Exit TV Mode
-           </button>
-           <div className="flex items-center gap-4">
-             <RefreshButton />
-             <ThemeToggle />
-             <Clock />
-           </div>
+        <div className="flex items-center justify-center w-full py-4 mb-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: -20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            className="text-4xl tracking-widest font-light text-foreground/80 drop-shadow-xl"
+          >
+            <Clock />
+          </motion.div>
         </div>
       )}
       
