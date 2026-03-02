@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, MonitorOff, RotateCcw } from "lucide-react";
 import { FastWidgetModal } from "./fast-widget-modal";
 import { HistoryModal } from "./history-modal";
 import { 
@@ -18,8 +17,21 @@ import {
   permadeleteFromHistory,
   restoreAllHistory,
   clearHistory,
-  TempWidget
+  getWorkspaces,
+  saveWorkspace,
+  deleteWorkspace,
+  updateWorkspace,
+  duplicateWorkspace,
+  MAX_WIDGETS_PER_WORKSPACE,
+  MAX_WORKSPACES,
+  TempWidget,
+  Workspace
 } from "@/lib/widgets";
+import { useSearchParams, useRouter } from "next/navigation";
+import { 
+  FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
+  ExternalLink, X as CloseIcon 
+} from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
@@ -31,24 +43,47 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const { isTVMode, toggleTVMode } = useTVMode();
   const { showAlert } = useAlert();
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const workspaceId = searchParams.get("workspace");
+  
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
   const [historyWidgets, setHistoryWidgets] = useState<TempWidget[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
-    setTempWidgets(getTempWidgets());
-    setHistoryWidgets(getHistoryWidgets());
-  }, []);
+    setWorkspaces(getWorkspaces());
+    setTempWidgets(getTempWidgets(workspaceId));
+    setHistoryWidgets(getHistoryWidgets(workspaceId));
+  }, [workspaceId]);
+
+  const currentWorkspaceName = useMemo(() => {
+    if (!workspaceId) return "Main Dashboard";
+    return workspaces.find(w => w.id === workspaceId)?.name || "Unknown Workspace";
+  }, [workspaceId, workspaces]);
 
   const allWidgets = useMemo(() => {
-    return mergeWidgets(baseConfigs, tempWidgets);
-  }, [baseConfigs, tempWidgets]);
+    // Only show default widgets on the Main dashboard
+    // Workspaces start as a blank canvas (only show tempWidgets)
+    const configsToMerge = workspaceId ? [] : baseConfigs;
+    return mergeWidgets(configsToMerge, tempWidgets);
+  }, [baseConfigs, tempWidgets, workspaceId]);
 
   const handleSaveWidget = (config: WidgetConfig, afterId: string | null) => {
-    saveTempWidget(config, afterId);
-    setTempWidgets(getTempWidgets());
-    setWidgetToEdit(null);
+    try {
+      saveTempWidget(config, afterId, workspaceId);
+      setTempWidgets(getTempWidgets(workspaceId));
+      setWidgetToEdit(null);
+      setIsModalOpen(false);
+    } catch (e: any) {
+      showAlert({
+        title: "Workspace Limit",
+        message: e.message,
+        type: "error"
+      });
+    }
   };
 
   const handleEditWidget = (id: string) => {
@@ -70,28 +105,46 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      deleteTempWidget(id);
-      setTempWidgets(getTempWidgets());
-      setHistoryWidgets(getHistoryWidgets());
+      deleteTempWidget(id, workspaceId);
+      setTempWidgets(getTempWidgets(workspaceId));
+      setHistoryWidgets(getHistoryWidgets(workspaceId));
     }
   };
 
   const handleRestoreFromHistory = (id: string) => {
-    restoreWidgetFromHistory(id);
-    setTempWidgets(getTempWidgets());
-    setHistoryWidgets(getHistoryWidgets());
+    try {
+      restoreWidgetFromHistory(id, workspaceId);
+      setTempWidgets(getTempWidgets(workspaceId));
+      setHistoryWidgets(getHistoryWidgets(workspaceId));
+    } catch (e: any) {
+      showAlert({
+        title: "Limit Reached",
+        message: e.message,
+        type: "error"
+      });
+    }
   };
 
   const handlePermadelete = (id: string) => {
-    permadeleteFromHistory(id);
-    setHistoryWidgets(getHistoryWidgets());
+    permadeleteFromHistory(id, workspaceId);
+    setHistoryWidgets(getHistoryWidgets(workspaceId));
   };
 
   const handleRestoreAllHistory = () => {
-    restoreAllHistory();
-    setTempWidgets(getTempWidgets());
-    setHistoryWidgets(getHistoryWidgets());
-    setIsHistoryOpen(false);
+    try {
+      restoreAllHistory(workspaceId);
+      setTempWidgets(getTempWidgets(workspaceId));
+      setHistoryWidgets(getHistoryWidgets(workspaceId));
+      setIsHistoryOpen(false);
+    } catch (e: any) {
+      showAlert({
+        title: "Partial Restore",
+        message: "Some widgets were not restored because the workspace limit was reached.",
+        type: "warning"
+      });
+      setTempWidgets(getTempWidgets(workspaceId));
+      setHistoryWidgets(getHistoryWidgets(workspaceId));
+    }
   };
 
   const handleClearHistory = async () => {
@@ -105,8 +158,90 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      clearHistory();
+      clearHistory(workspaceId);
       setHistoryWidgets([]);
+    }
+  };
+
+  const handleAddWorkspace = async () => {
+    const name = window.prompt("Enter workspace name:");
+    if (name && name.trim()) {
+      try {
+        const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
+        const newWS = { id, name: name.trim(), createdAt: Date.now() };
+        saveWorkspace(newWS);
+        setWorkspaces(getWorkspaces());
+        router.push(`/?workspace=${id}`);
+      } catch (e: any) {
+        showAlert({
+          title: "Workspace Error",
+          message: e.message,
+          type: "error"
+        });
+      }
+    }
+  };
+
+  const handleRenameWorkspace = async (wsId: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    if (!ws) return;
+
+    const newName = window.prompt("New workspace name:", ws.name);
+    if (newName && newName.trim() && newName.trim() !== ws.name) {
+      try {
+        updateWorkspace(wsId, newName.trim());
+        setWorkspaces(getWorkspaces());
+      } catch (e: any) {
+        showAlert({
+          title: "Rename Error",
+          message: e.message,
+          type: "error"
+        });
+      }
+    }
+  };
+
+  const handleCopyWorkspace = async (wsId: string | null) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    const sourceName = ws ? ws.name : "Main Dashboard";
+    const name = window.prompt("New copied workspace name:", `${sourceName} - COPY`);
+    
+    if (name && name.trim()) {
+      try {
+        const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
+        const newWS = { id, name: name.trim(), createdAt: Date.now() };
+        duplicateWorkspace(wsId, newWS);
+        setWorkspaces(getWorkspaces());
+        router.push(`/?workspace=${id}`);
+      } catch (e: any) {
+        showAlert({
+          title: "Copy Error",
+          message: e.message,
+          type: "error"
+        });
+      }
+    }
+  };
+
+  const handleDeleteWorkspace = async (wsId: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    if (!ws) return;
+
+    const confirmed = await showAlert({
+      title: "Delete Workspace",
+      message: `Are you sure you want to delete "${ws.name}"? All its widgets will be permanently lost.`,
+      type: "error",
+      showCancel: true,
+      confirmText: "Delete Workspace",
+      cancelText: "Cancel"
+    });
+
+    if (confirmed) {
+      deleteWorkspace(wsId);
+      setWorkspaces(getWorkspaces());
+      if (workspaceId === wsId) {
+        router.push("/");
+      }
     }
   };
 
@@ -121,10 +256,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      const current = getTempWidgets();
-      current.forEach(w => deleteTempWidget(w.config.id));
+      const current = getTempWidgets(workspaceId);
+      current.forEach(w => deleteTempWidget(w.config.id, workspaceId));
       setTempWidgets([]);
-      setHistoryWidgets(getHistoryWidgets());
+      setHistoryWidgets(getHistoryWidgets(workspaceId));
     }
   };
 
@@ -138,15 +273,78 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           transition={{ duration: 0.5 }}
           className="flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
         >
-          <div className="flex flex-col">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
-              Metrics Overview
-            </h1>
-            <p className="text-sm text-muted">
-              Monitor key performance indicators
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
+                {currentWorkspaceName}
+              </h1>
+              <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+                {!workspaceId && (
+                   <button 
+                     onClick={() => handleCopyWorkspace(null)}
+                     className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
+                     title="Copy main dashboard to new workspace"
+                   >
+                     <Copy size={12} />
+                   </button>
+                )}
+                {workspaceId && (
+                  <>
+                    <button 
+                      onClick={() => handleRenameWorkspace(workspaceId)}
+                      className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
+                      title="Rename workspace"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button 
+                      onClick={() => handleCopyWorkspace(workspaceId)}
+                      className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
+                      title="Copy workspace"
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteWorkspace(workspaceId)}
+                      className="p-1 px-1.5 text-muted hover:text-red-500 transition-colors hover:bg-muted/10 rounded-sm"
+                      title="Delete current workspace"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted font-medium tracking-wide uppercase opacity-60">
+              {tempWidgets.length}/{MAX_WIDGETS_PER_WORKSPACE} Fast Widgets Active
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {/* Workspaces List */}
+            <div className="flex items-center gap-1 bg-muted/20 p-1 rounded-lg mr-2">
+              <button
+                onClick={() => router.push("/")}
+                className={cn(
+                  "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all whitespace-nowrap",
+                  !workspaceId ? "bg-foreground text-background shadow-lg" : "text-muted hover:text-foreground hover:bg-muted/30"
+                )}
+              >
+                Main
+              </button>
+              {workspaces.map((ws) => (
+                <button
+                  key={ws.id}
+                  onClick={() => router.push(`/?workspace=${ws.id}`)}
+                  className={cn(
+                    "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all whitespace-nowrap",
+                    workspaceId === ws.id ? "bg-foreground text-background shadow-lg" : "text-muted hover:text-foreground hover:bg-muted/30"
+                  )}
+                >
+                  {ws.name}
+                </button>
+              ))}
+            </div>
+
             {tempWidgets.length > 0 && (
               <button
                 onClick={handleClearAll}
@@ -157,6 +355,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 Clear Temp
               </button>
             )}
+            
             {historyWidgets.length > 0 && (
               <button
                 onClick={() => setIsHistoryOpen(true)}
@@ -173,12 +372,36 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 History
               </button>
             )}
+
+            <button
+              onClick={handleAddWorkspace}
+              disabled={workspaces.length >= MAX_WORKSPACES}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap",
+                workspaces.length >= MAX_WORKSPACES 
+                  ? "bg-muted/5 text-muted/50 cursor-not-allowed opacity-50" 
+                  : "bg-muted/10 hover:bg-muted/20 text-foreground"
+              )}
+              title={workspaces.length >= MAX_WORKSPACES ? "Limit reached (max 3)" : "Add new workspace"}
+            >
+              <FolderPlus size={14} />
+              Workspace
+            </button>
+
             <button
               onClick={() => {
+                if (tempWidgets.length >= MAX_WIDGETS_PER_WORKSPACE) {
+                  showAlert({
+                    title: "Limit Reached",
+                    message: `Maximum of ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed per workspace.`,
+                    type: "error"
+                  });
+                  return;
+                }
                 setWidgetToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap ml-auto sm:ml-0"
+              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap"
             >
               <Plus size={14} />
               Fast Widget

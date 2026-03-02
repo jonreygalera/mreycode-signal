@@ -96,20 +96,6 @@ export function Header() {
       onClick: () => setShowAbout(true)
     },
     {
-      label: settings.autoRefresh ? `Refreshing in ${timeLeft}s` : "Refresh",
-      icon: (
-        <div className="relative">
-          <RotateCcw size={16} />
-          {settings.autoRefresh && (
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-panel animate-pulse" />
-          )}
-        </div>
-      ),
-      href: undefined,
-      external: false,
-      onClick: () => window.location.reload()
-    },
-    {
       label: "Settings",
       icon: <Settings size={16} />,
       href: undefined,
