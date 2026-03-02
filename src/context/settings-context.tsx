@@ -2,12 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppSettings, DEFAULT_SETTINGS } from "@/config/settings";
+import { useSWRConfig } from "swr";
 
 interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetSettings: () => void;
   timeLeft: number;
+  triggerRefresh: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -16,6 +18,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
   const [timeLeft, setTimeLeft] = useState(DEFAULT_SETTINGS.refreshInterval);
+  const { mutate } = useSWRConfig();
+
+  const triggerRefresh = () => {
+    // Revalidate everything tracking the SWR global cache
+    mutate(() => true, undefined, { revalidate: true });
+    setTimeLeft(settings.refreshInterval);
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem("app-settings");
@@ -56,8 +65,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          window.location.reload();
-          return settings.refreshInterval; // This won't actually hit due to reload
+          triggerRefresh();
+          return settings.refreshInterval;
         }
         return prev - 1;
       });
@@ -75,7 +84,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, resetSettings, timeLeft }}>
+    <SettingsContext.Provider value={{ 
+      settings, 
+      updateSettings, 
+      resetSettings, 
+      timeLeft, 
+      triggerRefresh
+    }}>
       <div className="relative min-h-screen">
         {settings.backgroundImage && (
           <>

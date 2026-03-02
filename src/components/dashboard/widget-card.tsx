@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
+import { useSettings } from "@/context/settings-context";
 import { Clock } from "../clock";
 
 const fetcher = async ({ url, method, headers, body }: any) => {
@@ -58,6 +59,7 @@ export function WidgetCard({
 
   const [isCopied, setIsCopied] = useState(false);
   const { isTVMode } = useTVMode();
+  const { settings, timeLeft } = useSettings();
 
   const handleCopyConfig = () => {
     // Deep clone to avoid mutating original config and strip runtime flags
@@ -96,7 +98,7 @@ export function WidgetCard({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     {
       url: config.api,
       method: config.method || "GET",
@@ -112,6 +114,14 @@ export function WidgetCard({
       keepPreviousData: true,
     }
   );
+
+  // Global Refresh Sync: Revalidate only if this widget doesn't have its own interval
+  useEffect(() => {
+    // If the timer just reset to the start value, trigger revalidation
+    if (settings.autoRefresh && timeLeft === settings.refreshInterval && !config.refreshInterval) {
+      mutate();
+    }
+  }, [timeLeft, settings.autoRefresh, settings.refreshInterval, config.refreshInterval, mutate]);
 
   const parsedData = useMemo(() => {
     if (!data) return null;

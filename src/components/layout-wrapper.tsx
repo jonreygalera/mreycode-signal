@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 import { Header } from "@/components/header";
 import { BackToTop } from "@/components/back-to-top";
 import { useTVMode } from "@/context/tv-mode-context";
+import { useSettings } from "@/context/settings-context";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isIframe = pathname?.includes('/iframe');
   const { isTVMode } = useTVMode();
+  const { refreshKey } = useSettings();
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {

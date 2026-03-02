@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings-context";
 
 export function Clock() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, timeLeft } = useSettings();
   const timezone = settings.timezone;
   const setTimezone = (tz: string) => updateSettings({ timezone: tz });
   
@@ -58,6 +58,13 @@ export function Clock() {
   useEffect(() => {
     fetchTime(timezone);
   }, [timezone, fetchTime]);
+
+  // Global Refresh Sync: Sync with server on every global refresh
+  useEffect(() => {
+    if (settings.autoRefresh && timeLeft === settings.refreshInterval) {
+      fetchTime(timezone);
+    }
+  }, [timeLeft, settings.autoRefresh, settings.refreshInterval, timezone, fetchTime]);
 
   useEffect(() => {
     if (!time) return;

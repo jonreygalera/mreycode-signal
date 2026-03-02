@@ -11,10 +11,10 @@ interface RefreshButtonProps {
 }
 
 export function RefreshButton({ className, showLabel = false }: RefreshButtonProps) {
-  const { settings, timeLeft } = useSettings();
+  const { settings, timeLeft, triggerRefresh } = useSettings();
 
   const handleRefresh = () => {
-    window.location.reload();
+    triggerRefresh();
   };
 
   return (
