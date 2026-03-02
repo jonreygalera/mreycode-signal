@@ -7,6 +7,7 @@ interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetSettings: () => void;
+  timeLeft: number;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -14,6 +15,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_SETTINGS.refreshInterval);
 
   useEffect(() => {
     const stored = localStorage.getItem("app-settings");
@@ -43,14 +45,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [settings.backgroundImage]);
 
   useEffect(() => {
-    if (!settings.autoRefresh) return;
+    if (!settings.autoRefresh) {
+      setTimeLeft(settings.refreshInterval);
+      return;
+    }
 
-    const intervalMs = Math.max(30, settings.refreshInterval) * 1000;
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, intervalMs);
+    // Reset timer when initial value changes
+    setTimeLeft(settings.refreshInterval);
 
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          window.location.reload();
+          return settings.refreshInterval; // This won't actually hit due to reload
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [settings.autoRefresh, settings.refreshInterval]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
@@ -62,7 +75,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, resetSettings, timeLeft }}>
       <div className="relative min-h-screen">
         {settings.backgroundImage && (
           <>

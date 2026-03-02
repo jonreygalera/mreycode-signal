@@ -15,41 +15,72 @@ export function TVModeProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const tvParam = searchParams.get("tv-mode") === "yes";
   
-  const [isTVMode, setIsTVMode] = useState(false);
+  const [isTVMode, setIsTVMode] = useState(tvParam);
 
-  // Sync state from URL on mount
+  // Sync state from URL changes
   useEffect(() => {
-    if (tvParam) {
-      setIsTVMode(true);
+    setIsTVMode(tvParam);
+    
+    // Attempt to automatically re-enter fullscreen if TV mode is in URL
+    const attemptFullscreen = async () => {
+      if (tvParam && !document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch (err) {
+          // This usually fails on refresh due to lack of user gesture
+          // We handle this by waiting for the first click below
+        }
+      }
+    };
+
+    attemptFullscreen();
+
+    // Fallback: If fullscreen failed on load, trigger it on first user interaction
+    const handleFirstInteraction = async () => {
+      if (tvParam && !document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+          // Remove listener after success
+          document.removeEventListener("click", handleFirstInteraction);
+        } catch (err) {
+          // If it still fails, we keep the listener for the next attempt
+        }
+      } else {
+        document.removeEventListener("click", handleFirstInteraction);
+      }
+    };
+
+    if (tvParam && !document.fullscreenElement) {
+      document.addEventListener("click", handleFirstInteraction);
     }
-  }, []);
+
+    return () => document.removeEventListener("click", handleFirstInteraction);
+  }, [tvParam]);
 
   const updateURL = useCallback((enabled: boolean) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     if (enabled) {
       params.set("tv-mode", "yes");
     } else {
       params.delete("tv-mode");
     }
-    router.replace(`?${params.toString()}`, { scroll: false });
-  }, [searchParams, router]);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
+  }, [router]);
 
   const toggleTVMode = useCallback(async () => {
     if (!document.fullscreenElement) {
       try {
         await document.documentElement.requestFullscreen();
-        setIsTVMode(true);
         updateURL(true);
       } catch (err) {
         console.error(`Error attempting to enable fullscreen: ${err}`);
-        // Still enable TV UI mode even if fullscreen fails
-        setIsTVMode(true);
+        // Even if browser fullscreen fails, we still enable the TV UI
         updateURL(true);
       }
     } else {
       if (document.exitFullscreen) {
         await document.exitFullscreen();
-        setIsTVMode(false);
         updateURL(false);
       }
     }
@@ -58,13 +89,16 @@ export function TVModeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleFullscreenChange = () => {
       const enabled = !!document.fullscreenElement;
-      setIsTVMode(enabled);
-      updateURL(enabled);
+      setIsTVMode(enabled || tvParam);
+      // Only remove the param if we explicitly exited fullscreen AND the param was there
+      if (!enabled && !document.fullscreenElement && !tvParam) {
+        updateURL(false);
+      }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [updateURL]);
+  }, [updateURL, tvParam]);
 
   return (
     <TVModeContext.Provider value={{ isTVMode, toggleTVMode }}>

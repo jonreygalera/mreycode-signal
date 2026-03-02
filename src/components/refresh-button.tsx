@@ -11,24 +11,7 @@ interface RefreshButtonProps {
 }
 
 export function RefreshButton({ className, showLabel = false }: RefreshButtonProps) {
-  const { settings } = useSettings();
-  const [timeLeft, setTimeLeft] = useState(settings.refreshInterval);
-
-  useEffect(() => {
-    if (!settings.autoRefresh) {
-      setTimeLeft(settings.refreshInterval);
-      return;
-    }
-
-    // Set initial value
-    setTimeLeft(settings.refreshInterval);
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [settings.autoRefresh, settings.refreshInterval]);
+  const { settings, timeLeft } = useSettings();
 
   const handleRefresh = () => {
     window.location.reload();
