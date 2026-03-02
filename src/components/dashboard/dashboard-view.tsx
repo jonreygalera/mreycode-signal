@@ -71,17 +71,38 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     title: string;
   }>({ isOpen: false, mode: 'add', title: '' });
 
-  const isModalOpen = searchParams.get("modal") === "new" || !!widgetToEdit;
+  const isModalOpen = searchParams.get("modal") === "new" || searchParams.get("modal") === "edit";
   const isHistoryOpen = searchParams.get("widget") === "history";
 
   const setIsModalOpen = (open: boolean) => {
-    handleParamChange("modal", open ? "new" : null);
-    if (!open) setWidgetToEdit(null);
+    if (!open) {
+      handleParamChange("modal", null);
+      handleParamChange("editId", null);
+      setWidgetToEdit(null);
+    } else {
+      handleParamChange("modal", "new");
+    }
   };
 
   const setIsHistoryOpen = (open: boolean) => {
     handleParamChange("widget", open ? "history" : null);
   };
+
+  useEffect(() => {
+    const modal = searchParams.get("modal");
+    const editId = searchParams.get("editId");
+    
+    if (modal === "edit" && editId && tempWidgets.length > 0) {
+      const widget = tempWidgets.find(w => w.config.id === editId);
+      if (widget) {
+        setWidgetToEdit(widget);
+      } else {
+        // If widget not found (maybe deleted), clear params
+        handleParamChange("modal", null);
+        handleParamChange("editId", null);
+      }
+    }
+  }, [searchParams, tempWidgets]);
 
   useEffect(() => {
     setWorkspaces(getWorkspaces());
@@ -120,7 +141,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const widget = tempWidgets.find(w => w.config.id === id);
     if (widget) {
       setWidgetToEdit(widget);
-      setIsModalOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("modal", "edit");
+      params.set("editId", id);
+      router.replace(`/?${params.toString()}`, { scroll: false });
     }
   };
 
