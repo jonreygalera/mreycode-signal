@@ -387,9 +387,8 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               >
                 <div className="relative">
                   <RotateCcw size={14} className="group-hover:-rotate-45 transition-transform duration-300" />
-                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-foreground opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-foreground"></span>
+                  <span className="absolute -top-2 -right-2 flex items-center justify-center bg-foreground text-background text-[8px] font-black h-3.5 w-3.5 rounded-full shadow-sm ring-2 ring-panel">
+                    {historyWidgets.length}
                   </span>
                 </div>
                 History

@@ -47,8 +47,13 @@ export function HistoryModal({
                   <RotateCcw size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight uppercase">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight uppercase">
                     Widget History
+                    {history.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-sm bg-foreground text-background text-[10px] font-black">
+                        {history.length}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-xs text-muted/70">
                     Recently deleted temporary widgets
