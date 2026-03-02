@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
+import { Clock } from "../clock";
 
 const fetcher = async ({ url, method, headers, body }: any) => {
   const res = await fetch(url, {
@@ -33,14 +34,28 @@ export function WidgetCard({
   config, 
   index,
   onEdit,
-  onDelete
+  onDelete,
+  isMaximized: isMaximizedProp,
+  onMaximize
 }: { 
   config: WidgetConfig; 
   index: number;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  isMaximized?: boolean;
+  onMaximize?: (maximized: boolean) => void;
 }) {
-  const [isMaximized, setIsMaximized] = useState(false);
+  const [internalMaximized, setInternalMaximized] = useState(false);
+  const isMaximized = isMaximizedProp !== undefined ? isMaximizedProp : internalMaximized;
+  
+  const handleSetMaximized = (val: boolean) => {
+    if (onMaximize) {
+      onMaximize(val);
+    } else {
+      setInternalMaximized(val);
+    }
+  };
+
   const [isCopied, setIsCopied] = useState(false);
   const { isTVMode } = useTVMode();
 
@@ -188,7 +203,7 @@ export function WidgetCard({
                 {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
               </button>
               <button 
-                onClick={() => setIsMaximized(true)}
+                onClick={() => handleSetMaximized(true)}
                 className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
                 title="Maximize"
               >
@@ -207,6 +222,9 @@ export function WidgetCard({
           )}
           {isMaximizedView && (
             <>
+              <div className="hidden sm:flex items-center scale-[0.85] origin-right mr-3 pr-3 border-r border-border/40 opacity-80">
+                <Clock />
+              </div>
               <button
                 onClick={handleCopyConfig}
                 className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
@@ -215,7 +233,7 @@ export function WidgetCard({
                 {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
               </button>
               <button 
-                onClick={() => setIsMaximized(false)}
+                onClick={() => handleSetMaximized(false)}
                 className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
               >
                 <X size={20} />

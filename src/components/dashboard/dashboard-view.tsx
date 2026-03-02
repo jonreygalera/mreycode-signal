@@ -39,19 +39,40 @@ import { useAlert } from "@/context/alert-context";
 
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
   const { showAlert } = useAlert();
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const workspaceId = searchParams.get("workspace");
+  const maximizedWidgetId = searchParams.get("widget");
+  
+  const handleParamChange = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    router.replace(`/?${params.toString()}`, { scroll: false });
+  };
   
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
   const [historyWidgets, setHistoryWidgets] = useState<TempWidget[]>([]);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  const isModalOpen = searchParams.get("modal") === "new" || !!widgetToEdit;
+  const isHistoryOpen = searchParams.get("widget") === "history";
+
+  const setIsModalOpen = (open: boolean) => {
+    handleParamChange("modal", open ? "new" : null);
+    if (!open) setWidgetToEdit(null);
+  };
+
+  const setIsHistoryOpen = (open: boolean) => {
+    handleParamChange("widget", open ? "history" : null);
+  };
 
   useEffect(() => {
     setWorkspaces(getWorkspaces());
@@ -279,7 +300,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 {currentWorkspaceName}
               </h1>
               <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
-                {!workspaceId && (
+                {!workspaceId && tempWidgets.length > 0 && (
                    <button 
                      onClick={() => handleCopyWorkspace(null)}
                      className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
@@ -297,13 +318,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                     >
                       <Edit2 size={12} />
                     </button>
-                    <button 
-                      onClick={() => handleCopyWorkspace(workspaceId)}
-                      className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
-                      title="Copy workspace"
-                    >
-                      <Copy size={12} />
-                    </button>
+                    {tempWidgets.length > 0 && (
+                      <button 
+                        onClick={() => handleCopyWorkspace(workspaceId)}
+                        className="p-1 px-1.5 text-muted hover:text-primary transition-colors hover:bg-muted/10 rounded-sm"
+                        title="Copy workspace"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    )}
                     <button 
                       onClick={() => handleDeleteWorkspace(workspaceId)}
                       className="p-1 px-1.5 text-muted hover:text-red-500 transition-colors hover:bg-muted/10 rounded-sm"
@@ -429,6 +452,8 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         configs={allWidgets} 
         onEdit={handleEditWidget}
         onDelete={handleDeleteWidget}
+        maximizedWidgetId={maximizedWidgetId}
+        onMaximizeChange={(id) => handleParamChange("widget", id)}
       />
 
       <FastWidgetModal

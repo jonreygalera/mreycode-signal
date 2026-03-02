@@ -7,11 +7,15 @@ import { WidgetCard } from "./widget-card";
 export function WidgetGrid({ 
   configs, 
   onEdit, 
-  onDelete 
+  onDelete,
+  maximizedWidgetId,
+  onMaximizeChange
 }: { 
   configs: WidgetConfig[]; 
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  maximizedWidgetId?: string | null;
+  onMaximizeChange?: (id: string | null) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(6);
   const observerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +47,8 @@ export function WidgetGrid({
             index={index} 
             onEdit={onEdit}
             onDelete={onDelete}
+            isMaximized={config.id === maximizedWidgetId}
+            onMaximize={(max) => onMaximizeChange?.(max ? config.id : null)}
           />
         ))}
       </div>

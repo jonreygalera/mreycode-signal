@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,9 +13,20 @@ export function Clock() {
   const timezone = settings.timezone;
   const setTimezone = (tz: string) => updateSettings({ timezone: tz });
   
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [time, setTime] = useState<Date | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
+  const isMaximized = searchParams.get("widget") === "clock";
+  
+  const setIsMaximized = (max: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (max) params.set("widget", "clock");
+    else params.delete("widget");
+    router.replace(`/?${params.toString()}`, { scroll: false });
+  };
+
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);

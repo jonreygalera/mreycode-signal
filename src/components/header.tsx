@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
@@ -14,8 +14,26 @@ import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
 
 export function Header() {
-  const [showAbout, setShowAbout] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  const showAbout = searchParams.get("widget") === "about";
+  const showSettings = searchParams.get("widget") === "settings";
+  
+  const setShowAbout = (show: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (show) params.set("widget", "about");
+    else params.delete("widget");
+    router.replace(`/?${params.toString()}`, { scroll: false });
+  };
+
+  const setShowSettings = (show: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (show) params.set("widget", "settings");
+    else params.delete("widget");
+    router.replace(`/?${params.toString()}`, { scroll: false });
+  };
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
