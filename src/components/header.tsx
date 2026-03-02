@@ -12,6 +12,7 @@ import { SettingsModal } from "./settings-modal";
 import Link from "next/link";
 import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
+import { RefreshButton } from "./refresh-button";
 
 export function Header() {
   const searchParams = useSearchParams();
@@ -39,7 +40,6 @@ export function Header() {
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
   const { settings } = useSettings();
-  const [timeLeft, setTimeLeft] = useState(settings.refreshInterval);
   
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
@@ -63,19 +63,6 @@ export function Header() {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  // Countdown timer for auto-refresh
-  useEffect(() => {
-    if (!settings.autoRefresh) {
-      setTimeLeft(settings.refreshInterval);
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [settings.autoRefresh, settings.refreshInterval]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -196,29 +183,7 @@ export function Header() {
               <span className="hidden lg:inline">TV Mode</span>
             </button>
             <div className="h-4 w-px bg-border mx-1" />
-            <button
-              onClick={() => window.location.reload()}
-              className={cn(
-                "group flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all active:scale-95",
-                settings.autoRefresh ? "bg-green-500/5 text-green-500 ring-1 ring-green-500/20" : "text-muted hover:text-foreground"
-              )}
-              title={settings.autoRefresh ? `Auto-refresh active: ${timeLeft}s remaining` : "Hard Refresh Dashboard"}
-            >
-              <div className="relative">
-                <RotateCcw size={14} className={cn(
-                  "transition-transform duration-500",
-                  settings.autoRefresh ? "animate-[spin_4s_linear_infinite]" : "group-hover:rotate-180"
-                )} />
-                {settings.autoRefresh && (
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-panel animate-pulse" />
-                )}
-              </div>
-              {settings.autoRefresh && (
-                <span className="text-[10px] font-bold tabular-nums">
-                  {timeLeft}s
-                </span>
-              )}
-            </button>
+            <RefreshButton />
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
           </div>

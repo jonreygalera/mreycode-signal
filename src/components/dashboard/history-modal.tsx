@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, RefreshCw, RotateCcw, AlertTriangle } from "lucide-react";
-import { TempWidget } from "@/lib/widgets";
+import type { TempWidget } from "@/lib/widgets";
 import { cn } from "@/lib/utils";
 
 interface HistoryModalProps {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { WidgetConfig } from "@/types/widget";
+import type { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
 import { FastWidgetModal } from "./fast-widget-modal";
@@ -24,8 +24,8 @@ import {
   duplicateWorkspace,
   MAX_WIDGETS_PER_WORKSPACE,
   MAX_WORKSPACES,
-  TempWidget,
-  Workspace
+  type TempWidget,
+  type Workspace
 } from "@/lib/widgets";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
@@ -36,6 +36,7 @@ import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useAlert } from "@/context/alert-context";
+import { RefreshButton } from "../refresh-button";
 
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
@@ -441,6 +442,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
              Exit TV Mode
            </button>
            <div className="flex items-center gap-4">
+             <RefreshButton />
              <ThemeToggle />
              <Clock />
            </div>

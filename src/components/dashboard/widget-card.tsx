@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { WidgetConfig } from "@/types/widget";
+import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";

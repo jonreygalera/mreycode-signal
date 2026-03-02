@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { WidgetConfig } from "@/types/widget";
+import type { WidgetConfig } from "@/types/widget";
 import { WidgetCard } from "./widget-card";
 
 export function WidgetGrid({ 
