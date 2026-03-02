@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,18 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+
+function TVModeParamSync({ onSync }: { onSync: (param: boolean) => void }) {
+  const searchParams = useSearchParams();
+  const tvParam = searchParams.get("tv-mode") === "yes";
+  
+  useEffect(() => {
+    onSync(tvParam);
+  }, [tvParam, onSync]);
+
+  return null;
+}
 
 interface TVModeContextType {
   isTVMode: boolean;
@@ -11,13 +22,11 @@ interface TVModeContextType {
 const TVModeContext = createContext<TVModeContextType | undefined>(undefined);
 
 export function TVModeProvider({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const tvParam = searchParams.get("tv-mode") === "yes";
-  
-  const [isTVMode, setIsTVMode] = useState(tvParam);
+  const [tvParam, setTvParam] = useState(false);
+  const [isTVMode, setIsTVMode] = useState(false);
 
-  // Sync state from URL changes
+  // Sync state from URL changes via TVModeParamSync
   useEffect(() => {
     setIsTVMode(tvParam);
     
@@ -102,6 +111,9 @@ export function TVModeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <TVModeContext.Provider value={{ isTVMode, toggleTVMode }}>
+      <Suspense fallback={null}>
+        <TVModeParamSync onSync={setTvParam} />
+      </Suspense>
       {children}
     </TVModeContext.Provider>
   );

@@ -25,7 +25,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     responsePath: 'public_repos',
     size: 'sm',
     description: 'Number of public repositories on GitHub',
-    refreshInterval: 0,
+    refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=repositories',
     color: 'info'
@@ -39,7 +39,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     responsePath: 'followers',
     size: 'sm',
     description: 'Number of followers on GitHub',
-    refreshInterval: 0,
+    refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=followers',
     color: 'up'
@@ -53,7 +53,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     responsePath: 'following',
     size: 'sm',
     description: 'Number of users followed on GitHub',
-    refreshInterval: 0,
+    refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=following',
     color: 'muted'
