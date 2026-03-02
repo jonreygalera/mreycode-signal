@@ -2,6 +2,21 @@ import { WidgetConfig } from '../types/widget';
 
 export const dashboardWidgets: WidgetConfig[] = [
   {
+    id: 'mreycode-signal-vercel-app-total-visits',
+    type: 'stat',
+    label: 'mreycode-signal.vercel.app Total Visits',
+    api: 'https://api-mreyai.vercel.app/api/guest/stats',
+    method: 'GET',
+    headers: {
+      'x-mrey-tenant': 'mreycode-signal.vercel.app',
+    },
+    responsePath: 'count',
+    size: 'sm',
+    description: 'Total visits on mreycode-signal.vercel.app',
+    refreshInterval: 5000, 
+    color: 'up'
+  },
+  {
     id: 'jonreygalera-github-repos',
     type: 'stat',
     label: 'Jon Rey | GitHub Public Repos',
