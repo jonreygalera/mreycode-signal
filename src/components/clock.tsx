@@ -102,6 +102,7 @@ export function Clock() {
     day: "numeric",
     year: "numeric"
   });
+  const dayString = time.toLocaleDateString("en-US", { weekday: "long" });
 
   const selectedTzLabel = timezone.split("/").pop()?.replace(/_/g, " ") || timezone;
 
@@ -178,7 +179,7 @@ export function Clock() {
               "text-xl sm:text-2xl md:text-4xl font-bold uppercase tracking-[0.2em] italic",
               settings.useBgInClock && settings.backgroundImage ? "text-white/80" : "text-muted"
             )}>
-              {dateString}
+              {dayString}, {dateString}
             </span>
           </motion.div>
         </div>
@@ -233,7 +234,7 @@ export function Clock() {
           <div className="flex items-center gap-1 opacity-60">
              <Calendar size={10} className="text-muted" />
              <span className="text-[9px] font-medium text-muted uppercase tracking-wider">
-               {dateString}
+               {dayString}, {dateString}
              </span>
           </div>
         </div>

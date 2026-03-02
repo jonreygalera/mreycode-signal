@@ -45,28 +45,6 @@ import { RefreshButton } from "../refresh-button";
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
   const { isTVMode, toggleTVMode } = useTVMode();
 
-  // TV‑mode auto‑hide header logic
-  const [showHeader, setShowHeader] = useState(true);
-  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!isTVMode) return;
-    const resetTimer = () => {
-      setShowHeader(true);
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      inactivityTimer.current = setTimeout(() => setShowHeader(false), 10000);
-    };
-    resetTimer();
-    window.addEventListener('mousemove', resetTimer);
-    window.addEventListener('click', resetTimer);
-    window.addEventListener('keydown', resetTimer);
-    return () => {
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('click', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-    };
-  }, [isTVMode]);
   const { showAlert } = useAlert();
 
   const searchParams = useSearchParams();
@@ -500,7 +478,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             </button>
           </div>
         </motion.div>
-      ) : showHeader ? (
+      ) : (
         <div className="sticky top-0 z-20 bg-background/80 dark:bg-background/80 backdrop-blur-lg shadow-md rounded-b-lg flex items-center justify-between px-4 py-2 mb-4">
           <button
             onClick={toggleTVMode}
@@ -515,16 +493,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             <ThemeToggle />
             <Clock />
           </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center w-full py-4 mb-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: -20 }} 
-            animate={{ opacity: 1, scale: 1, y: 0 }} 
-            className="text-4xl tracking-widest font-light text-foreground/80 drop-shadow-xl"
-          >
-            <Clock />
-          </motion.div>
         </div>
       )}
       
