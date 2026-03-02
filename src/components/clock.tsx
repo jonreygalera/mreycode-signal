@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings-context";
 
+const CLOCK_REFRESH_INTERVAL = 300000; //  5 minutes
+
 export function Clock() {
   const { settings, updateSettings, timeLeft } = useSettings();
   const timezone = settings.timezone;
@@ -61,10 +63,10 @@ export function Clock() {
 
   // Global Refresh Sync: Sync with server on every global refresh
   useEffect(() => {
-    if (settings.autoRefresh && timeLeft === settings.refreshInterval) {
+    if (settings.autoRefresh && timeLeft === CLOCK_REFRESH_INTERVAL) {
       fetchTime(timezone);
     }
-  }, [timeLeft, settings.autoRefresh, settings.refreshInterval, timezone, fetchTime]);
+  }, [timeLeft, settings.autoRefresh, CLOCK_REFRESH_INTERVAL, timezone, fetchTime]);
 
   useEffect(() => {
     if (!time) return;
