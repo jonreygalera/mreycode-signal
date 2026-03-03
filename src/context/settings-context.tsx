@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, AppSettings } from "@/config/settings";
 import { useSWRConfig } from "swr";
 import { useTVMode } from "./tv-mode-context";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { getWorkspaces } from "@/lib/widgets";
 
 interface SettingsContextType {
@@ -22,7 +23,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { mutate } = useSWRConfig();
   const { isTVMode } = useTVMode();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const triggerRefresh = () => {
     // Hard refresh the entire page
@@ -48,35 +48,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings, isInitialized]);
 
-  // TV Carousel Logic
-  useEffect(() => {
-    if (!isTVMode || !settings.tvCarouselEnabled || !isInitialized) return;
-
-    const intervalMs = Math.max(30, settings.tvCarouselInterval) * 1000;
-    
-    const timer = setInterval(() => {
-      const workspaces = getWorkspaces();
-      const currentWorkspace = searchParams.get("workspace");
-      
-      // Build a list of all viewable IDs (null for Main, then all workspace IDs)
-      const viewList = [null, ...workspaces.map(ws => ws.id)];
-      
-      const currentIndex = viewList.indexOf(currentWorkspace as any);
-      const nextIndex = (currentIndex + 1) % viewList.length;
-      const nextWorkspace = viewList[nextIndex];
-
-      const params = new URLSearchParams(searchParams.toString());
-      if (nextWorkspace) {
-        params.set("workspace", nextWorkspace);
-      } else {
-        params.delete("workspace");
-      }
-      
-      router.push(`/?${params.toString()}`);
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [isTVMode, settings.tvCarouselEnabled, settings.tvCarouselInterval, isInitialized, searchParams, router]);
 
   useEffect(() => {
     if (settings.backgroundImage) {
@@ -102,6 +73,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       triggerRefresh
     }}>
       <div className="relative min-h-screen">
+        <Suspense fallback={null}>
+          <SettingsSync 
+            isTVMode={isTVMode} 
+            settings={settings} 
+            isInitialized={isInitialized} 
+            router={router} 
+          />
+        </Suspense>
         {settings.backgroundImage && (
           <>
             <div 
@@ -123,6 +102,49 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       </div>
     </SettingsContext.Provider>
   );
+}
+
+function SettingsSync({ 
+  isTVMode, 
+  settings, 
+  isInitialized, 
+  router 
+}: { 
+  isTVMode: boolean, 
+  settings: AppSettings, 
+  isInitialized: boolean, 
+  router: any 
+}) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    if (!isTVMode || !settings.tvCarouselEnabled || !isInitialized) return;
+
+    const intervalMs = Math.max(30, settings.tvCarouselInterval) * 1000;
+    
+    const timer = setInterval(() => {
+      const workspaces = getWorkspaces();
+      const currentWorkspace = searchParams.get("workspace");
+      
+      const viewList = [null, ...workspaces.map(ws => ws.id)];
+      const currentIndex = viewList.indexOf(currentWorkspace as any);
+      const nextIndex = (currentIndex + 1) % viewList.length;
+      const nextWorkspace = viewList[nextIndex];
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextWorkspace) {
+        params.set("workspace", nextWorkspace);
+      } else {
+        params.delete("workspace");
+      }
+      
+      router.push(`/?${params.toString()}`);
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [isTVMode, settings.tvCarouselEnabled, settings.tvCarouselInterval, isInitialized, searchParams, router]);
+
+  return null;
 }
 
 export function useSettings() {
