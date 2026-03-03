@@ -29,5 +29,7 @@ export const appConfig = {
     "SWR 2.4",
   ],
   statsApi: process.env.NEXT_PUBLIC_STATS_API ?? "https://api-mreyai.vercel.app",
+  signalSound: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+  defaultSignalDuration: 10,
 };
 

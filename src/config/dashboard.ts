@@ -75,7 +75,8 @@ export const dashboardWidgets: WidgetConfig[] = [
         label: 'It\'s Cold in Baguio!',
         condition: 'below',
         threshold: 15,
-        action: ['pulse', 'notify', 'sound'],
+        action: ['pulse', 'notify', 'sound', 'notify-in-app'],
+        duration: 10,
         enabled: true
       },
       {
@@ -83,7 +84,8 @@ export const dashboardWidgets: WidgetConfig[] = [
         label: 'It\'s Hot in Baguio!',
         condition: 'above',
         threshold: 25,
-        action: ['pulse', 'notify', 'sound'],
+        action: ['pulse', 'notify', 'sound', 'notify-in-app'],
+        duration: 10,
         enabled: true
       }
     ],
@@ -140,6 +142,17 @@ export const dashboardWidgets: WidgetConfig[] = [
       belowZero: "down",    // Red if loss
       atZero: "muted"       // Gray if neutral
     },
+    signals: [
+      {
+        id: 'random-number-alert',
+        label: 'Random Number Alert!',
+        condition: 'below',
+        threshold: 30,
+        action: ['pulse', 'notify-in-app', 'sound'],
+        enabled: true,
+        duration: 10,
+      }
+    ],
     config: {},
   },
   {

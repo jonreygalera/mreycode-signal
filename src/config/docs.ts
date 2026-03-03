@@ -87,8 +87,9 @@ export const WIDGET_DOCS: DocSection[] = [
       { key: "signal.label", type: "string", description: "Name of the alert shown in browser notifications.", required: true },
       { key: "signal.condition", type: "'above' | 'below' | 'equals'", description: "Threshold logic.", required: true },
       { key: "signal.threshold", type: "number", description: "The value that triggers the alert.", required: true },
-      { key: "signal.action", type: "Array<'notify' | 'pulse' | 'sound'>", description: "What happens when triggered.", required: true },
+      { key: "signal.action", type: "Array<'notify' | 'pulse' | 'sound' | 'notify-in-app'>", description: "What happens when triggered.", required: true },
       { key: "signal.enabled", type: "boolean", description: "Toggle the signal on/off.", required: true },
+      { key: "signal.duration", type: "number", description: "Duration in seconds for 'notify-in-app' (Default: 10)." },
     ],
   },
 ];
