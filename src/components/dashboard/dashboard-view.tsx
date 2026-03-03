@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
 import { FastWidgetModal } from "./fast-widget-modal";
+import { appConfig } from "@/config/app";
 import { HistoryModal } from "./history-modal";
 import { WorkspaceModal } from "./workspace-modal";
 import { 
@@ -25,15 +26,13 @@ import {
   deleteWorkspace,
   updateWorkspace,
   duplicateWorkspace,
-  MAX_WIDGETS_PER_WORKSPACE,
-  MAX_WORKSPACES,
   type TempWidget,
   type Workspace
 } from "@/lib/widgets";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon, Download, Upload 
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, Check, LayoutDashboard, Search
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -81,6 +80,21 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     initialValue?: string;
     title: string;
   }>({ isOpen: false, mode: 'add', title: '' });
+
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(event.target as Node)) {
+        setIsWorkspaceOpen(false);
+        setWorkspaceSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const isModalOpen = searchParams.get("modal") === "new" || searchParams.get("modal") === "edit";
   const isHistoryOpen = searchParams.get("widget") === "history";
@@ -231,14 +245,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleAddWorkspace = () => {
-    if (workspaces.length >= MAX_WORKSPACES) {
-      showAlert({
-        title: "Limit Reached",
-        message: `Maximum of ${MAX_WORKSPACES} workspaces allowed.`,
-        type: "error"
-      });
-      return;
-    }
+
     setWorkspaceModal({
       isOpen: true,
       mode: 'add',
@@ -343,16 +350,24 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleExport = () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const dateFormatted = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const timeFormatted = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
+    const fullTimestamp = `${dateFormatted}-${timeFormatted}`;
+
     const data = {
-      workspaceName: currentWorkspaceName,
-      widgets: tempWidgets.map(tw => tw.config),
+      workspaceName: `${currentWorkspaceName}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      version: appConfig.version,
+      // Export all widgets (both predefined and custom)
+      // When imported, they will all become "fast widgets"
+      widgets: allWidgets.map(({ isTemp, ...config }: any) => config),
       exportedAt: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${currentWorkspaceName.toLowerCase().replace(/\s+/g, '-')}-config.json`;
+    link.download = `${currentWorkspaceName.toLowerCase().replace(/\s+/g, '-')}-v${appConfig.version}-${fullTimestamp}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -361,8 +376,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const file = e.target.files?.[0];
     if (!file) return;
 
+
+
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const content = event.target?.result as string;
         const data = JSON.parse(content);
@@ -371,30 +388,48 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           throw new Error("Invalid configuration file: Missing widgets array.");
         }
 
-        const confirmed = showAlert({
-          title: "Import Dashboard",
-          message: `This will add ${data.widgets.length} widgets to your current workspace. Proceed?`,
+        const rawName = (data.workspaceName || "Imported Dashboard").split('-')[0].trim();
+        const existing = getWorkspaces();
+        const nameExists = existing.some(ws => ws.name.toLowerCase() === rawName.toLowerCase());
+        const finalName = nameExists ? `${rawName} (Imported)` : rawName;
+
+        const confirmed = await showAlert({
+          title: "Import Workspace",
+          message: `This will create a new workspace "${finalName}" with ${data.widgets.length} widgets. Proceed?`,
           type: "info",
           showCancel: true,
           confirmText: "Import",
           cancelText: "Cancel"
-        }).then(conf => {
-          if (conf) {
-            data.widgets.forEach((config: WidgetConfig) => {
-              // Ensure IDs are unique to avoid collision if importing multiple times
-              const newConfig = { ...config, id: `${config.id}-${Date.now()}` };
-              saveTempWidget(newConfig, null, workspaceId);
-            });
-            setTempWidgets(getTempWidgets(workspaceId));
-            showAlert({ title: "Success", message: "Widgets imported successfully.", type: "info" });
-          }
         });
+
+        if (confirmed) {
+          const newWsId = `ws-import-${Date.now()}`;
+          const newWorkspace = {
+            id: newWsId,
+            name: finalName,
+            createdAt: Date.now()
+          };
+          
+          saveWorkspace(newWorkspace);
+          
+          // Map widgets and save them synchronously
+          data.widgets.forEach((config: WidgetConfig) => {
+            saveTempWidget(config, null, newWsId);
+          });
+          
+          // Clear input
+          e.target.value = "";
+
+          // THE FIX: Direct window location change is the most reliable way 
+          // to ensure Next.js cleans up all internal state and re-reads localStorage
+          window.location.href = `/?workspace=${newWsId}`;
+        }
       } catch (err: any) {
         showAlert({ title: "Import Error", message: err.message, type: "error" });
+        e.target.value = "";
       }
     };
     reader.readAsText(file);
-    e.target.value = ""; // Reset input
   };
 
 
@@ -408,11 +443,135 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           className="sticky top-[56px] z-10 bg-background dark:bg-background flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
-                {currentWorkspaceName}
-              </h1>
-              <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-3 relative" ref={workspaceDropdownRef}>
+              <button 
+                onClick={() => {
+                  setIsWorkspaceOpen(!isWorkspaceOpen);
+                  if (isWorkspaceOpen) setWorkspaceSearch("");
+                }}
+                className="group flex items-center gap-3 text-left p-1 -m-1 rounded-md hover:bg-foreground/5 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground uppercase">
+                    {currentWorkspaceName}
+                  </h1>
+                  <span className="flex items-center justify-center bg-foreground/10 text-foreground text-[10px] font-bold px-2 py-0.5 rounded-full border border-foreground/10 backdrop-blur-sm">
+                    {workspaces.length + 1}
+                  </span>
+                </div>
+                <ChevronDown size={16} className={cn("text-muted transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isWorkspaceOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 5, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute top-full left-0 z-60 mt-2 w-64 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md"
+                  >
+                    <div className="px-3 py-2 border-b border-border bg-muted/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <LayoutDashboard size={12} className="text-muted" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Workspaces</span>
+                      </div>
+                      <span className="text-[10px] font-black text-muted/50">{workspaces.length + 1} TOTAL</span>
+                    </div>
+
+                    <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
+                      <div className="relative">
+                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                        <input
+                          type="text"
+                          placeholder="Search workspace..."
+                          value={workspaceSearch}
+                          onChange={(e) => setWorkspaceSearch(e.target.value)}
+                          className="w-full bg-transparent border-none pl-7 pr-2 py-1 text-xs placeholder:text-muted/50 focus:outline-none focus:ring-0"
+                          autoFocus
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="p-1.5 max-h-[320px] overflow-y-auto custom-scrollbar">
+                      {/* Main Dashboard option - Only show if it matches search or search is empty */}
+                      {("Main Dashboard".toLowerCase().includes(workspaceSearch.toLowerCase())) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              router.push("/");
+                              setIsWorkspaceOpen(false);
+                              setWorkspaceSearch("");
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-xs transition-colors",
+                              !workspaceId
+                                ? "bg-primary/10 text-primary font-bold" 
+                                : "text-muted hover:bg-muted/20 hover:text-foreground"
+                            )}
+                          >
+                            <div className="flex flex-col">
+                               <span className="uppercase tracking-tight">Main Dashboard</span>
+                               <span className="text-[9px] opacity-60">Master View</span>
+                            </div>
+                            {!workspaceId && <Check size={14} className="shrink-0" />}
+                          </button>
+                          <div className="h-px bg-border/40 my-1 mx-2" />
+                        </>
+                      )}
+
+                      {workspaces
+                        .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
+                        .map((ws) => (
+                        <button
+                          key={ws.id}
+                          onClick={() => {
+                            router.push(`/?workspace=${ws.id}`);
+                            setIsWorkspaceOpen(false);
+                            setWorkspaceSearch("");
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-xs transition-colors mb-0.5",
+                            workspaceId === ws.id
+                              ? "bg-primary/10 text-primary font-bold" 
+                              : "text-muted hover:bg-muted/20 hover:text-foreground"
+                          )}
+                        >
+                          <div className="flex flex-col">
+                             <span className="uppercase tracking-tight">{ws.name}</span>
+                             <span className="text-[9px] opacity-60">Created {new Date(ws.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {workspaceId === ws.id && <Check size={14} className="shrink-0" />}
+                        </button>
+                      ))}
+
+                      {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && 
+                       !"Main Dashboard".toLowerCase().includes(workspaceSearch.toLowerCase()) && (
+                        <div className="px-3 py-4 text-center">
+                          <p className="text-[10px] text-muted italic">No matching workspaces found</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-1.5 border-t border-border bg-muted/5">
+                      <button
+                        onClick={() => {
+                          handleAddWorkspace();
+                          setIsWorkspaceOpen(false);
+                          setWorkspaceSearch("");
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 rounded-sm text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/20 transition-all"
+                      >
+                        <FolderPlus size={14} />
+                        CREATE NEW WORKSPACE
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity ml-1">
                 {!workspaceId && tempWidgets.length > 0 && (
                    <button 
                      onClick={() => handleCopyWorkspace(null)}
@@ -452,34 +611,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               </div>
             </div>
             <p className="text-xs text-muted font-medium tracking-wide uppercase opacity-60">
-              {tempWidgets.length}/{MAX_WIDGETS_PER_WORKSPACE} Fast Widgets Active
+              {allWidgets.length} Widgets Active
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {/* Workspaces List */}
-            <div className="flex items-center gap-1 bg-muted/20 p-1 rounded-lg mr-2">
-              <button
-                onClick={() => router.push("/")}
-                className={cn(
-                  "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all whitespace-nowrap",
-                  !workspaceId ? "bg-foreground text-background shadow-lg" : "text-muted hover:text-foreground hover:bg-muted/30"
-                )}
-              >
-                Main
-              </button>
-              {workspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  onClick={() => router.push(`/?workspace=${ws.id}`)}
-                  className={cn(
-                    "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all whitespace-nowrap",
-                    workspaceId === ws.id ? "bg-foreground text-background shadow-lg" : "text-muted hover:text-foreground hover:bg-muted/30"
-                  )}
-                >
-                  {ws.name}
-                </button>
-              ))}
-            </div>
 
             {tempWidgets.length > 0 && (
               <button
@@ -509,30 +644,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             )}
 
             <button
-              onClick={handleAddWorkspace}
-              disabled={workspaces.length >= MAX_WORKSPACES}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap",
-                workspaces.length >= MAX_WORKSPACES 
-                  ? "bg-muted/5 text-muted/50 cursor-not-allowed opacity-50" 
-                  : "bg-muted/10 hover:bg-muted/20 text-foreground"
-              )}
-              title={workspaces.length >= MAX_WORKSPACES ? "Limit reached (max 3)" : "Add new workspace"}
-            >
-              <FolderPlus size={14} />
-              Workspace
-            </button>
-
-            <button
               onClick={() => {
-                if (tempWidgets.length >= MAX_WIDGETS_PER_WORKSPACE) {
-                  showAlert({
-                    title: "Limit Reached",
-                    message: `Maximum of ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed per workspace.`,
-                    type: "error"
-                  });
-                  return;
-                }
                 setWidgetToEdit(null);
                 setIsModalOpen(true);
               }}
@@ -553,10 +665,18 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               <span className="hidden lg:inline">Export</span>
             </button>
 
-            <label className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px] cursor-pointer" title="Import workspace configuration">
+            <label 
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/10 cursor-pointer transition-all rounded-[4px]"
+              title="Import workspace configuration"
+            >
               <Upload size={14} />
               <span className="hidden lg:inline">Import</span>
-              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+              <input 
+                type="file" 
+                accept=".json" 
+                onChange={handleImport} 
+                className="hidden" 
+              />
             </label>
           </div>
         </motion.div>

@@ -16,7 +16,6 @@ const HISTORY_KEY_BASE = "mreycode_signal_widget_history";
 const WORKSPACES_KEY = "mreycode_signal_workspaces";
 
 export const MAX_WIDGETS_PER_WORKSPACE = 12;
-export const MAX_WORKSPACES = 3;
 
 const getStorageKey = (workspaceId?: string | null) => 
   workspaceId ? `${STORAGE_KEY_BASE}_${workspaceId}` : STORAGE_KEY_BASE;
@@ -96,9 +95,11 @@ export const saveTempWidget = (config: WidgetConfig, afterId: string | null, wor
   const current = getTempWidgets(workspaceId);
   const existingIndex = current.findIndex(w => w.config.id === config.id);
   
+  /* 
   if (existingIndex === -1 && current.length >= MAX_WIDGETS_PER_WORKSPACE) {
     throw new Error(`Maximum of ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed per workspace.`);
   }
+  */
 
   let updated;
   if (existingIndex !== -1) {
@@ -190,9 +191,11 @@ export const getWorkspaces = (): Workspace[] => {
 export const saveWorkspace = (workspace: Workspace) => {
   const current = getWorkspaces();
   
+  /* 
   if (current.length >= MAX_WORKSPACES) {
     throw new Error(`Maximum of ${MAX_WORKSPACES} workspaces allowed.`);
   }
+  */
 
   if (current.some(ws => ws.name.toLowerCase() === workspace.name.toLowerCase())) {
     throw new Error(`A workspace with the name "${workspace.name}" already exists.`);
