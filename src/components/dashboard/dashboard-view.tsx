@@ -8,7 +8,10 @@ import type { WidgetConfig } from "@/types/widget";
 import { WidgetGrid } from "./widget-grid";
 import { cn } from "@/lib/utils";
 import { FastWidgetModal } from "./fast-widget-modal";
+import { ExportModal } from "./export-modal";
+import { ImportModal } from "./import-modal";
 import { appConfig } from "@/config/app";
+import { TEMPLATES, NEW_TEMPLATES } from "@/config/templates";
 import { HistoryModal } from "./history-modal";
 import { WorkspaceModal } from "./workspace-modal";
 import { 
@@ -80,6 +83,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     initialValue?: string;
     title: string;
   }>({ isOpen: false, mode: 'add', title: '' });
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFileData, setImportFileData] = useState<{ workspaceName: string; widgets: WidgetConfig[] } | null>(null);
 
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceSearch, setWorkspaceSearch] = useState("");
@@ -280,7 +287,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
   };
 
-  const handleWorkspaceConfirm = (name: string) => {
+  const handleWorkspaceConfirm = async (name: string, selectedWidgets: WidgetConfig[]) => {
     const { mode, targetId } = workspaceModal;
 
     try {
@@ -288,6 +295,12 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
         saveWorkspace(newWS);
+        
+        // Initialize with selected widgets
+        selectedWidgets.forEach(config => {
+          saveTempWidget(config, null, id);
+        });
+
         setWorkspaces(getWorkspaces());
         router.push(`/?workspace=${id}`);
       } else if (mode === 'rename' && targetId) {
@@ -296,7 +309,13 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       } else if (mode === 'copy') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
-        duplicateWorkspace(targetId || null, newWS);
+        saveWorkspace(newWS);
+
+        // Copy selected widgets
+        selectedWidgets.forEach(config => {
+          saveTempWidget(config, null, id);
+        });
+
         setWorkspaces(getWorkspaces());
         router.push(`/?workspace=${id}`);
       }
@@ -306,6 +325,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         message: e.message,
         type: "error"
       });
+      throw e;
     }
   };
 
@@ -350,24 +370,29 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleExport = () => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    setIsExportModalOpen(true);
+  };
+
+  const handleConfirmExport = async (exportData: { name: string; widgets: WidgetConfig[] }) => {
+    // Simulate slight delay for the progress bar to feel natural
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
     const dateFormatted = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const timeFormatted = new Date().toTimeString().split(' ')[0].replace(/:/g, '');
     const fullTimestamp = `${dateFormatted}-${timeFormatted}`;
 
     const data = {
-      workspaceName: `${currentWorkspaceName}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      workspaceName: exportData.name,
       version: appConfig.version,
-      // Export all widgets (both predefined and custom)
-      // When imported, they will all become "fast widgets"
-      widgets: allWidgets.map(({ isTemp, ...config }: any) => config),
+      widgets: exportData.widgets,
       exportedAt: new Date().toISOString()
     };
+    
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${currentWorkspaceName.toLowerCase().replace(/\s+/g, '-')}-v${appConfig.version}-${fullTimestamp}.json`;
+    link.download = `${exportData.name.toLowerCase().replace(/\s+/g, '-')}-v${appConfig.version}-${fullTimestamp}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -375,8 +400,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -393,43 +416,46 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         const nameExists = existing.some(ws => ws.name.toLowerCase() === rawName.toLowerCase());
         const finalName = nameExists ? `${rawName} (Imported)` : rawName;
 
-        const confirmed = await showAlert({
-          title: "Import Workspace",
-          message: `This will create a new workspace "${finalName}" with ${data.widgets.length} widgets. Proceed?`,
-          type: "info",
-          showCancel: true,
-          confirmText: "Import",
-          cancelText: "Cancel"
+        setImportFileData({
+          workspaceName: finalName,
+          widgets: data.widgets
         });
-
-        if (confirmed) {
-          const newWsId = `ws-import-${Date.now()}`;
-          const newWorkspace = {
-            id: newWsId,
-            name: finalName,
-            createdAt: Date.now()
-          };
-          
-          saveWorkspace(newWorkspace);
-          
-          // Map widgets and save them synchronously
-          data.widgets.forEach((config: WidgetConfig) => {
-            saveTempWidget(config, null, newWsId);
-          });
-          
-          // Clear input
-          e.target.value = "";
-
-          // THE FIX: Direct window location change is the most reliable way 
-          // to ensure Next.js cleans up all internal state and re-reads localStorage
-          window.location.href = `/?workspace=${newWsId}`;
-        }
+        setIsImportModalOpen(true);
+        
+        // Clear input
+        e.target.value = "";
       } catch (err: any) {
         showAlert({ title: "Import Error", message: err.message, type: "error" });
         e.target.value = "";
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleConfirmImport = async (importData: { name: string; widgets: WidgetConfig[] }) => {
+    // Simulate slight delay for the progress bar
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    try {
+      const newWsId = `ws-import-${Date.now()}`;
+      const newWorkspace = {
+        id: newWsId,
+        name: importData.name.trim(),
+        createdAt: Date.now()
+      };
+      
+      saveWorkspace(newWorkspace);
+      
+      // Map widgets and save them synchronously
+      importData.widgets.forEach((config: WidgetConfig) => {
+        saveTempWidget(config, null, newWsId);
+      });
+      
+      // Direct window location change to refresh state
+      window.location.href = `/?workspace=${newWsId}`;
+    } catch (err: any) {
+      showAlert({ title: "Import Failed", message: err.message, type: "error" });
+    }
   };
 
 
@@ -783,6 +809,24 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         onClearAll={handleClearHistory}
       />
 
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleConfirmExport}
+        defaultName={`${currentWorkspaceName}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`}
+        availableWidgets={allWidgets.map(({ isTemp, ...config }: any) => config)}
+      />
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setImportFileData(null);
+        }}
+        onConfirm={handleConfirmImport}
+        initialData={importFileData}
+      />
+
       <WorkspaceModal
         isOpen={workspaceModal.isOpen}
         onClose={() => setWorkspaceModal(prev => ({ ...prev, isOpen: false }))}
@@ -790,6 +834,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         mode={workspaceModal.mode}
         title={workspaceModal.title}
         initialValue={workspaceModal.initialValue}
+        availableWidgets={
+          workspaceModal.mode === 'copy' 
+            ? allWidgets.map(({ isTemp, ...config }: any) => config) 
+            : [...TEMPLATES, ...NEW_TEMPLATES].map(t => t.config)
+        }
       />
     </div>
   );
