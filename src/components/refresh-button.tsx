@@ -10,7 +10,7 @@ interface RefreshButtonProps {
 }
 
 export function RefreshButton({ className, showLabel = false }: RefreshButtonProps) {
-  const { settings, timeLeft, triggerRefresh } = useSettings();
+  const { triggerRefresh } = useSettings();
 
   const handleRefresh = () => {
     triggerRefresh();
@@ -20,34 +20,19 @@ export function RefreshButton({ className, showLabel = false }: RefreshButtonPro
     <button
       onClick={handleRefresh}
       className={cn(
-        "group flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all active:scale-95",
-        settings.autoRefresh 
-          ? "bg-green-500/5 text-green-500 ring-1 ring-green-500/20" 
-          : "text-muted hover:text-foreground hover:bg-muted/10",
+        "group flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-muted hover:text-foreground hover:bg-muted/10",
         className
       )}
-      title={settings.autoRefresh ? `Auto-refresh active: ${timeLeft}s remaining` : "Hard Refresh Dashboard"}
+      title="Hard Refresh Dashboard"
     >
       <div className="relative">
         <RotateCcw 
           size={14} 
-          className={cn(
-            "transition-transform duration-500",
-            settings.autoRefresh ? "animate-[spin_4s_linear_infinite]" : "group-hover:rotate-180"
-          )} 
+          className="transition-transform duration-500 group-hover:rotate-180" 
         />
-        {settings.autoRefresh && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border-2 border-panel animate-pulse" />
-        )}
       </div>
       
-      {settings.autoRefresh && (
-        <span className="text-[10px] font-bold tabular-nums">
-          {timeLeft}s
-        </span>
-      )}
-
-      {showLabel && !settings.autoRefresh && (
+      {showLabel && (
         <span className="text-xs font-semibold uppercase tracking-tight">Refresh</span>
       )}
     </button>

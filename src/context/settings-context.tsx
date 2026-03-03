@@ -8,7 +8,6 @@ interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetSettings: () => void;
-  timeLeft: number;
   triggerRefresh: () => void;
 }
 
@@ -17,13 +16,11 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_SETTINGS.refreshInterval);
   const { mutate } = useSWRConfig();
 
   const triggerRefresh = () => {
-    // Revalidate everything tracking the SWR global cache
-    mutate(() => true, undefined, { revalidate: true });
-    setTimeLeft(settings.refreshInterval);
+    // Hard refresh the entire page
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -53,28 +50,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.backgroundImage]);
 
-  useEffect(() => {
-    if (!settings.autoRefresh) {
-      setTimeLeft(settings.refreshInterval);
-      return;
-    }
-
-    // Reset timer when initial value changes
-    setTimeLeft(settings.refreshInterval);
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          triggerRefresh();
-          return settings.refreshInterval;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [settings.autoRefresh, settings.refreshInterval]);
-
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
@@ -88,7 +63,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       settings, 
       updateSettings, 
       resetSettings, 
-      timeLeft, 
       triggerRefresh
     }}>
       <div className="relative min-h-screen">

@@ -128,9 +128,14 @@ export function Header() {
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
             </div>
-            <span className="font-semibold tracking-tight text-foreground uppercase text-sm">
-              {appConfig.name}
-            </span>
+            <div className="flex flex-col">
+              <span className="font-bold tracking-tighter text-foreground uppercase text-sm leading-none">
+                {appConfig.name}
+              </span>
+              <span className="text-[9px] text-muted/60 font-mono font-medium tracking-widest mt-0.5">
+                v{appConfig.version}
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
