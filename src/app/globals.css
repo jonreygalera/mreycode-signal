@@ -49,11 +49,52 @@ body.has-custom-bg {
 }
 
 body.has-custom-bg .bg-panel {
-  background-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   transform: translateZ(0);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dark body.has-custom-bg .bg-panel {
-  background-color: rgba(19, 23, 34, 0.7);
+  background-color: rgba(19, 23, 34, 0.5);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes pulse-subtle {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 123, 134, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 123, 134, 0.4);
 }

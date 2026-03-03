@@ -11,7 +11,7 @@ import { useSettings } from "@/context/settings-context";
 const CLOCK_REFRESH_INTERVAL = 300000; //  5 minutes
 
 export function Clock() {
-  const { settings, updateSettings, timeLeft } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const timezone = settings.timezone;
   const setTimezone = (tz: string) => updateSettings({ timezone: tz });
   
@@ -61,12 +61,6 @@ export function Clock() {
     fetchTime(timezone);
   }, [timezone, fetchTime]);
 
-  // Global Refresh Sync: Sync with server on every global refresh
-  useEffect(() => {
-    if (settings.autoRefresh && timeLeft === CLOCK_REFRESH_INTERVAL) {
-      fetchTime(timezone);
-    }
-  }, [timeLeft, settings.autoRefresh, CLOCK_REFRESH_INTERVAL, timezone, fetchTime]);
 
   useEffect(() => {
     if (!time) return;

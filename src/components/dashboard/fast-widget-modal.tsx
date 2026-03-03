@@ -5,14 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
-import { TEMPLATES } from "@/config/templates";
+import { TEMPLATES, NEW_TEMPLATES, WidgetTemplate } from "@/config/templates";
 
 const CONFIG_DOCS = [
   { key: "id", type: "string", description: "Unique identifier for the widget", required: true },
   { key: "label", type: "string", description: "Display title shown on the card", required: true },
-  { key: "type", type: "'stat' | 'line' | 'bar' | 'area'", description: "Widget visualization style", required: true },
-  { key: "api", type: "string", description: "The URL endpoint to fetch data from", required: true },
-  { key: "responsePath", type: "string", description: "Dot-notation path to data (e.g., 'result.count')", required: true },
+  { key: "type", type: "'stat' | 'line' | 'bar' | 'area' | 'iframe' | 'list' | 'clock' | 'progress' | 'status'", description: "Widget visualization style", required: true },
+  { key: "api", type: "string", description: "The URL endpoint to fetch data from" },
+  { key: "responsePath", type: "string", description: "Dot-notation path to data (e.g., 'result.count')" },
+  { key: "transformer", type: "string", description: "JS code to transform data: '(val, data) => val * 100'" },
+  { key: "iframeUrl", type: "string", description: "External URL to host in Iframe widget" },
+  { key: "displayType", type: "'analog' | 'digital'", description: "Style for Clock widget" },
+  { key: "accentColor", type: "HEX Color", description: "Custom glow/border color (e.g. '#ff0000')" },
   { key: "size", type: "'sm' | 'md' | 'lg' | 'xl'", description: "Horizontal width/grid span" },
   { key: "refreshInterval", type: "number", description: "Auto-refresh time in milliseconds" },
   { key: "prefix / suffix", type: "string", description: "Currency or units ($, °C, %)" },
@@ -152,7 +156,15 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                   <select 
                     onChange={(e) => {
                       if (e.target.value) {
-                        const template = TEMPLATES[parseInt(e.target.value)];
+                        const templateIdx = parseInt(e.target.value);
+                        let template;
+                        
+                        if (templateIdx >= 100) {
+                          template = NEW_TEMPLATES[templateIdx - 100];
+                        } else {
+                          template = TEMPLATES[templateIdx];
+                        }
+                        
                         const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
                         setConfigText(JSON.stringify({ ...template.config, id: newId }, null, 2));
                       }
@@ -160,9 +172,16 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     className="flex-1 bg-muted/20 border border-border/50 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all cursor-pointer outline-none"
                   >
                     <option value="">Select Template...</option>
-                    {TEMPLATES.map((t, i) => (
-                      <option key={i} value={i}>{t.label}</option>
-                    ))}
+                    <optgroup label="Standard Templates">
+                      {TEMPLATES.map((t, i) => (
+                        <option key={i} value={i}>{t.label}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="New Widget Types">
+                      {NEW_TEMPLATES.map((t: WidgetTemplate, i: number) => (
+                        <option key={i + 100} value={i + 100}>{t.label}</option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
                 <textarea

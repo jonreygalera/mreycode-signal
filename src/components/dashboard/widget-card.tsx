@@ -12,7 +12,51 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useSettings } from "@/context/settings-context";
-import { Clock } from "../clock";
+import { Clock as ClockIcon } from "../clock";
+
+// Helper for Analog Clock
+function AnalogClock({ className }: { className?: string }) {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const seconds = time.getSeconds() * 6;
+  const minutes = time.getMinutes() * 6;
+  const hours = ((time.getHours() % 12) + time.getMinutes() / 60) * 30;
+
+  return (
+    <div className={cn("relative w-32 h-32 rounded-full border-2 border-border/60 bg-panel/30 backdrop-blur-md shadow-inner", className)}>
+      {/* Center dot */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-foreground rounded-full z-10" />
+      {/* Hands */}
+      <div 
+        className="absolute bottom-1/2 left-1/2 w-0.5 h-12 bg-foreground/40 rounded-full origin-bottom -translate-x-1/2"
+        style={{ transform: `translateX(-50%) rotate(${hours}deg)` }}
+      />
+      <div 
+        className="absolute bottom-1/2 left-1/2 w-0.5 h-14 bg-foreground/60 rounded-full origin-bottom -translate-x-1/2"
+        style={{ transform: `translateX(-50%) rotate(${minutes}deg)` }}
+      />
+      <div 
+        className="absolute bottom-1/2 left-1/2 w-px h-14 bg-primary rounded-full origin-bottom -translate-x-1/2"
+        style={{ transform: `translateX(-50%) rotate(${seconds}deg)` }}
+      />
+      {/* Markers */}
+      {[...Array(12)].map((_, i) => (
+        <div 
+          key={i}
+          className="absolute top-0 left-1/2 h-full w-px py-1 flex flex-col justify-between origin-bottom -translate-x-1/2"
+          style={{ transform: `translateX(-50%) rotate(${i * 30}deg)` }}
+        >
+          <div className={cn("w-px h-1 bg-border", i % 3 === 0 ? "h-2 bg-foreground/30" : "")} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const fetcher = async ({ url, method, headers, body }: any) => {
   const res = await fetch(url, {
@@ -59,7 +103,7 @@ export function WidgetCard({
 
   const [isCopied, setIsCopied] = useState(false);
   const { isTVMode } = useTVMode();
-  const { settings, timeLeft } = useSettings();
+  const { settings } = useSettings();
 
   const handleCopyConfig = () => {
     // Deep clone to avoid mutating original config and strip runtime flags
@@ -99,12 +143,12 @@ export function WidgetCard({
   };
 
   const { data, error, isLoading, mutate } = useSWR(
-    {
+    config.api && config.api !== "none" ? {
       url: config.api,
       method: config.method || "GET",
       headers: config.headers,
       body: config.body,
-    },
+    } : null,
     fetcher,
     {
       refreshInterval: config.refreshInterval || 0,
@@ -115,35 +159,41 @@ export function WidgetCard({
     }
   );
 
-  // Global Refresh Sync: Revalidate only if this widget doesn't have its own interval
-  useEffect(() => {
-    // If the timer just reset to the start value, trigger revalidation
-    if (settings.autoRefresh && timeLeft === settings.refreshInterval && !config.refreshInterval) {
-      mutate();
-    }
-  }, [timeLeft, settings.autoRefresh, settings.refreshInterval, config.refreshInterval, mutate]);
 
   const parsedData = useMemo(() => {
-    if (!data) return null;
-    const value = getNestedProperty(data, config.responsePath);
+    if (!data && config.type !== 'clock' && config.type !== 'iframe' && config.type !== 'status' && config.type !== 'progress') return null;
     
+    let value = (data && config.responsePath) ? getNestedProperty(data, config.responsePath) : data;
+    
+    // Apply Transform Middleware if exists
+    if (config.transformer && value !== null) {
+      try {
+        // Safe evaluation of transformer logic
+        // eslint-disable-next-line no-new-func
+        const transformFn = new Function('val', 'data', `return (${config.transformer})(val, data)`);
+        value = transformFn(value, data);
+      } catch (e) {
+        console.error("Transformer error:", e);
+      }
+    }
+
     // Force stat value to a number if type is stat
-    // If not a number, default to 0
     if (config.type === "stat") {
       const numValue = Number(value);
       return isNaN(numValue) ? 0 : numValue;
     }
 
     return value;
-  }, [data, config.responsePath, config.type]);
+  }, [data, config.responsePath, config.type, config.transformer]);
 
   const sourceLabel = useMemo(() => {
     if (config.source) return config.source;
+    if (!config.api || config.api === "none") return "Static Widget";
     try {
       if (config.api.startsWith("/")) return "Local Network";
       return new URL(config.api).hostname;
     } catch (e) {
-      return "Unknown Source";
+      return "External Source";
     }
   }, [config.api, config.source]);
 
@@ -154,11 +204,16 @@ export function WidgetCard({
     xl: "flex-grow basis-full min-w-[280px] min-h-[400px]",
   };
 
-  const isStat = config.type === "stat";
+  const isStat = config.type === "stat" || config.type === "status" || config.type === "clock";
   const currentSizeClass = sizeClasses[config.size || (isStat ? "sm" : "sm")];
   const finalSizeClass = isStat 
     ? cn(currentSizeClass, "min-h-0 h-auto min-w-0 sm:min-w-[240px]") 
     : currentSizeClass;
+
+  const accentStyle = config.accentColor ? {
+    borderColor: `${config.accentColor}40`,
+    boxShadow: `0 0 20px -10px ${config.accentColor}30`,
+  } : {};
 
   const renderContent = (isMaximizedView = false) => (
     <>
@@ -233,7 +288,7 @@ export function WidgetCard({
           {isMaximizedView && (
             <>
               <div className="hidden sm:flex items-center scale-[0.85] origin-right mr-3 pr-3 border-r border-border/40 opacity-80">
-                <Clock />
+                <ClockIcon />
               </div>
               <button
                 onClick={handleCopyConfig}
@@ -267,8 +322,8 @@ export function WidgetCard({
         )}
         {!isLoading && !error && parsedData !== null && parsedData !== undefined && (
           <div className={cn(
-            "flex w-full flex-col justify-end",
-            config.type === "stat" ? "h-full" : "absolute inset-0 pt-4" 
+            "flex w-full flex-col justify-center",
+            isStat ? "h-full" : "absolute inset-0 pt-4" 
           )}>
             {config.type === "stat" && (
               <AnimatedStat
@@ -316,6 +371,75 @@ export function WidgetCard({
                 className="pt-2 pb-1"
               />
             )}
+            {config.type === "iframe" && (
+              <div className="flex-1 w-full h-full min-h-[200px] overflow-hidden rounded-lg bg-black/5">
+                <iframe 
+                  src={config.iframeUrl || config.api} 
+                  className="w-full h-full border-none pointer-events-auto"
+                  title={config.label}
+                />
+              </div>
+            )}
+            {config.type === "list" && Array.isArray(parsedData) && (
+              <div className="flex-1 w-full overflow-y-auto space-y-1 scrollbar-none">
+                {parsedData.map((item: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-sm bg-muted/5 border border-border/30 hover:bg-muted/10 transition-colors">
+                    <span className="text-xs font-medium truncate flex-1">{item.label || item.name || String(item)}</span>
+                    {item.value && <span className="text-[10px] font-mono font-bold text-muted">{item.value}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {config.type === "clock" && (
+              <div className="flex flex-col items-center justify-center py-4">
+                {config.displayType === "analog" ? (
+                  <AnalogClock />
+                ) : (
+                  <div className="scale-125">
+                    <ClockIcon />
+                  </div>
+                )}
+              </div>
+            )}
+            {config.type === "status" && (
+              <div className="flex flex-col items-center justify-center gap-4 py-4">
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center shadow-lg animate-pulse-subtle border-4",
+                  parsedData ? "bg-up/10 border-up/20 text-up" : "bg-down/10 border-down/20 text-down"
+                )}>
+                  <Zap size={32} fill="currentColor" className="opacity-80" />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                   <span className={cn("text-lg font-black uppercase tracking-tighter", parsedData ? "text-up" : "text-down")}>
+                     {parsedData ? "SYSTEM ONLINE" : "SYSTEM DOWN"}
+                   </span>
+                   <span className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] font-bold">
+                     Last Checked: {new Date().toLocaleTimeString()}
+                   </span>
+                </div>
+              </div>
+            )}
+            {config.type === "progress" && (
+              <div className="flex flex-col gap-4 py-2 px-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono tracking-tighter">
+                    {Number(parsedData).toFixed(1)}%
+                  </span>
+                  <div className="h-6 w-px bg-border" />
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest pl-4">Capacity</span>
+                </div>
+                <div className="w-full h-3 bg-muted/10 rounded-full overflow-hidden border border-border/40">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, Math.max(0, Number(parsedData)))}%` }}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-1000",
+                      Number(parsedData) > 90 ? "bg-down" : Number(parsedData) > 70 ? "bg-warning" : "bg-up"
+                    )}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -339,12 +463,19 @@ export function WidgetCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
+        style={accentStyle}
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel p-4 transition-colors",
+          "relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel/70 backdrop-blur-2xl p-4 transition-all duration-500 hover:shadow-xl hover:shadow-foreground/5 hover:-translate-y-0.5 group",
           finalSizeClass,
           !isStat && "@container"
         )}
       >
+        {config.accentColor && (
+          <div 
+            className="absolute top-0 right-0 w-24 h-24 blur-[60px] opacity-10 pointer-events-none rounded-full"
+            style={{ backgroundColor: config.accentColor }}
+          />
+        )}
         {renderContent()}
       </motion.div>
 

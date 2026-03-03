@@ -33,7 +33,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon 
+  ExternalLink, X as CloseIcon, Download, Upload 
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -52,14 +52,20 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const workspaceId = searchParams.get("workspace");
   const maximizedWidgetId = searchParams.get("widget");
   
-  const handleParamChange = (key: string, value: string | null) => {
+  const handleParamsChange = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
     router.replace(`/?${params.toString()}`, { scroll: false });
+  };
+
+  const handleParamChange = (key: string, value: string | null) => {
+    handleParamsChange({ [key]: value });
   };
   
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -79,8 +85,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const setIsModalOpen = (open: boolean) => {
     if (!open) {
-      handleParamChange("modal", null);
-      handleParamChange("editId", null);
+      handleParamsChange({
+        modal: null,
+        editId: null
+      });
       setWidgetToEdit(null);
     } else {
       handleParamChange("modal", "new");
@@ -144,10 +152,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const widget = tempWidgets.find(w => w.config.id === id);
     if (widget) {
       setWidgetToEdit(widget);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("modal", "edit");
-      params.set("editId", id);
-      router.replace(`/?${params.toString()}`, { scroll: false });
+      handleParamsChange({
+        modal: "edit",
+        editId: id
+      });
     }
   };
 
@@ -332,6 +340,61 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     }
   };
 
+  const handleExport = () => {
+    const data = {
+      workspaceName: currentWorkspaceName,
+      widgets: tempWidgets.map(tw => tw.config),
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${currentWorkspaceName.toLowerCase().replace(/\s+/g, '-')}-config.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const data = JSON.parse(content);
+        
+        if (!data.widgets || !Array.isArray(data.widgets)) {
+          throw new Error("Invalid configuration file: Missing widgets array.");
+        }
+
+        const confirmed = showAlert({
+          title: "Import Dashboard",
+          message: `This will add ${data.widgets.length} widgets to your current workspace. Proceed?`,
+          type: "info",
+          showCancel: true,
+          confirmText: "Import",
+          cancelText: "Cancel"
+        }).then(conf => {
+          if (conf) {
+            data.widgets.forEach((config: WidgetConfig) => {
+              // Ensure IDs are unique to avoid collision if importing multiple times
+              const newConfig = { ...config, id: `${config.id}-${Date.now()}` };
+              saveTempWidget(newConfig, null, workspaceId);
+            });
+            setTempWidgets(getTempWidgets(workspaceId));
+            showAlert({ title: "Success", message: "Widgets imported successfully.", type: "info" });
+          }
+        });
+      } catch (err: any) {
+        showAlert({ title: "Import Error", message: err.message, type: "error" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ""; // Reset input
+  };
+
 
   return (
     <div className={cn("flex flex-col gap-4 pb-32", isTVMode && "pt-6")}>
@@ -476,6 +539,23 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               <Plus size={14} />
               Fast Widget
             </button>
+
+            <div className="h-6 w-px bg-border mx-1" />
+            
+            <button
+               onClick={handleExport}
+               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px]"
+               title="Export workspace configuration"
+            >
+              <Download size={14} />
+              <span className="hidden lg:inline">Export</span>
+            </button>
+
+            <label className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px] cursor-pointer" title="Import workspace configuration">
+              <Upload size={14} />
+              <span className="hidden lg:inline">Import</span>
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
           </div>
         </motion.div>
       ) : (

@@ -1,15 +1,19 @@
-export type WidgetType = 'stat' | 'line' | 'bar' | 'area';
+export type WidgetType = 'stat' | 'line' | 'bar' | 'area' | 'iframe' | 'list' | 'clock' | 'progress' | 'status';
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export interface WidgetConfig {
   id: string;
   label: string;
   type: WidgetType;
-  api: string;
+  api?: string;
   method?: 'GET' | 'POST';
   headers?: Record<string, string>;
   body?: any;
-  responsePath: string; // Used to pick nested data points
+  responsePath?: string; // Used to pick nested data points
+  transformer?: string; // JavaScript code to transform the response value
+  displayType?: 'analog' | 'digital'; // For clock
+  iframeUrl?: string; // For iframe widget
+  accentColor?: string; // Custom glow/border color
   xKey?: string;        // Used for charts
   yKey?: string;        // Used for charts
   size?: WidgetSize;

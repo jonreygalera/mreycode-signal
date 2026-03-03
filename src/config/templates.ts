@@ -280,3 +280,77 @@ export const TEMPLATES: WidgetTemplate[] = [
     },
   },
 ];
+
+export const NEW_TEMPLATES: WidgetTemplate[] = [
+  {
+    label: 'Iframe: External Dashboard',
+    config: {
+      id: 'tpl-iframe-ext',
+      type: 'iframe',
+      label: 'Vercel Analytics',
+      iframeUrl: 'https://www.youtube.com/embed/tgbNymZ7vqY',
+      responsePath: '',
+      size: 'lg',
+      description: 'Embed an external dashboard via Iframe',
+      accentColor: '#0070f3',
+    },
+  },
+  {
+    label: 'List: GitHub Repositories',
+    config: {
+      id: 'tpl-list-github',
+      type: 'list',
+      label: 'My Repositories',
+      api: 'https://api.github.com/users/jonreygalera/repos?sort=updated&per_page=5',
+      method: 'GET',
+      responsePath: '',
+      transformer: '(val) => val.map(r => ({ name: r.name, value: r.stargazers_count + " ★" }))',
+      size: 'md',
+      description: 'List of recent GitHub repositories',
+      source: 'api.github.com',
+    },
+  },
+  {
+    label: 'Clock: Analog & Digital',
+    config: {
+      id: 'tpl-clock-custom',
+      type: 'clock',
+      label: 'World Clock',
+      api: 'none',
+      responsePath: '',
+      displayType: 'analog',
+      size: 'sm',
+      description: 'Professional bento clock widget',
+      accentColor: '#fbbf24',
+    },
+  },
+  {
+    label: 'Progress: System Capacity',
+    config: {
+      id: 'tpl-progress-mock',
+      type: 'progress',
+      label: 'Server Storage',
+      api: '/api/mock',
+      method: 'POST',
+      body: { metric: 'random-number' },
+      responsePath: 'payload.sessions',
+      size: 'sm',
+      description: 'Visual progress bar for metrics',
+      accentColor: '#3b82f6',
+    },
+  },
+  {
+    label: 'Status: System Online',
+    config: {
+      id: 'tpl-status-check',
+      type: 'status',
+      label: 'API Gateway',
+      api: 'https://api.github.com/zen',
+      responsePath: '',
+      transformer: '(val) => !!val', // Returns true if response exists
+      size: 'sm',
+      description: 'System availability indicator',
+    },
+  },
+];
+
