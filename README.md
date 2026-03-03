@@ -25,19 +25,40 @@ npm install
 npm run dev
 ```
 
-### Adding a Widget (Snippet)
+### Adding a Widget
 
-Open `src/config/dashboard.ts` and add a config object:
+To add a new widget, append a `WidgetConfig` object to the `dashboardWidgets` array in `src/config/dashboard.ts`.
 
-```typescript
+#### Stat Widget
+
+```json
 {
-  id: 'revenue-chart',
-  type: 'line',
-  label: 'Revenue',
-  api: '/api/revenue',
-  responsePath: 'result.series',
-  xKey: 'day',
-  yKey: 'revenue'
+  "id": "tpl-stat-vibe",
+  "type": "stat",
+  "label": "Total Vibe",
+  "api": "/api/vibe",
+  "config": {
+    "prefix": "$",
+    "suffix": "!",
+    "abbreviate": true
+  }
+}
+```
+
+#### Chart Widget
+
+```json
+{
+  "id": "gold-futures-chart",
+  "type": "chart",
+  "label": "Gold Price",
+  "api": "/api/yahoo?symbol=GC=F",
+  "config": {
+    "chart": "line", // bar, area, line
+    "xKey": "timestamp",
+    "yKey": "price",
+    "prefix": "$"
+  }
 }
 ```
 

@@ -10,9 +10,9 @@ import { useSettings } from "@/context/settings-context";
 
 const CLOCK_REFRESH_INTERVAL = 300000; //  5 minutes
 
-export function Clock() {
+export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string; isWidget?: boolean }) {
   const { settings, updateSettings } = useSettings();
-  const timezone = settings.timezone;
+  const timezone = propTimezone || settings.timezone;
   const setTimezone = (tz: string) => updateSettings({ timezone: tz });
   
   const searchParams = useSearchParams();
@@ -204,6 +204,24 @@ export function Clock() {
       </motion.div>
     </motion.div>
   );
+
+  if (isWidget) {
+    return (
+      <div className="flex flex-col items-center select-none">
+        <span className="font-mono text-4xl font-black tracking-tighter text-foreground lining-nums">
+          {timeString}
+        </span>
+        <div className="flex flex-col items-center gap-0.5 mt-1">
+          <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] lining-nums">
+            {selectedTzLabel}
+          </span>
+          <span className="text-[9px] font-bold text-muted uppercase tracking-widest">
+            {dayString}, {dateString}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex items-center gap-1" ref={dropdownRef}>

@@ -21,12 +21,13 @@ type ChartProps = {
   yKey: string;
   className?: string;
   prefix?: string;
+  suffix?: string;
   source?: string;
   sourceUrl?: string;
 };
 
 // Custom tooltip for better styling
-const CustomTooltip = ({ active, payload, label, prefix }: any) => {
+const CustomTooltip = ({ active, payload, label, prefix, suffix }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="border border-border bg-panel p-2 shadow-sm font-mono text-sm leading-tight">
@@ -34,7 +35,7 @@ const CustomTooltip = ({ active, payload, label, prefix }: any) => {
           {label}
         </p>
         <p className="text-foreground tracking-tight font-medium">
-          {prefix}{payload[0].value.toLocaleString()}
+          {prefix}{payload[0].value.toLocaleString()}{suffix}
         </p>
       </div>
     );
@@ -67,7 +68,7 @@ function ChartSource({ source, sourceUrl }: { source?: string; sourceUrl?: strin
   );
 }
 
-export function WidgetLineChart({ data, xKey, yKey, className, prefix, source, sourceUrl }: ChartProps) {
+export function WidgetLineChart({ data, xKey, yKey, className, prefix, suffix, source, sourceUrl }: ChartProps) {
 
   return (
     <div className={cn("h-full w-full flex flex-col", className)}>
@@ -77,7 +78,7 @@ export function WidgetLineChart({ data, xKey, yKey, className, prefix, source, s
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" className="opacity-50" />
             <XAxis dataKey={xKey} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} minTickGap={30} />
             <YAxis hide domain={['dataMin', 'dataMax']} />
-            <Tooltip content={<CustomTooltip prefix={prefix} />} cursor={{ stroke: 'var(--color-muted)', strokeDasharray: '4 4' }} />
+            <Tooltip content={<CustomTooltip prefix={prefix} suffix={suffix} />} cursor={{ stroke: 'var(--color-muted)', strokeDasharray: '4 4' }} />
             <Line type="monotone" dataKey={yKey} stroke="var(--color-up)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "var(--color-up)" }} />
           </LineChart>
         </ResponsiveContainer>
@@ -87,7 +88,7 @@ export function WidgetLineChart({ data, xKey, yKey, className, prefix, source, s
   );
 }
 
-export function WidgetAreaChart({ data, xKey, yKey, className, prefix, source, sourceUrl }: ChartProps) {
+export function WidgetAreaChart({ data, xKey, yKey, className, prefix, suffix, source, sourceUrl }: ChartProps) {
   return (
     <div className={cn("h-full w-full flex flex-col", className)}>
       <div className="flex-1 min-h-0">
@@ -102,7 +103,7 @@ export function WidgetAreaChart({ data, xKey, yKey, className, prefix, source, s
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" className="opacity-50" />
             <XAxis dataKey={xKey} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} minTickGap={30} />
             <YAxis hide domain={['dataMin', 'dataMax']} />
-            <Tooltip content={<CustomTooltip prefix={prefix} />} cursor={{ stroke: 'var(--color-muted)', strokeDasharray: '4 4' }} />
+            <Tooltip content={<CustomTooltip prefix={prefix} suffix={suffix} />} cursor={{ stroke: 'var(--color-muted)', strokeDasharray: '4 4' }} />
             <Area type="monotone" dataKey={yKey} stroke="var(--color-up)" strokeWidth={2} fillOpacity={1} fill="url(#colorY)" />
           </AreaChart>
         </ResponsiveContainer>
@@ -112,7 +113,7 @@ export function WidgetAreaChart({ data, xKey, yKey, className, prefix, source, s
   );
 }
 
-export function WidgetBarChart({ data, xKey, yKey, className, prefix, source, sourceUrl }: ChartProps) {
+export function WidgetBarChart({ data, xKey, yKey, className, prefix, suffix, source, sourceUrl }: ChartProps) {
   return (
     <div className={cn("h-full w-full flex flex-col", className)}>
       <div className="flex-1 min-h-0">
@@ -121,7 +122,7 @@ export function WidgetBarChart({ data, xKey, yKey, className, prefix, source, so
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" className="opacity-50" />
             <XAxis dataKey={xKey} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={<CustomTooltip prefix={prefix} />} cursor={{ fill: 'var(--color-muted)', opacity: 0.1 }} />
+            <Tooltip content={<CustomTooltip prefix={prefix} suffix={suffix} />} cursor={{ fill: 'var(--color-muted)', opacity: 0.1 }} />
             <Bar dataKey={yKey} fill="var(--color-up)" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

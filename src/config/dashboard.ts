@@ -14,7 +14,8 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Total visits on mreycode-signal.vercel.app',
     refreshInterval: 5000, 
-    color: 'up'
+    color: 'up',
+    config: {},
   },
   {
     id: 'jonreygalera-github-repos',
@@ -28,7 +29,8 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=repositories',
-    color: 'info'
+    color: 'info',
+    config: {},
   },
   {
     id: 'jonreygalera-github-followers',
@@ -42,7 +44,8 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=followers',
-    color: 'up'
+    color: 'up',
+    config: {},
   },
   {
     id: 'jonreygalera-github-following',
@@ -56,10 +59,11 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 3600000,
     source: 'GitHub',
     sourceUrl: 'https://github.com/jonreygalera?tab=following',
-    color: 'muted'
+    color: 'muted',
+    config: {},
   },
   {
-    id: 'jonreygalera-vercel-app-total-visits',
+    id: 'jonreygalera.vercel.app-total-visits',
     type: 'stat',
     label: 'jonreygalera.vercel.app Total Visits',
     api: 'https://api-mreyai.vercel.app/api/guest/stats',
@@ -71,7 +75,8 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Total visits on jonreygalera.vercel.app',
     refreshInterval: 5000, 
-    color: 'up'
+    color: 'up',
+    config: {},
   },
   {
     id: 'mrey-ai-vercel-app-total-visits',
@@ -86,7 +91,8 @@ export const dashboardWidgets: WidgetConfig[] = [
     size: 'sm',
     description: 'Total visits on mrey-ai.vercel.app',
     refreshInterval: 5000, 
-    color: 'up'
+    color: 'up',
+    config: {},
   },
   {
     id: "baguio-city-ph-temperature",
@@ -99,13 +105,15 @@ export const dashboardWidgets: WidgetConfig[] = [
     description: "Baguio City PH Temperature",
     refreshInterval: 3600000,
     sourceUrl: "https://api.open-meteo.com/v1/forecast?latitude=16.4023&longitude=120.5960&current_weather=true",
-    suffix: "°C",
     colorRules: {
       rules: [
         { condition: 'below', value: 18, color: 'up' },   // Nice & Cold (Green)
         { condition: 'above', value: 25, color: 'down' }, // Too Hot (Red)
       ]
-    }
+    },
+    config: {
+      suffix: "°C",
+    },
   },
   {
     id: "tpl-gold-price-6247",
@@ -116,11 +124,13 @@ export const dashboardWidgets: WidgetConfig[] = [
     responsePath: "series.0.price",
     size: "sm",
     description: "Today's BTC-USD price",
-    prefix: "$",
     refreshInterval: 300000,
     source: "finance.yahoo.com",
     sourceUrl: "https://finance.yahoo.com/quote/BTC-USD",
-    color: "up"
+    color: "up",
+    config: {
+      prefix: "$",
+    },
   },  
   {
     id: 'philippines-population',
@@ -133,6 +143,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     description: 'Current population of the Philippines',
     refreshInterval: 3600000, // 1 hour (doesn't change fast)
     sourceUrl: 'https://restcountries.com/v3.1/name/philippines',
+    config: {},
   },
   {
     id: 'random-number',
@@ -155,27 +166,31 @@ export const dashboardWidgets: WidgetConfig[] = [
       aboveZero: "up",      // Green if profit
       belowZero: "down",    // Red if loss
       atZero: "muted"       // Gray if neutral
-    } 
+    },
+    config: {},
   },
   {
     id: 'gold-futures-chart',
-    type: 'line',
+    type: 'chart',
     label: 'Gold Futures (GC=F) - 5m',
     api: '/api/yahoo?symbol=GC=F&range=1d&interval=5m',
     method: 'GET',
     responsePath: 'series',
-    xKey: 'timestamp',
-    yKey: 'price',
     size: 'lg',
     description: 'Today\'s 5-minute interval price action for Gold',
-    prefix: '$',
     refreshInterval: 300000, // 5 minutes matching candle interval
     source: 'finance.yahoo.com',
     sourceUrl: 'https://finance.yahoo.com/quote/GC=F',
+    config: {
+      chart: 'line',
+      xKey: 'timestamp',
+      yKey: 'price',
+      prefix: '$',
+    },
   },
   {
     id: 'traffic-sources-bar',
-    type: 'bar',
+    type: 'chart',
     label: 'Traffic Sources - DEMO',
     api: '/api/mock',
     method: 'POST',
@@ -183,24 +198,30 @@ export const dashboardWidgets: WidgetConfig[] = [
       metric: 'traffic-sources',
     },
     responsePath: 'stats.trafficData',
-    xKey: 'source',
-    yKey: 'visits',
     size: 'md',
     description: 'Distribution of traffic sources',
     refreshInterval: 10000,
+    config: {
+      chart: 'bar',
+      xKey: 'source',
+      yKey: 'visits',
+    },
   },
   {
     id: 'revenue-trends-area',
-    type: 'area',
+    type: 'chart',
     label: 'Revenue Trends - DEMO',
     api: '/api/mock?type=chart-revenue',
     method: 'GET',
     responsePath: 'result.series',
-    xKey: 'day',
-    yKey: 'revenue',
     size: 'lg',
     description: 'Weekly revenue growth visualization',
     refreshInterval: 60000,
-    prefix: '$',
+    config: {
+      chart: 'area',
+      xKey: 'day',
+      yKey: 'revenue',
+      prefix: '$',
+    },
   },
 ];

@@ -24,12 +24,69 @@ const getStorageKey = (workspaceId?: string | null) =>
 const getHistoryKey = (workspaceId?: string | null) => 
   workspaceId ? `${HISTORY_KEY_BASE}_${workspaceId}` : HISTORY_KEY_BASE;
 
+const migrateWidgetConfig = (oldConfig: any): WidgetConfig => {
+  if (oldConfig.config) return oldConfig as WidgetConfig;
+
+  const {
+    type,
+    displayType,
+    timezone,
+    iframeUrl,
+    xKey,
+    yKey,
+    prefix,
+    suffix,
+    abbreviate,
+    ...base
+  } = oldConfig;
+
+  let newConfig: any = { ...base };
+
+  if (type === 'line' || type === 'bar' || type === 'area') {
+    newConfig.type = 'chart';
+    newConfig.config = {
+      chart: type,
+      xKey: xKey || '',
+      yKey: yKey || '',
+      prefix,
+      suffix,
+    };
+  } else if (type === 'stat') {
+    newConfig.type = 'stat';
+    newConfig.config = {
+      prefix,
+      suffix,
+      abbreviate,
+    };
+  } else if (type === 'clock') {
+    newConfig.type = 'clock';
+    newConfig.config = {
+      displayType: displayType || 'digital',
+      timezone,
+    };
+  } else if (type === 'iframe') {
+    newConfig.type = 'iframe';
+    newConfig.config = {
+      iframeUrl,
+    };
+  } else {
+    newConfig.type = type;
+    newConfig.config = {};
+  }
+
+  return newConfig as WidgetConfig;
+};
+
 export const getTempWidgets = (workspaceId?: string | null): TempWidget[] => {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(getStorageKey(workspaceId));
   if (!stored) return [];
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    return parsed.map((tw: any) => ({
+      ...tw,
+      config: migrateWidgetConfig(tw.config)
+    }));
   } catch (e) {
     return [];
   }
@@ -59,7 +116,11 @@ export const getHistoryWidgets = (workspaceId?: string | null): TempWidget[] => 
   const stored = localStorage.getItem(getHistoryKey(workspaceId));
   if (!stored) return [];
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    return parsed.map((tw: any) => ({
+      ...tw,
+      config: migrateWidgetConfig(tw.config)
+    }));
   } catch (e) {
     return [];
   }

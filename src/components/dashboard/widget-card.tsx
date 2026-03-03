@@ -15,13 +15,38 @@ import { useSettings } from "@/context/settings-context";
 import { Clock as ClockIcon } from "../clock";
 
 // Helper for Analog Clock
-function AnalogClock({ className }: { className?: string }) {
+function AnalogClock({ className, timezone }: { className?: string; timezone?: string }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
+    const timer = setInterval(() => {
+      if (timezone) {
+        try {
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            year: 'numeric', month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: 'numeric', second: 'numeric',
+            hour12: false
+          });
+          const parts = formatter.formatToParts(now);
+          const map: any = {};
+          parts.forEach(p => map[p.type] = p.value);
+          
+          const tzDate = new Date(
+            parseInt(map.year), parseInt(map.month) - 1, parseInt(map.day),
+            parseInt(map.hour), parseInt(map.minute), parseInt(map.second)
+          );
+          setTime(tzDate);
+        } catch (e) {
+          setTime(new Date());
+        }
+      } else {
+        setTime(new Date());
+      }
+    }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [timezone]);
 
   const seconds = time.getSeconds() * 6;
   const minutes = time.getMinutes() * 6;
@@ -205,7 +230,7 @@ export function WidgetCard({
   };
 
   const isStat = config.type === "stat" || config.type === "status" || config.type === "clock";
-  const currentSizeClass = sizeClasses[config.size || (isStat ? "sm" : "sm")];
+  const currentSizeClass = sizeClasses[config.size || "sm"];
   const finalSizeClass = isStat 
     ? cn(currentSizeClass, "min-h-0 h-auto min-w-0 sm:min-w-[240px]") 
     : currentSizeClass;
@@ -328,53 +353,60 @@ export function WidgetCard({
             {config.type === "stat" && (
               <AnimatedStat
                 value={parsedData as number}
-                prefix={config.prefix}
-                suffix={config.suffix}
+                prefix={config.config?.prefix}
+                suffix={config.config?.suffix}
                 source={sourceLabel}
                 sourceUrl={config.sourceUrl}
                 size={isMaximizedView ? "lg" : "md"}
-                abbreviate={config.abbreviate}
+                abbreviate={config.config?.abbreviate}
                 color={config.color}
                 colorRules={config.colorRules}
               />
             )}
-            {config.type === "line" && Array.isArray(parsedData) && (
-              <WidgetLineChart
-                data={parsedData}
-                xKey={config.xKey || ""}
-                yKey={config.yKey || ""}
-                prefix={config.prefix}
-                source={sourceLabel}
-                sourceUrl={config.sourceUrl}
-                className="pt-2 pb-1"
-              />
-            )}
-            {config.type === "area" && Array.isArray(parsedData) && (
-              <WidgetAreaChart
-                data={parsedData}
-                xKey={config.xKey || ""}
-                yKey={config.yKey || ""}
-                prefix={config.prefix}
-                source={sourceLabel}
-                sourceUrl={config.sourceUrl}
-                className="pt-2 pb-1"
-              />
-            )}
-            {config.type === "bar" && Array.isArray(parsedData) && (
-              <WidgetBarChart
-                data={parsedData}
-                xKey={config.xKey || ""}
-                yKey={config.yKey || ""}
-                prefix={config.prefix}
-                source={sourceLabel}
-                sourceUrl={config.sourceUrl}
-                className="pt-2 pb-1"
-              />
+            {config.type === "chart" && Array.isArray(parsedData) && (
+              <>
+                {config.config.chart === "line" && (
+                  <WidgetLineChart
+                    data={parsedData}
+                    xKey={config.config.xKey}
+                    yKey={config.config.yKey}
+                    prefix={config.config.prefix}
+                    suffix={config.config.suffix}
+                    source={sourceLabel}
+                    sourceUrl={config.sourceUrl}
+                    className="pt-2 pb-1"
+                  />
+                )}
+                {config.config.chart === "area" && (
+                  <WidgetAreaChart
+                    data={parsedData}
+                    xKey={config.config.xKey}
+                    yKey={config.config.yKey}
+                    prefix={config.config.prefix}
+                    suffix={config.config.suffix}
+                    source={sourceLabel}
+                    sourceUrl={config.sourceUrl}
+                    className="pt-2 pb-1"
+                  />
+                )}
+                {config.config.chart === "bar" && (
+                  <WidgetBarChart
+                    data={parsedData}
+                    xKey={config.config.xKey}
+                    yKey={config.config.yKey}
+                    prefix={config.config.prefix}
+                    suffix={config.config.suffix}
+                    source={sourceLabel}
+                    sourceUrl={config.sourceUrl}
+                    className="pt-2 pb-1"
+                  />
+                )}
+              </>
             )}
             {config.type === "iframe" && (
               <div className="flex-1 w-full h-full min-h-[200px] overflow-hidden rounded-lg bg-black/5">
                 <iframe 
-                  src={config.iframeUrl || config.api} 
+                  src={config.config?.iframeUrl || config.api} 
                   className="w-full h-full border-none pointer-events-auto"
                   title={config.label}
                 />
@@ -392,11 +424,11 @@ export function WidgetCard({
             )}
             {config.type === "clock" && (
               <div className="flex flex-col items-center justify-center py-4">
-                {config.displayType === "analog" ? (
-                  <AnalogClock />
+                {config.config?.displayType === "analog" ? (
+                  <AnalogClock timezone={config.config?.timezone} />
                 ) : (
                   <div className="scale-125">
-                    <ClockIcon />
+                    <ClockIcon timezone={config.config?.timezone} isWidget />
                   </div>
                 )}
               </div>
