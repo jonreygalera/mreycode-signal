@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
+import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown, Copy, Check, Search, Type } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { TEMPLATES, WidgetTemplate } from "@/config/templates";
@@ -27,6 +27,8 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
   const [error, setError] = useState<string | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTemplateLabel, setSelectedTemplateLabel] = useState<string | null>(null);
 
   // Sync state if initialConfig changes (when modal opens for a different widget)
   useEffect(() => {
@@ -154,28 +156,71 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     )}
                   </button>
                 </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <select 
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const templateIdx = parseInt(e.target.value);
-                        const template = TEMPLATES[templateIdx];
-                        const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
-                        setConfigText(JSON.stringify({ ...template.config, id: newId }, null, 2));
-                      }
-                    }}
-                    className="flex-1 bg-muted/20 border border-border/50 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all cursor-pointer outline-none"
-                  >
-                    <option value="">Select Template...</option>
-                    {TEMPLATES.map((t, i) => (
-                      <option key={i} value={i}>{t.label}</option>
-                    ))}
-                  </select>
-                </div>
+                {!initialConfig && (
+                  <div className="space-y-4 pt-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/50" size={14} />
+                      <input
+                        type="text"
+                        placeholder="Search templates..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-background border border-border rounded-[4px] pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-1.5 max-h-[220px] overflow-y-auto custom-scrollbar pr-2 p-1 bg-background/50 border border-border/30 rounded-lg">
+                      {TEMPLATES
+                        .filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map((template, i) => (
+                          <button
+                            key={`${template.config.id}-${i}`}
+                            type="button"
+                            onClick={() => {
+                              const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
+                              setConfigText(JSON.stringify({ ...template.config, id: newId }, null, 2));
+                              setSelectedTemplateLabel(template.label);
+                              setError(null);
+                            }}
+                            className={cn(
+                              "w-full flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
+                              selectedTemplateLabel === template.label
+                                ? "bg-foreground/5 border-foreground/10"
+                                : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/30"
+                            )}
+                          >
+                            <div className="flex flex-col items-start gap-1 text-left">
+                              <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                                selectedTemplateLabel === template.label ? "text-foreground" : "text-muted group-hover:text-foreground"
+                              )}>
+                                {template.label}
+                              </span>
+                               <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest flex items-center gap-1">
+                                 <Type size={8} /> {template.config.type}
+                               </span>
+                            </div>
+                            {selectedTemplateLabel === template.label && (
+                              <div className="p-0.5 rounded-sm bg-foreground text-background">
+                                <Check size={10} />
+                              </div>
+                            )}
+                          </button>
+                      ))}
+                      {TEMPLATES.filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                        <div className="py-8 text-center border border-dashed border-border/40 rounded-lg">
+                          <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic">No templates found</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <textarea
                   value={configText}
                   onChange={(e) => {
                     setConfigText(e.target.value);
+                    setSelectedTemplateLabel(null);
                     setError(null);
                   }}
                   placeholder='{ "id": "my-widget", "type": "stat", "label": "My Widget", ... }'
