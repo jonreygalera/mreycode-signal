@@ -140,50 +140,6 @@ export const dashboardWidgets: WidgetConfig[] = [
       belowZero: "down",    // Red if loss
       atZero: "muted"       // Gray if neutral
     },
-    signals: [
-      {
-        id: 'critical-high-alert',
-        label: 'Critical High Vibe!',
-        condition: 'above',
-        threshold: 3000,
-        action: ['pulse', 'notify', 'sound'],
-        enabled: true,
-        cooldown: 5
-      },
-      {
-        id: 'low-vibe-warning',
-        label: 'Vibe Depletion Detected',
-        condition: 'below',
-        threshold: 0,
-        action: ['pulse'],
-        enabled: true
-      },
-      {
-        id: 'lucky-number-alert',
-        label: 'Lucky 777 Triggered!',
-        condition: 'equals',
-        threshold: 77,
-        action: ['notify', 'sound'],
-        enabled: true
-      },
-      {
-        id: 'volatility-alert',
-        label: 'High Volatility!',
-        condition: 'diff',
-        threshold: 40,
-        action: ['pulse', 'sound'],
-        enabled: true,
-        cooldown: 1
-      },
-      {
-        id: 'volatility-spike',
-        label: 'Volatility Spike Detected',
-        condition: 'diff',
-        threshold: 50, // Triggers if value changes by 50 or more
-        action: ['pulse', 'notify'],
-        enabled: true
-      }
-    ],
     config: {},
   },
   {
