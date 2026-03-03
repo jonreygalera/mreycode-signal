@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X } from "lucide-react";
+import { Clock as ClockIcon, Calendar, ChevronDown, Check, Globe, Maximize2, X, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/settings-context";
@@ -32,6 +32,7 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -74,6 +75,7 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchQuery(""); // Reset search when closing
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -275,13 +277,31 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
               <Globe size={10} className="text-muted" />
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted">Select Timezone</span>
             </div>
-            <div className="p-1 max-h-[240px] overflow-y-auto">
-              {timezones.map((tz) => (
+            
+            <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
+              <div className="relative">
+                <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search zone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-none pl-6 pr-2 py-1 text-[11px] placeholder:text-muted/50 focus:outline-none focus:ring-0"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="p-1 max-h-[240px] overflow-y-auto custom-scrollbar">
+              {timezones
+                .filter(tz => tz.toLowerCase().includes(searchQuery.toLowerCase().replace(/ /g, "_")))
+                .map((tz) => (
                 <button
                    key={tz}
                    onClick={() => {
                      setTimezone(tz);
                      setIsOpen(false);
+                     setSearchQuery("");
                    }}
                    className={cn(
                      "flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors",
@@ -294,6 +314,11 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
                    {timezone === tz && <Check size={12} className="shrink-0" />}
                 </button>
               ))}
+              {timezones.filter(tz => tz.toLowerCase().includes(searchQuery.toLowerCase().replace(/ /g, "_"))).length === 0 && (
+                <div className="px-2 py-4 text-center">
+                  <span className="text-[10px] text-muted italic">No matching zones found</span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
