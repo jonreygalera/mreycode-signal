@@ -287,8 +287,8 @@ export const NEW_TEMPLATES: WidgetTemplate[] = [
     config: {
       id: 'tpl-iframe-ext',
       type: 'iframe',
-      label: 'Vercel Analytics',
-      iframeUrl: 'https://www.youtube.com/embed/tgbNymZ7vqY',
+      label: '🐱💻 When Your Cat Takes Over Your PC! 😹💤',
+      iframeUrl: 'https://www.youtube.com/embed/dn5OzbHrkp4',
       responsePath: '',
       size: 'lg',
       description: 'Embed an external dashboard via Iframe',

@@ -320,7 +320,7 @@ export function WidgetCard({
             Failed to load data.
           </div>
         )}
-        {!isLoading && !error && parsedData !== null && parsedData !== undefined && (
+        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress'].includes(config.type)) && (
           <div className={cn(
             "flex w-full flex-col justify-center",
             isStat ? "h-full" : "absolute inset-0 pt-4" 
