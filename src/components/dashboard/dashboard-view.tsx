@@ -40,9 +40,11 @@ import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useAlert } from "@/context/alert-context";
 import { RefreshButton } from "../refresh-button";
+import { useSettings } from "@/context/settings-context";
 
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
+  const { settings, timeLeft } = useSettings();
   const { isTVMode, toggleTVMode } = useTVMode();
 
   const { showAlert } = useAlert();
@@ -559,19 +561,75 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           </div>
         </motion.div>
       ) : (
-        <div className="sticky top-0 z-20 bg-background/80 dark:bg-background/80 backdrop-blur-lg shadow-md rounded-b-lg flex items-center justify-between px-4 py-2 mb-4">
-          <button
-            onClick={toggleTVMode}
-            className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors border border-border/40 rounded-[2px] bg-panel/50 backdrop-blur-sm"
-            title="Exit TV Mode (Esc)"
-          >
-            <MonitorOff size={12} />
-            Exit TV Mode
-          </button>
+        <div className="sticky top-0 z-20 bg-background/40 dark:bg-background/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 py-3 mb-6 transition-all duration-500 hover:bg-background/60 group">
           <div className="flex items-center gap-4">
-            <RefreshButton />
-            <ThemeToggle />
-            <Clock />
+            <button
+              onClick={toggleTVMode}
+              className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all border border-border/20 rounded-md bg-panel/30 hover:bg-panel/50 backdrop-blur-sm"
+              title="Exit TV Mode (Esc)"
+            >
+              <MonitorOff size={14} />
+              Exit Mode
+            </button>
+            <div className="h-4 w-px bg-border/30 mx-1" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-1">Active View</span>
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-tight leading-none">
+                {currentWorkspaceName}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6">
+            {timeLeft !== null && settings.tvCarouselEnabled && (
+              <div className="flex items-center gap-3 px-4 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
+                <div className="relative flex items-center justify-center w-5 h-5">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="transparent"
+                      className="text-foreground/5"
+                    />
+                    <motion.circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="transparent"
+                      strokeDasharray={50}
+                      initial={{ strokeDashoffset: 50 }}
+                      animate={{ 
+                        strokeDashoffset: 50 - (50 * (timeLeft / settings.tvCarouselInterval))
+                      }}
+                      transition={{ duration: 0.5, ease: "linear" }}
+                      className="text-primary"
+                    />
+                  </svg>
+                  <span className="absolute text-[8px] font-black text-foreground">
+                    {timeLeft}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">Carousel Active</span>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-3 py-1 bg-foreground/5 rounded-full border border-border/10">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Live</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <RefreshButton />
+              <ThemeToggle />
+              <div className="h-6 w-px bg-border/20 mx-1" />
+              <Clock />
+            </div>
           </div>
         </div>
       )}

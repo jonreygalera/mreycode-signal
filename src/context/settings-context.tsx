@@ -13,6 +13,7 @@ interface SettingsContextType {
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetSettings: () => void;
   triggerRefresh: () => void;
+  timeLeft: number | null;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -20,12 +21,10 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { mutate } = useSWRConfig();
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const { isTVMode } = useTVMode();
-  const router = useRouter();
 
   const triggerRefresh = () => {
-    // Hard refresh the entire page
     window.location.reload();
   };
 
@@ -70,7 +69,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       settings, 
       updateSettings, 
       resetSettings, 
-      triggerRefresh
+      triggerRefresh,
+      timeLeft
     }}>
       <div className="relative min-h-screen">
         <Suspense fallback={null}>
@@ -78,7 +78,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             isTVMode={isTVMode} 
             settings={settings} 
             isInitialized={isInitialized} 
-            router={router} 
+            onTimeUpdate={setTimeLeft}
           />
         </Suspense>
         {settings.backgroundImage && (
@@ -107,42 +107,56 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 function SettingsSync({ 
   isTVMode, 
   settings, 
-  isInitialized, 
-  router 
+  isInitialized,
+  onTimeUpdate
 }: { 
   isTVMode: boolean, 
   settings: AppSettings, 
-  isInitialized: boolean, 
-  router: any 
+  isInitialized: boolean,
+  onTimeUpdate: (time: number | null) => void
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   useEffect(() => {
-    if (!isTVMode || !settings.tvCarouselEnabled || !isInitialized) return;
+    if (!isTVMode || !settings.tvCarouselEnabled || !isInitialized) {
+      onTimeUpdate(null);
+      return;
+    }
 
-    const intervalMs = Math.max(30, settings.tvCarouselInterval) * 1000;
+    const totalSeconds = Math.max(30, settings.tvCarouselInterval);
+    let remaining = totalSeconds;
     
-    const timer = setInterval(() => {
-      const workspaces = getWorkspaces();
-      const currentWorkspace = searchParams.get("workspace");
-      
-      const viewList = [null, ...workspaces.map(ws => ws.id)];
-      const currentIndex = viewList.indexOf(currentWorkspace as any);
-      const nextIndex = (currentIndex + 1) % viewList.length;
-      const nextWorkspace = viewList[nextIndex];
+    onTimeUpdate(remaining);
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (nextWorkspace) {
-        params.set("workspace", nextWorkspace);
-      } else {
-        params.delete("workspace");
+    const timer = setInterval(() => {
+      remaining -= 1;
+      
+      if (remaining <= 0) {
+        const workspaces = getWorkspaces();
+        const currentWorkspace = searchParams.get("workspace");
+        
+        const viewList = [null, ...workspaces.map(ws => ws.id)];
+        const currentIndex = viewList.indexOf(currentWorkspace as any);
+        const nextIndex = (currentIndex + 1) % viewList.length;
+        const nextWorkspace = viewList[nextIndex];
+
+        const params = new URLSearchParams(searchParams.toString());
+        if (nextWorkspace) {
+          params.set("workspace", nextWorkspace);
+        } else {
+          params.delete("workspace");
+        }
+        
+        router.push(`/?${params.toString()}`);
+        remaining = totalSeconds;
       }
       
-      router.push(`/?${params.toString()}`);
-    }, intervalMs);
+      onTimeUpdate(remaining);
+    }, 1000);
 
     return () => clearInterval(timer);
-  }, [isTVMode, settings.tvCarouselEnabled, settings.tvCarouselInterval, isInitialized, searchParams, router]);
+  }, [isTVMode, settings.tvCarouselEnabled, settings.tvCarouselInterval, isInitialized, searchParams, router, onTimeUpdate]);
 
   return null;
 }

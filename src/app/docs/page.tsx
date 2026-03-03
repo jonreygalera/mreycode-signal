@@ -6,49 +6,28 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { appConfig } from "@/config/app";
 
-const SECTIONS = [
+import { WIDGET_DOCS } from "@/config/docs";
+
+const SECTIONS = WIDGET_DOCS.map(section => ({
+  ...section,
+  icon: section.title === "Core Configuration" ? <Terminal className="w-5 h-5" /> :
+        section.title === "Data Fetching" ? <RefreshCw className="w-5 h-5" /> :
+        section.title === "Widget Config (Nested)" ? <Layers className="w-5 h-5" /> :
+        section.title === "Logic & Aesthetics" ? <Palette className="w-5 h-5" /> :
+        <Code className="w-5 h-5" />
+}));
+
+const GUIDES = [
   {
-    title: "Core Configuration",
-    icon: <Terminal className="w-5 h-5" />,
-    description: "The essential properties required to define a widget.",
-    fields: [
-      { name: "id", type: "string", required: true, desc: "A unique identifier for the widget instance. Used for React keys and internal lookups." },
-      { name: "label", type: "string", required: true, desc: "The display name shown at the top of the widget card." },
-      { name: "type", type: "'stat' | 'line' | 'bar' | 'area'", required: true, desc: "The visualization engine to use for rendering the data." },
-      { name: "api", type: "string", required: true, desc: "The backend endpoint URL. Supports both absolute URLs and local internal API routes." },
-      { name: "responsePath", type: "string", required: true, desc: "Dot-notation path to extract data from JSON response (e.g., 'data.metrics.sessions')." },
-    ],
-  },
-  {
-    title: "Visual & Layout",
-    icon: <Layers className="w-5 h-5" />,
-    description: "Control how your widget looks and spans across the dashboard grid.",
-    fields: [
-      { name: "size", type: "'sm' | 'md' | 'lg' | 'xl'", desc: "Grid footprint. 'sm' is standard 1/3 width, 'lg' spans 2/3, and 'xl' takes the full width." },
-      { name: "prefix / suffix", type: "string", desc: "Text to prepend or append to the value (e.g., '$' prefix or '%' suffix)." },
-      { name: "description", type: "string", desc: "Sub-text shown under the label for extra context." },
-      { name: "source / sourceUrl", type: "string", desc: "Attribution shown at the bottom of the card. If omitted, the API hostname is used." },
-    ],
-  },
-  {
-    title: "Dynamic Behavior",
-    icon: <RefreshCw className="w-5 h-5" />,
-    description: "Configure how data is updated and processed.",
-    fields: [
-      { name: "refreshInterval", type: "number", desc: "Polling interval in milliseconds. Set to 0 to disable auto-refresh." },
-      { name: "abbreviate", type: "boolean", desc: "If true, large numbers like 1,500,000 become 1.5M. Includes a hover-to-view-full tooltip." },
-      { name: "method / headers / body", type: "Fetch Options", desc: "Configure standard HTTP request options for the API call." },
-    ],
-  },
-  {
-    title: "Intelligent Coloring",
+    title: "Vibe Coding Approach",
     icon: <Palette className="w-5 h-5" />,
-    description: "Apply semantic colors based on theme or data values.",
-    fields: [
-      { name: "color", type: "ThemeColor", desc: "Static color: 'up' (green), 'down' (red), 'warning' (orange), 'info' (blue), or 'muted'." },
-      { name: "colorRules", type: "ColorRuleSet", desc: "Dynamic rules: Define conditions like 'above 1000' or 'below 0' to set state reactively." },
-    ],
+    content: "Signal is built with a 'Vibe Coding' philosophy. This means prioritizing rapid iteration, elegant design tokens, and human-readable configurations over rigid boilerplates. When adding widgets, focus on the 'vibe'—the colors, the glow, and the real-time feel."
   },
+  {
+    title: "The Fast Widget Flow",
+    icon: <Terminal className="w-5 h-5" />,
+    content: "Need a metric quickly? Use the 'Fast Widget' button. Paste your JSON, deploy instantly to local storage, and see it go live. Once you're happy with the vibe, you can permanently add it to `src/config/dashboard.ts`."
+  }
 ];
 
 export default function DocsPage() {
@@ -84,7 +63,12 @@ export default function DocsPage() {
           {/* Quick Nav (Left) */}
           <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-fit">
             <nav className="space-y-1">
-              <h3 className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mb-4">On this page</h3>
+              <h3 className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mb-4">Introduction</h3>
+              <a href="#guides" className="block px-3 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-muted/5 rounded-md transition-all">
+                Getting Started
+              </a>
+              
+              <h3 className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mt-8 mb-4">Widget Schema</h3>
               {SECTIONS.map((section) => (
                 <a
                   key={section.title}
@@ -99,6 +83,28 @@ export default function DocsPage() {
 
           {/* Main Content (Right) */}
           <main className="lg:col-span-9 space-y-20">
+            {/* Introduction & Guides */}
+            <section id="guides" className="scroll-mt-24 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {GUIDES.map((guide, idx) => (
+                  <motion.div
+                    key={guide.title}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="p-6 rounded-xl border border-border bg-panel shadow-sm group hover:border-muted/50 transition-all"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-foreground/5 flex items-center justify-center text-muted group-hover:text-foreground transition-colors mb-4">
+                      {guide.icon}
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground uppercase tracking-tight mb-2">{guide.title}</h3>
+                    <p className="text-sm text-muted/70 leading-relaxed">{guide.content}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+
             {SECTIONS.map((section, idx) => (
               <motion.section 
                 key={section.title}
@@ -122,13 +128,13 @@ export default function DocsPage() {
                 <div className="grid gap-4">
                   {section.fields.map((field: any) => (
                     <div 
-                      key={field.name}
+                      key={field.key}
                       className="group p-5 rounded-lg border border-border bg-panel/50 hover:border-muted/50 transition-all shadow-sm"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <code className="text-sm font-bold text-foreground bg-foreground/5 px-2 py-1 rounded">
-                            {field.name}
+                            {field.key}
                           </code>
                           <span className="text-xs font-mono text-muted italic">
                             {field.type}
@@ -142,7 +148,7 @@ export default function DocsPage() {
                         )}
                       </div>
                       <p className="text-sm text-muted/80 leading-relaxed group-hover:text-foreground/80 transition-colors">
-                        {field.desc}
+                        {field.description}
                       </p>
                     </div>
                   ))}
@@ -168,14 +174,15 @@ export default function DocsPage() {
   "id": "global-population",
   "label": "World Population",
   "type": "stat",
-  "api": "https://disease.sh/v3/covid-19/all",
-  "responsePath": "population",
+  "api": "https://restcountries.com/v3.1/name/philippines",
+  "responsePath": "0.population",
   "size": "sm",
-  "refreshInterval": 86400000,
-  "abbreviate": true,
-  "colorRules": {
-    "aboveZero": "info"
+  "refreshInterval": 3600000,
+  "config": {
+    "suffix": " souls",
+    "abbreviate": true
   },
+  "color": "info",
   "description": "Total estimated global residents"
 }`}
                 </pre>

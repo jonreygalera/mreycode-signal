@@ -7,29 +7,9 @@ import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { TEMPLATES, NEW_TEMPLATES, WidgetTemplate } from "@/config/templates";
 
-const CONFIG_DOCS = [
-  { key: "id", type: "string", description: "Unique identifier for the widget", required: true },
-  { key: "label", type: "string", description: "Display title shown on the card", required: true },
-  { key: "type", type: "'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status'", description: "Widget visualization style", required: true },
-  { key: "api", type: "string", description: "The URL endpoint to fetch data from" },
-  { key: "responsePath", type: "string", description: "Dot-notation path to data (e.g., 'result.count')" },
-  { key: "transformer", type: "string", description: "JS code to transform data: '(val, data) => val * 100'" },
-  { key: "config", type: "object", description: "Widget-specific settings (nested)", required: true },
-  { key: "config.chart", type: "'line' | 'bar' | 'area'", description: "Style for Chart widget" },
-  { key: "config.xKey / yKey", type: "string", description: "Data keys for charts" },
-  { key: "config.displayType", type: "'analog' | 'digital'", description: "Style for Clock widget" },
-  { key: "config.timezone", type: "string", description: "Timezone for Clock widget" },
-  { key: "config.iframeUrl", type: "string", description: "External URL to host in Iframe" },
-  { key: "config.prefix / suffix", type: "string", description: "Currency or units ($, °C, %)" },
-  { key: "config.abbreviate", type: "boolean", description: "Shorten large numbers (1M, 5K)" },
-  { key: "accentColor", type: "HEX Color", description: "Custom glow/border color (e.g. '#ff0000')" },
-  { key: "size", type: "'sm' | 'md' | 'lg' | 'xl'", description: "Horizontal width/grid span" },
-  { key: "refreshInterval", type: "number", description: "Auto-refresh time in milliseconds (min 30000/30s)" },
-  { key: "source", type: "string", description: "Custom label for data source" },
-  { key: "sourceUrl", type: "string", description: "Link to the human-readable source page" },
-  { key: "color", type: "string", description: "'up', 'down', 'warning', 'info', 'muted'" },
-  { key: "colorRules", type: "object", description: "Dynamic color based on value thresholds" },
-];
+import { FLAT_CONFIG_DOCS } from "@/config/docs";
+
+const CONFIG_DOCS = FLAT_CONFIG_DOCS;
 
 
 
