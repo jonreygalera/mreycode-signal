@@ -6,6 +6,77 @@ export interface WidgetTemplate {
 }
 
 export const TEMPLATES: WidgetTemplate[] = [
+  // ── GitHub ──────────────────────────────────────────────────────────
+  {
+    label: 'GitHub: Public Repositories (Stat)',
+    config: {
+      id: 'jonreygalera-github-repos',
+      type: 'stat',
+      label: 'Jon Rey | GitHub Public Repos',
+      api: 'https://api.github.com/users/jonreygalera',
+      method: 'GET',
+      responsePath: 'public_repos',
+      size: 'sm',
+      description: 'Number of public repositories on GitHub',
+      refreshInterval: 3600000,
+      source: 'GitHub',
+      sourceUrl: 'https://github.com/jonreygalera?tab=repositories',
+      color: 'info',
+      config: {},
+    },
+  },
+  {
+    label: 'GitHub: Followers (Stat)',
+    config: {
+      id: 'jonreygalera-github-followers',
+      type: 'stat',
+      label: 'Jon Rey | GitHub Followers',
+      api: 'https://api.github.com/users/jonreygalera',
+      method: 'GET',
+      responsePath: 'followers',
+      size: 'sm',
+      description: 'Number of followers on GitHub',
+      refreshInterval: 3600000,
+      source: 'GitHub',
+      sourceUrl: 'https://github.com/jonreygalera?tab=followers',
+      color: 'up',
+      config: {},
+    },
+  },
+  {
+    label: 'GitHub: Following (Stat)',
+    config: {
+      id: 'jonreygalera-github-following',
+      type: 'stat',
+      label: 'Jon Rey | GitHub Following',
+      api: 'https://api.github.com/users/jonreygalera',
+      method: 'GET',
+      responsePath: 'following',
+      size: 'sm',
+      description: 'Number of users followed on GitHub',
+      refreshInterval: 3600000,
+      source: 'GitHub',
+      sourceUrl: 'https://github.com/jonreygalera?tab=following',
+      color: 'muted',
+      config: {},
+    },
+  },
+  {
+    label: 'GitHub: Repositories (List)',
+    config: {
+      id: 'tpl-list-github',
+      type: 'list',
+      label: 'My Repositories',
+      api: 'https://api.github.com/users/jonreygalera/repos?sort=updated&per_page=5',
+      method: 'GET',
+      responsePath: '',
+      transformer: '(val) => val.map(r => ({ name: r.name, value: r.stargazers_count + " ★" }))',
+      size: 'md',
+      description: 'List of recent GitHub repositories',
+      source: 'api.github.com',
+      config: {},
+    },
+  },
   // ── Stats ──────────────────────────────────────────────────────────
   {
     label: 'Stat: Philippines Population',
@@ -91,7 +162,7 @@ export const TEMPLATES: WidgetTemplate[] = [
       },
     },
   },
-  {
+    {
     label: 'COVID: Total Deaths',
     config: {
       id: 'tpl-covid-total-deaths',
@@ -306,9 +377,7 @@ export const TEMPLATES: WidgetTemplate[] = [
       },
     },
   },
-];
-
-export const NEW_TEMPLATES: WidgetTemplate[] = [
+  // ── Interactive & Specialized ──────────────────────────────────────
   {
     label: 'Iframe: External Dashboard',
     config: {
@@ -322,22 +391,6 @@ export const NEW_TEMPLATES: WidgetTemplate[] = [
       config: {
         iframeUrl: 'https://www.youtube.com/embed/dn5OzbHrkp4',
       },
-    },
-  },
-  {
-    label: 'List: GitHub Repositories',
-    config: {
-      id: 'tpl-list-github',
-      type: 'list',
-      label: 'My Repositories',
-      api: 'https://api.github.com/users/jonreygalera/repos?sort=updated&per_page=5',
-      method: 'GET',
-      responsePath: '',
-      transformer: '(val) => val.map(r => ({ name: r.name, value: r.stargazers_count + " ★" }))',
-      size: 'md',
-      description: 'List of recent GitHub repositories',
-      source: 'api.github.com',
-      config: {},
     },
   },
   {
@@ -388,4 +441,3 @@ export const NEW_TEMPLATES: WidgetTemplate[] = [
     },
   },
 ];
-

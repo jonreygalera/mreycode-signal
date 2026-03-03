@@ -106,6 +106,7 @@ export function WidgetCard({
   index,
   onEdit,
   onDelete,
+  onCopy,
   isMaximized: isMaximizedProp,
   onMaximize
 }: { 
@@ -113,6 +114,7 @@ export function WidgetCard({
   index: number;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onCopy?: (config: WidgetConfig) => void;
   isMaximized?: boolean;
   onMaximize?: (maximized: boolean) => void;
 }) {
@@ -165,8 +167,12 @@ export function WidgetCard({
     }
 
     navigator.clipboard.writeText(JSON.stringify(exportConfig, null, 2));
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (onCopy) {
+      onCopy(exportConfig);
+    } else {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   const { data, error, isLoading, mutate } = useSWR(

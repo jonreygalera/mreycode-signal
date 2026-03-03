@@ -349,9 +349,17 @@ export function Header() {
                     <Cpu size={12} />
                     Project Origins
                   </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed font-mono">
+                  <p className="text-sm text-foreground/80 leading-relaxed font-mono mb-4">
                     This project was built with a <span className="text-primary font-bold">Vibe Coding</span> approach using the <span className="text-primary font-bold">Google Antigravity IDE</span>. It focuses on high-density data visualization and modularity.
                   </p>
+                  <div className="p-3 rounded-sm border border-border/40 bg-muted/5 space-y-2">
+                    <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
+                      <span className="text-foreground/60 font-bold">STORAGE:</span> This application has <span className="text-red-500/80">no database</span>. All configurations, custom widgets, and workspace data are stored purely in your <span className="text-foreground">browser's local storage</span>.
+                    </p>
+                    <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
+                      <span className="text-foreground/60 font-bold">WIDGETS:</span> Predefined system widgets are <span className="text-foreground">hardcoded</span> directly into the source code for maximum performance and zero-latency availability.
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -394,6 +402,16 @@ export function Header() {
                       className="text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
                     >
                       {appConfig.developer.website.replace("https://", "")}
+                      <ExternalLink size={10} />
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
+                    <span className="text-muted">Contact</span>
+                    <a 
+                      href={`mailto:${(appConfig.developer as any).email}`}
+                      className="text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                    >
+                      {(appConfig.developer as any).email}
                       <ExternalLink size={10} />
                     </a>
                   </div>

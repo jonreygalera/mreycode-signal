@@ -11,7 +11,7 @@ import { FastWidgetModal } from "./fast-widget-modal";
 import { ExportModal } from "./export-modal";
 import { ImportModal } from "./import-modal";
 import { appConfig } from "@/config/app";
-import { TEMPLATES, NEW_TEMPLATES } from "@/config/templates";
+import { TEMPLATES } from "@/config/templates";
 import { HistoryModal } from "./history-modal";
 import { WorkspaceModal } from "./workspace-modal";
 import { 
@@ -181,6 +181,16 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         editId: id
       });
     }
+  };
+
+  const handleCopyWidget = (config: WidgetConfig) => {
+    // Generate a new unique ID for the copy to avoid conflicts
+    const newId = `${config.id}-copy-${Date.now().toString().slice(-4)}`;
+    const copiedConfig = { ...config, id: newId };
+    
+    // We treat copying as creating a new widget (after the original one)
+    setWidgetToEdit({ config: copiedConfig, afterId: config.id });
+    handleParamChange("modal", "new");
   };
 
   const handleDeleteWidget = async (id: string) => {
@@ -787,6 +797,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         configs={allWidgets} 
         onEdit={handleEditWidget}
         onDelete={handleDeleteWidget}
+        onCopy={handleCopyWidget}
         maximizedWidgetId={maximizedWidgetId}
         onMaximizeChange={(id) => handleParamChange("widget", id)}
       />
@@ -840,7 +851,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         availableWidgets={
           workspaceModal.mode === 'copy' 
             ? allWidgets.map(({ isTemp, ...config }: any) => config) 
-            : [...TEMPLATES, ...NEW_TEMPLATES].map(t => t.config)
+            : TEMPLATES.map(t => t.config)
         }
       />
     </div>

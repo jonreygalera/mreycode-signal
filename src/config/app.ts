@@ -18,7 +18,7 @@ export const appConfig = {
   developer: {
     name: "jonreygalera",
     website: "https://jonreygalera.vercel.app",
-    twitter: "@jonreygalera",
+    email: "jonreygalera@gmail.com",
   },
   techStack: [
     "Next.js 16 (App Router)",

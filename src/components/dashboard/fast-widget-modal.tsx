@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown } from "lucide-react";
+import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
-import { TEMPLATES, NEW_TEMPLATES, WidgetTemplate } from "@/config/templates";
+import { TEMPLATES, WidgetTemplate } from "@/config/templates";
 
 import { FLAT_CONFIG_DOCS } from "@/config/docs";
 
@@ -26,6 +26,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
   const [configText, setConfigText] = useState(initialConfig ? JSON.stringify(initialConfig.config, null, 2) : "");
   const [error, setError] = useState<string | null>(null);
   const [showDocs, setShowDocs] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Sync state if initialConfig changes (when modal opens for a different widget)
   useEffect(() => {
@@ -132,23 +133,33 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted/70">
-                  <Terminal size={14} />
-                  Widget Config (JSON)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted/70">
+                    <Terminal size={14} />
+                    Widget Config (JSON)
+                  </label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(configText);
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-all"
+                    title="Copy to clipboard"
+                  >
+                    {isCopied ? (
+                      <><Check size={12} className="text-up" /> Copied</>
+                    ) : (
+                      <><Copy size={12} /> Copy Config</>
+                    )}
+                  </button>
+                </div>
                 <div className="flex items-center gap-2 mb-2">
                   <select 
                     onChange={(e) => {
                       if (e.target.value) {
                         const templateIdx = parseInt(e.target.value);
-                        let template;
-                        
-                        if (templateIdx >= 100) {
-                          template = NEW_TEMPLATES[templateIdx - 100];
-                        } else {
-                          template = TEMPLATES[templateIdx];
-                        }
-                        
+                        const template = TEMPLATES[templateIdx];
                         const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
                         setConfigText(JSON.stringify({ ...template.config, id: newId }, null, 2));
                       }
@@ -156,16 +167,9 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     className="flex-1 bg-muted/20 border border-border/50 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all cursor-pointer outline-none"
                   >
                     <option value="">Select Template...</option>
-                    <optgroup label="Standard Templates">
-                      {TEMPLATES.map((t, i) => (
-                        <option key={i} value={i}>{t.label}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="New Widget Types">
-                      {NEW_TEMPLATES.map((t: WidgetTemplate, i: number) => (
-                        <option key={i + 100} value={i + 100}>{t.label}</option>
-                      ))}
-                    </optgroup>
+                    {TEMPLATES.map((t, i) => (
+                      <option key={i} value={i}>{t.label}</option>
+                    ))}
                   </select>
                 </div>
                 <textarea
