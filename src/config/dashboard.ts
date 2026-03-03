@@ -18,67 +18,6 @@ export const dashboardWidgets: WidgetConfig[] = [
     config: {},
   },
   {
-    id: 'jonreygalera-github-repos',
-    type: 'stat',
-    label: 'Jon Rey | GitHub Public Repos',
-    api: 'https://api.github.com/users/jonreygalera',
-    method: 'GET',
-    responsePath: 'public_repos',
-    size: 'sm',
-    description: 'Number of public repositories on GitHub',
-    refreshInterval: 3600000,
-    source: 'GitHub',
-    sourceUrl: 'https://github.com/jonreygalera?tab=repositories',
-    color: 'info',
-    config: {},
-  },
-  {
-    id: 'jonreygalera-github-followers',
-    type: 'stat',
-    label: 'Jon Rey | GitHub Followers',
-    api: 'https://api.github.com/users/jonreygalera',
-    method: 'GET',
-    responsePath: 'followers',
-    size: 'sm',
-    description: 'Number of followers on GitHub',
-    refreshInterval: 3600000,
-    source: 'GitHub',
-    sourceUrl: 'https://github.com/jonreygalera?tab=followers',
-    color: 'up',
-    config: {},
-  },
-  {
-    id: 'jonreygalera-github-following',
-    type: 'stat',
-    label: 'Jon Rey | GitHub Following',
-    api: 'https://api.github.com/users/jonreygalera',
-    method: 'GET',
-    responsePath: 'following',
-    size: 'sm',
-    description: 'Number of users followed on GitHub',
-    refreshInterval: 3600000,
-    source: 'GitHub',
-    sourceUrl: 'https://github.com/jonreygalera?tab=following',
-    color: 'muted',
-    config: {},
-  },
-  {
-    id: 'jonreygalera.vercel.app-total-visits',
-    type: 'stat',
-    label: 'jonreygalera.vercel.app Total Visits',
-    api: 'https://api-mreyai.vercel.app/api/guest/stats',
-    method: 'GET',
-    headers: {
-      'x-mrey-tenant': 'jonreygalera.vercel.app',
-    },
-    responsePath: 'count',
-    size: 'sm',
-    description: 'Total visits on jonreygalera.vercel.app',
-    refreshInterval: 5000, 
-    color: 'up',
-    config: {},
-  },
-  {
     id: 'mrey-ai-vercel-app-total-visits',
     type: 'stat',
     label: 'mrey-ai.vercel.app Total Visits',
@@ -90,6 +29,22 @@ export const dashboardWidgets: WidgetConfig[] = [
     responsePath: 'count',
     size: 'sm',
     description: 'Total visits on mrey-ai.vercel.app',
+    refreshInterval: 5000, 
+    color: 'up',
+    config: {},
+  },
+  {
+    id: 'jonreygalera-vercel-app-total-visits',
+    type: 'stat',
+    label: 'jonreygalera.vercel.app Total Visits',
+    api: 'https://api-mreyai.vercel.app/api/guest/stats',
+    method: 'GET',
+    headers: {
+      'x-mrey-tenant': 'jonreygalera.vercel.app',
+    },
+    responsePath: 'count',
+    size: 'sm',
+    description: 'Total visits on jonreygalera.vercel.app',
     refreshInterval: 5000, 
     color: 'up',
     config: {},
@@ -114,6 +69,24 @@ export const dashboardWidgets: WidgetConfig[] = [
     config: {
       suffix: "°C",
     },
+    signals: [
+      {
+        id: 'cold-alert',
+        label: 'It\'s Cold in Baguio!',
+        condition: 'below',
+        threshold: 15,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true
+      },
+      {
+        id: 'hot-alert',
+        label: 'It\'s Hot in Baguio!',
+        condition: 'above',
+        threshold: 25,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true
+      }
+    ],
   },
   {
     id: "tpl-gold-price-6247",
@@ -167,6 +140,50 @@ export const dashboardWidgets: WidgetConfig[] = [
       belowZero: "down",    // Red if loss
       atZero: "muted"       // Gray if neutral
     },
+    signals: [
+      {
+        id: 'critical-high-alert',
+        label: 'Critical High Vibe!',
+        condition: 'above',
+        threshold: 3000,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true,
+        cooldown: 5
+      },
+      {
+        id: 'low-vibe-warning',
+        label: 'Vibe Depletion Detected',
+        condition: 'below',
+        threshold: 0,
+        action: ['pulse'],
+        enabled: true
+      },
+      {
+        id: 'lucky-number-alert',
+        label: 'Lucky 777 Triggered!',
+        condition: 'equals',
+        threshold: 77,
+        action: ['notify', 'sound'],
+        enabled: true
+      },
+      {
+        id: 'volatility-alert',
+        label: 'High Volatility!',
+        condition: 'diff',
+        threshold: 40,
+        action: ['pulse', 'sound'],
+        enabled: true,
+        cooldown: 1
+      },
+      {
+        id: 'volatility-spike',
+        label: 'Volatility Spike Detected',
+        condition: 'diff',
+        threshold: 50, // Triggers if value changes by 50 or more
+        action: ['pulse', 'notify'],
+        enabled: true
+      }
+    ],
     config: {},
   },
   {
@@ -223,5 +240,5 @@ export const dashboardWidgets: WidgetConfig[] = [
       yKey: 'revenue',
       prefix: '$',
     },
-  },
+  }
 ];

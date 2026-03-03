@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useSettings } from "@/context/settings-context";
 import { useConnectivity } from "@/context/connectivity-context";
+import { useSignals } from "@/context/signal-context";
 import { Clock as ClockIcon } from "../clock";
 
 // Helper for Analog Clock
@@ -106,6 +107,7 @@ export function WidgetCard({
   index,
   onEdit,
   onDelete,
+  onCopy,
   isMaximized: isMaximizedProp,
   onMaximize
 }: { 
@@ -113,6 +115,7 @@ export function WidgetCard({
   index: number;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onCopy?: (config: WidgetConfig) => void;
   isMaximized?: boolean;
   onMaximize?: (maximized: boolean) => void;
 }) {
@@ -131,6 +134,15 @@ export function WidgetCard({
   const { isTVMode } = useTVMode();
   const { settings } = useSettings();
   const { isOnline } = useConnectivity();
+  const { activeSignals, tripSignal, dismissSignal } = useSignals();
+
+  // Find active signals for this widget
+  const widgetActiveSignals = useMemo(() => 
+    activeSignals.filter(as => as.widgetId === config.id),
+    [activeSignals, config.id]
+  );
+
+  const hasActiveSignal = widgetActiveSignals.length > 0;
 
   const handleCopyConfig = () => {
     // Deep clone to avoid mutating original config and strip runtime flags
@@ -165,8 +177,12 @@ export function WidgetCard({
     }
 
     navigator.clipboard.writeText(JSON.stringify(exportConfig, null, 2));
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (onCopy) {
+      onCopy(exportConfig);
+    } else {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -213,6 +229,47 @@ export function WidgetCard({
     return value;
   }, [data, config.responsePath, config.type, config.transformer]);
 
+  // Signal Triggering Logic
+  const prevDataValue = useMemo(() => {
+    // We use a ref to track the previous value across refreshes
+    return { current: parsedData };
+  }, [parsedData]);
+  
+  const [lastValue, setLastValue] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (parsedData === null || !config.signals || config.signals.length === 0) return;
+
+    const val = Number(parsedData);
+
+    config.signals.forEach(signal => {
+      if (!signal.enabled) return;
+
+      let triggered = false;
+
+      switch (signal.condition) {
+        case 'above': triggered = val > signal.threshold; break;
+        case 'below': triggered = val < signal.threshold; break;
+        case 'equals': triggered = val === signal.threshold; break;
+        case 'diff': {
+          if (lastValue !== null) {
+            triggered = Math.abs(val - lastValue) >= signal.threshold;
+          }
+          break;
+        }
+      }
+
+      if (triggered) {
+        tripSignal(config, signal, val);
+      } else {
+        // Auto-dismiss if condition no longer met
+        dismissSignal(config.id, signal.id);
+      }
+    });
+
+    setLastValue(val);
+  }, [parsedData, config, tripSignal, dismissSignal, lastValue]);
+
   const sourceLabel = useMemo(() => {
     if (config.source) return config.source;
     if (!config.api || config.api === "none") return "Static Widget";
@@ -257,6 +314,15 @@ export function WidgetCard({
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-500"></span>
                 </span>
                 <span className="text-[8px] font-mono leading-none font-bold text-yellow-500/90 tracking-tighter">TEMP</span>
+              </div>
+            )}
+            {hasActiveSignal && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-[2px] shadow-[0_0_8px_rgba(239,68,68,0.2)]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
+                </span>
+                <span className="text-[8px] font-mono leading-none font-bold text-red-500/90 tracking-tighter">SIGNAL TRIP</span>
               </div>
             )}
           </div>

@@ -78,6 +78,19 @@ export const WIDGET_DOCS: DocSection[] = [
       { key: "rule.color", type: "ThemeColor", description: "The color to apply if condition is met." },
     ],
   },
+  {
+    title: "Active Alerts: Signals",
+    description: "Transform your dashboard into an active monitoring hub with threshold-based signals.",
+    fields: [
+      { key: "signals", type: "SignalConfig[]", description: "An array of alert configurations." },
+      { key: "signal.id", type: "string", description: "Identifier for the signal.", required: true },
+      { key: "signal.label", type: "string", description: "Name of the alert shown in browser notifications.", required: true },
+      { key: "signal.condition", type: "'above' | 'below' | 'equals'", description: "Threshold logic.", required: true },
+      { key: "signal.threshold", type: "number", description: "The value that triggers the alert.", required: true },
+      { key: "signal.action", type: "Array<'notify' | 'pulse' | 'sound'>", description: "What happens when triggered.", required: true },
+      { key: "signal.enabled", type: "boolean", description: "Toggle the signal on/off.", required: true },
+    ],
+  },
 ];
 
 // Helper for components that need a flat list

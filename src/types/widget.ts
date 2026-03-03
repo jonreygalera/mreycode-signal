@@ -1,3 +1,4 @@
+import { SignalConfig } from './signal';
 export type WidgetType = 'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status';
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
 export type ChartType = 'line' | 'bar' | 'area';
@@ -36,6 +37,9 @@ export interface BaseWidgetConfig {
       color: 'up' | 'down' | 'muted' | 'foreground' | 'warning' | 'info';
     }>;
   };
+  
+  // Signals (Alerting)
+  signals?: SignalConfig[];
 }
 
 export interface StatConfig extends BaseWidgetConfig {
