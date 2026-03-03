@@ -69,6 +69,24 @@ export const dashboardWidgets: WidgetConfig[] = [
     config: {
       suffix: "°C",
     },
+    signals: [
+      {
+        id: 'cold-alert',
+        label: 'It\'s Cold in Baguio!',
+        condition: 'below',
+        threshold: 15,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true
+      },
+      {
+        id: 'hot-alert',
+        label: 'It\'s Hot in Baguio!',
+        condition: 'above',
+        threshold: 25,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true
+      }
+    ],
   },
   {
     id: "tpl-gold-price-6247",
@@ -122,6 +140,50 @@ export const dashboardWidgets: WidgetConfig[] = [
       belowZero: "down",    // Red if loss
       atZero: "muted"       // Gray if neutral
     },
+    signals: [
+      {
+        id: 'critical-high-alert',
+        label: 'Critical High Vibe!',
+        condition: 'above',
+        threshold: 3000,
+        action: ['pulse', 'notify', 'sound'],
+        enabled: true,
+        cooldown: 5
+      },
+      {
+        id: 'low-vibe-warning',
+        label: 'Vibe Depletion Detected',
+        condition: 'below',
+        threshold: 0,
+        action: ['pulse'],
+        enabled: true
+      },
+      {
+        id: 'lucky-number-alert',
+        label: 'Lucky 777 Triggered!',
+        condition: 'equals',
+        threshold: 77,
+        action: ['notify', 'sound'],
+        enabled: true
+      },
+      {
+        id: 'volatility-alert',
+        label: 'High Volatility!',
+        condition: 'diff',
+        threshold: 40,
+        action: ['pulse', 'sound'],
+        enabled: true,
+        cooldown: 1
+      },
+      {
+        id: 'volatility-spike',
+        label: 'Volatility Spike Detected',
+        condition: 'diff',
+        threshold: 50, // Triggers if value changes by 50 or more
+        action: ['pulse', 'notify'],
+        enabled: true
+      }
+    ],
     config: {},
   },
   {
@@ -178,5 +240,5 @@ export const dashboardWidgets: WidgetConfig[] = [
       yKey: 'revenue',
       prefix: '$',
     },
-  },
+  }
 ];

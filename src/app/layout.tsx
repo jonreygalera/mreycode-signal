@@ -50,7 +50,6 @@ export const metadata: Metadata = {
     title: appConfig.name,
     description: appConfig.description,
     images: ["/og-image.png"],
-    creator: appConfig.developer.twitter,
   },
   robots: {
     index: true,
@@ -88,6 +87,7 @@ export const viewport: Viewport = {
 };
 
 import { AlertProvider } from "@/context/alert-context";
+import { SignalProvider } from "@/context/signal-context";
 import GuestTracker from "@/components/guest-tracker";
 
 export default function RootLayout({
@@ -111,8 +111,10 @@ export default function RootLayout({
               <ConnectivityProvider>
                 <AlertProvider>
                   <SecurityProvider>
-                    <GuestTracker />
-                    <LayoutWrapper>{children}</LayoutWrapper>
+                    <SignalProvider>
+                      <GuestTracker />
+                      <LayoutWrapper>{children}</LayoutWrapper>
+                    </SignalProvider>
                   </SecurityProvider>
                 </AlertProvider>
               </ConnectivityProvider>
