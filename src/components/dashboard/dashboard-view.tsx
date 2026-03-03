@@ -42,6 +42,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useAlert } from "@/context/alert-context";
 import { RefreshButton } from "../refresh-button";
+import { ConnectivityStatus } from "../connectivity-status";
 import { useSettings } from "@/context/settings-context";
 
 
@@ -727,6 +728,8 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           </div>
 
           <div className="flex items-center gap-6">
+            <ConnectivityStatus />
+            <div className="h-4 w-px bg-border/30" />
             {timeLeft !== null && settings.tvCarouselEnabled && (
               <div className="flex items-center gap-3 px-4 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
                 <div className="relative flex items-center justify-center w-5 h-5">

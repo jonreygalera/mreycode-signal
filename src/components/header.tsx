@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
 import { RefreshButton } from "./refresh-button";
+import { ConnectivityStatus } from "./connectivity-status";
 
 export function Header() {
   const searchParams = useSearchParams();
@@ -190,6 +191,8 @@ export function Header() {
             <div className="h-4 w-px bg-border mx-1" />
             <RefreshButton />
             <div className="h-4 w-px bg-border mx-1" />
+            <ConnectivityStatus />
+            <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
           </div>
 
@@ -296,7 +299,10 @@ export function Header() {
 
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between px-4 py-2">
                    <span className="text-xs font-bold text-muted uppercase tracking-widest">Theme Mode</span>
-                   <ThemeToggle />
+                   <div className="flex items-center gap-2">
+                     <ConnectivityStatus />
+                     <ThemeToggle />
+                   </div>
                 </div>
               </div>
             </motion.div>

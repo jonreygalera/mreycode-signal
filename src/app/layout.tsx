@@ -7,6 +7,7 @@ import { appConfig } from "@/config/app";
 import { TVModeProvider } from "@/context/tv-mode-context";
 import { SettingsProvider } from "@/context/settings-context";
 import { SecurityProvider } from "@/context/security-context";
+import { ConnectivityProvider } from "@/context/connectivity-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -107,12 +108,14 @@ export default function RootLayout({
         >
           <TVModeProvider>
             <SettingsProvider>
-              <AlertProvider>
-                <SecurityProvider>
-                  <GuestTracker />
-                  <LayoutWrapper>{children}</LayoutWrapper>
-                </SecurityProvider>
-              </AlertProvider>
+              <ConnectivityProvider>
+                <AlertProvider>
+                  <SecurityProvider>
+                    <GuestTracker />
+                    <LayoutWrapper>{children}</LayoutWrapper>
+                  </SecurityProvider>
+                </AlertProvider>
+              </ConnectivityProvider>
             </SettingsProvider>
           </TVModeProvider>
         </ThemeProvider>

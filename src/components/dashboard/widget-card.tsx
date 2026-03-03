@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useSettings } from "@/context/settings-context";
+import { useConnectivity } from "@/context/connectivity-context";
 import { Clock as ClockIcon } from "../clock";
 
 // Helper for Analog Clock
@@ -129,6 +130,7 @@ export function WidgetCard({
   const [isCopied, setIsCopied] = useState(false);
   const { isTVMode } = useTVMode();
   const { settings } = useSettings();
+  const { isOnline } = useConnectivity();
 
   const handleCopyConfig = () => {
     // Deep clone to avoid mutating original config and strip runtime flags
@@ -168,7 +170,7 @@ export function WidgetCard({
   };
 
   const { data, error, isLoading, mutate } = useSWR(
-    config.api && config.api !== "none" ? {
+    (isOnline && config.api && config.api !== "none") ? {
       url: config.api,
       method: config.method || "GET",
       headers: config.headers,
@@ -176,8 +178,8 @@ export function WidgetCard({
     } : null,
     fetcher,
     {
-      refreshInterval: config.refreshInterval || 0,
-      revalidateOnFocus: true,
+      refreshInterval: isOnline ? (config.refreshInterval || 0) : 0,
+      revalidateOnFocus: isOnline,
       revalidateOnReconnect: true,
       dedupingInterval: 2000,
       keepPreviousData: true,
