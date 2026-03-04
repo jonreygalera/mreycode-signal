@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
 import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
@@ -10,6 +10,7 @@ import { appConfig } from "@/config/app";
 
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
+import { getStorageUsage } from "@/lib/storage-utils";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,7 +27,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localTvCarouselEnabled, setLocalTvCarouselEnabled] = useState(settings.tvCarouselEnabled);
   const [localTvCarouselInterval, setLocalTvCarouselInterval] = useState(settings.tvCarouselInterval);
   const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
+  const [localLocalStorageThreshold, setLocalLocalStorageThreshold] = useState(settings.localStorageThreshold);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
+  const [storageStatus, setStorageStatus] = useState(getStorageUsage());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
   const [tzSearch, setTzSearch] = useState("");
@@ -62,7 +65,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalTvCarouselEnabled(settings.tvCarouselEnabled);
     setLocalTvCarouselInterval(settings.tvCarouselInterval);
     setLocalSnackbarPosition(settings.snackbarPosition);
+    setLocalLocalStorageThreshold(settings.localStorageThreshold);
     setPreviewImage(settings.backgroundImage);
+    setStorageStatus(getStorageUsage());
   }, [settings, isOpen]);
 
   useEffect(() => {
@@ -105,6 +110,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       tvCarouselEnabled: localTvCarouselEnabled,
       tvCarouselInterval: Math.max(30, localTvCarouselInterval),
       snackbarPosition: localSnackbarPosition,
+      localStorageThreshold: localLocalStorageThreshold,
     });
     onClose();
   };
@@ -127,6 +133,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalTvCarouselEnabled(DEFAULT_SETTINGS.tvCarouselEnabled);
       setLocalTvCarouselInterval(DEFAULT_SETTINGS.tvCarouselInterval);
       setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
+      setLocalLocalStorageThreshold(DEFAULT_SETTINGS.localStorageThreshold);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -460,6 +467,87 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           {pos.label}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <label className="text-sm font-semibold text-foreground/80 block mb-1">Storage Usage Warning Threshold</label>
+                        <p className="text-[10px] text-muted leading-relaxed">
+                          Trigger a snackbar notification when your browser's local storage exceeds this percentage.
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-primary">{localLocalStorageThreshold}%</span>
+                    </div>
+
+                    <div className="bg-muted/5 border border-border/50 rounded-xl p-4 mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <HardDrive size={14} className="text-primary" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Current Status</span>
+                          <button 
+                            onClick={() => setStorageStatus(getStorageUsage())}
+                            className="p-1 hover:bg-foreground/5 rounded-full transition-colors text-muted hover:text-primary active:rotate-180"
+                            title="Refresh usage"
+                          >
+                            <RefreshCcw size={10} />
+                          </button>
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-black px-2 py-0.5 rounded-full border",
+                          storageStatus.percentage >= localLocalStorageThreshold 
+                            ? "bg-red-500/10 text-red-500 border-red-500/20" 
+                            : "bg-primary/10 text-primary border-primary/20"
+                        )}>
+                          {storageStatus.percentage >= localLocalStorageThreshold ? "THRESHOLD EXCEEDED" : "OPTIMAL"}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-end justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-xl font-black text-foreground tabular-nums">
+                              {storageStatus.usedMB} <span className="text-[10px] font-bold text-muted uppercase tracking-tighter ml-1">MB</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">
+                              Used of {storageStatus.limitMB} MB Limit
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={cn(
+                              "text-lg font-black tabular-nums",
+                              storageStatus.percentage >= localLocalStorageThreshold ? "text-red-500" : "text-primary"
+                            )}>
+                              {storageStatus.percentage}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden mt-1">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${storageStatus.percentage}%` }}
+                            className={cn(
+                              "h-full transition-colors duration-500",
+                              storageStatus.percentage >= 90 ? "bg-red-500" : 
+                              storageStatus.percentage >= localLocalStorageThreshold ? "bg-amber-500" : "bg-primary"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                       <input 
+                         type="range"
+                         min="50"
+                         max="98"
+                         value={localLocalStorageThreshold}
+                         onChange={(e) => setLocalLocalStorageThreshold(Number(e.target.value))}
+                         className="flex-1 accent-primary cursor-pointer"
+                       />
+                       <span className="text-[10px] font-bold text-muted w-8">98%</span>
                     </div>
                   </div>
                 </div>

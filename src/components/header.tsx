@@ -5,7 +5,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu, RotateCcw } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu, RotateCcw, Trash2 } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
 import { SettingsModal } from "./settings-modal";
@@ -14,6 +14,9 @@ import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
 import { RefreshButton } from "./refresh-button";
 import { ConnectivityStatus } from "./connectivity-status";
+import { getStorageUsage } from "@/lib/storage-utils";
+import { getGlobalStats, clearAllHistory } from "@/lib/widgets";
+import { useAlert } from "@/context/alert-context";
 
 export function Header() {
   const searchParams = useSearchParams();
@@ -41,6 +44,20 @@ export function Header() {
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
   const { settings } = useSettings();
+  const { showAlert } = useAlert();
+  const [storageUsage, setStorageUsage] = useState({ usedMB: 0, limitMB: 5, percentage: 0 });
+  const [globalStats, setGlobalStats] = useState({ workspacesCount: 0, activeWidgetsCount: 0, historyWidgetsCount: 0 });
+  
+  const refreshStats = () => {
+    setStorageUsage(getStorageUsage());
+    setGlobalStats(getGlobalStats());
+  };
+
+  useEffect(() => {
+    if (showAbout) {
+      refreshStats();
+    }
+  }, [showAbout]);
   
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
@@ -343,6 +360,45 @@ export function Header() {
                 </button>
               </div>
 
+              <div className="px-6 py-4 bg-muted/5 border-b border-border/40 grid grid-cols-3 gap-4">
+                <div className="flex flex-col items-center">
+                  <span className="text-xl font-black text-foreground">{globalStats.workspacesCount}</span>
+                  <span className="text-[8px] font-bold text-muted uppercase tracking-widest">Workspaces</span>
+                </div>
+                <div className="flex flex-col items-center border-x border-border/40">
+                  <span className="text-xl font-black text-foreground">{globalStats.activeWidgetsCount}</span>
+                  <span className="text-[8px] font-bold text-muted uppercase tracking-widest">Active Widgets</span>
+                </div>
+                <div className="flex flex-col items-center group relative">
+                  <div className="flex items-center gap-1.5 translate-x-3 group-hover:translate-x-0 transition-transform">
+                    <span className="text-xl font-black text-foreground">{globalStats.historyWidgetsCount}</span>
+                    {globalStats.historyWidgetsCount > 0 && (
+                      <button 
+                        onClick={async () => {
+                          const confirmed = await showAlert({
+                            title: "Purge All History",
+                            message: "This will permanently delete ALL widget history across all workspaces. This action cannot be undone.",
+                            type: "error",
+                            showCancel: true,
+                            confirmText: "Empty Bin",
+                            cancelText: "Cancel"
+                          });
+                          if (confirmed) {
+                            clearAllHistory();
+                            refreshStats();
+                          }
+                        }}
+                        className="p-1 px-1.5 -mr-1 rounded-sm bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 active:scale-95"
+                        title="Delete Forever"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[8px] font-bold text-muted uppercase tracking-widest">Deleted Records</span>
+                </div>
+              </div>
+
               <div className="p-6 space-y-6">
                 <div>
                   <div className="flex items-center gap-2 mb-3 text-[10px] font-bold text-muted uppercase tracking-[0.2em]">
@@ -359,6 +415,30 @@ export function Header() {
                     <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
                       <span className="text-foreground/60 font-bold">WIDGETS:</span> Predefined system widgets are <span className="text-foreground">hardcoded</span> directly into the source code for maximum performance and zero-latency availability.
                     </p>
+                    
+                    <div className="pt-2 border-t border-border/20 mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[9px] font-bold text-muted/80 uppercase">
+                        <span>LocalStorage Usage</span>
+                        <span className={cn(
+                          storageUsage.percentage > 80 ? "text-red-500" : 
+                          storageUsage.percentage > 50 ? "text-amber-500" : "text-foreground/60"
+                        )}>
+                          {storageUsage.usedMB} / {storageUsage.limitMB} MB ({storageUsage.percentage}%)
+                        </span>
+                      </div>
+                      <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${storageUsage.percentage}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className={cn(
+                            "h-full rounded-full transition-colors",
+                            storageUsage.percentage > 80 ? "bg-red-500/80" : 
+                            storageUsage.percentage > 50 ? "bg-amber-500/80" : "bg-primary/80"
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

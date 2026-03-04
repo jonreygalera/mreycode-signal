@@ -87,6 +87,11 @@ export function WorkspaceModal({
       return;
     }
 
+    if (trimmedName.length > 15) {
+      setError("Workspace name must be at most 15 characters.");
+      return;
+    }
+
     if (isProcessing) return;
     
     setIsProcessing(true);
@@ -186,24 +191,34 @@ export function WorkspaceModal({
                     <input
                       autoFocus
                       type="text"
+                      maxLength={15}
                       value={name}
                       onChange={(e) => {
                         setName(e.target.value);
                         setError(null);
                       }}
                       placeholder={placeholder}
-                      className="w-full bg-background border border-border rounded-[4px] px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground font-medium"
+                      className="w-full bg-background border border-border rounded-[4px] px-4 py-3 pr-16 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground font-medium"
                     />
-                    {name && (
-                      <button
-                        type="button"
-                        onClick={() => setName("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground opacity-0 group-hover/input:opacity-100 transition-opacity"
-                        title="Clear name"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <span className={cn(
+                        "text-[9px] font-bold font-mono transition-colors",
+                        name.length >= 13 ? "text-amber-500" : "text-muted/40",
+                        name.length === 15 && "text-red-500"
+                      )}>
+                        {name.length}/15
+                      </span>
+                      {name && (
+                        <button
+                          type="button"
+                          onClick={() => setName("")}
+                          className="p-1 text-muted hover:text-foreground opacity-0 group-hover/input:opacity-100 transition-opacity"
+                          title="Clear name"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {error && <p className="text-[10px] text-red-500 font-bold uppercase tracking-tight">{error}</p>}
                 </div>

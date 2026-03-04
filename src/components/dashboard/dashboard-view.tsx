@@ -149,9 +149,9 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     // Auto-generate initial workspace ONLY on first visit and if none exist
     if (!workspaceId && ws.length === 0 && !visited) {
       localStorage.setItem("mreycode_signal_visited", "true");
-      const suffixes = ["Hub", "Nexus", "Matrix", "Pulse", "Flow", "Station", "Vibe", "Base"];
+      const suffixes = ["Hub", "Nexus", "Pulse", "Flow", "Vibe", "Base", "Core", "Node"];
       const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-      const randomName = `Signal ${randomSuffix} ${Math.floor(Math.random() * 999)}`;
+      const randomName = `${randomSuffix}-${Math.floor(Math.random() * 999)}`;
       const randomId = `ws-auto-${Date.now()}`;
       
       const newWS = { id: randomId, name: randomName, createdAt: Date.now() };
@@ -311,15 +311,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleAddWorkspace = () => {
-    const suffixes = ["Hub", "Nexus", "Matrix", "Pulse", "Flow", "Station", "Vibe", "Base"];
+    const suffixes = ["Hub", "Nexus", "Pulse", "Flow", "Vibe", "Base", "Core", "Node"];
     const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-    const randomName = `Signal ${randomSuffix} ${Math.floor(Math.random() * 999)}`;
+    const randomName = `${randomSuffix}-${Math.floor(Math.random() * 999)}`;
 
     setWorkspaceModal({
       isOpen: true,
       mode: 'add',
       title: 'Add New Workspace',
-      initialValue: randomName
+      initialValue: randomName.slice(0, 15)
     });
   };
 
@@ -346,7 +346,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       isOpen: true,
       mode: 'copy',
       title: 'Copy Workspace',
-      initialValue: `${sourceName} - COPY`,
+      initialValue: `${sourceName.slice(0, 8)} (Copy)`,
       targetId: wsId
     });
   };

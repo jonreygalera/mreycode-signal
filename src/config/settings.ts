@@ -5,6 +5,7 @@ export interface AppSettings {
   tvCarouselEnabled: boolean;
   tvCarouselInterval: number;
   snackbarPosition: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+  localStorageThreshold: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -14,5 +15,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tvCarouselEnabled: false,
   tvCarouselInterval: 30,
   snackbarPosition: 'top-right',
+  localStorageThreshold: 90,
 };
 

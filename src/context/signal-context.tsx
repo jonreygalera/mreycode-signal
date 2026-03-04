@@ -8,12 +8,14 @@ import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { appConfig } from "@/config/app";
 import { useSettings } from "./settings-context";
+import { getStorageUsage } from "@/lib/storage-utils";
 
 interface Snackbar {
   id: string;
   title: string;
   message: string;
   duration: number;
+  isPersistent?: boolean;
 }
 
 interface SignalContextType {
@@ -21,6 +23,7 @@ interface SignalContextType {
   snackbars: Snackbar[];
   tripSignal: (widget: WidgetConfig, signal: SignalConfig, value: number) => void;
   dismissSignal: (widgetId: string, signalId: string) => void;
+  addSnackbar: (snack: Omit<Snackbar, "id">) => void;
   removeSnackbar: (id: string) => void;
 }
 
@@ -68,19 +71,12 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
 
     // In-App Notification Logic
     if (signal.action.includes("notify-in-app")) {
-      const id = Math.random().toString(36).substring(2, 9);
       const duration = signal.duration || appConfig.defaultSignalDuration;
-      
-      setSnackbars(prev => [...prev, {
-        id,
+      addSnackbar({
         title: widget.label,
         message: `${signal.label} (Value: ${value})`,
         duration
-      }]);
-
-      setTimeout(() => {
-        setSnackbars(prev => prev.filter(s => s.id !== id));
-      }, duration * 1000);
+      });
     }
 
     // 4. Update the visual state
@@ -102,6 +98,22 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
     setSnackbars(prev => prev.filter(s => s.id !== id));
   }, []);
 
+  const addSnackbar = useCallback((snack: Omit<Snackbar, "id">, explicitId?: string) => {
+    const id = explicitId || Math.random().toString(36).substring(2, 9);
+    
+    setSnackbars(prev => {
+      // If explicitId is provided, don't duplicate
+      if (explicitId && prev.some(s => s.id === explicitId)) return prev;
+      return [...prev, { ...snack, id }];
+    });
+    
+    if (!snack.isPersistent) {
+      setTimeout(() => {
+        setSnackbars(prev => prev.filter(s => s.id !== id));
+      }, snack.duration * 1000);
+    }
+  }, []);
+
   const dismissSignal = useCallback((widgetId: string, signalId: string) => {
     const tripKey = `${widgetId}-${signalId}`;
     activeActionKeys.current.delete(tripKey);
@@ -118,6 +130,33 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const { settings } = useSettings();
+  const hasAlertedRef = useRef<boolean>(false);
+
+  // Storage Usage Check
+  useEffect(() => {
+    const STORAGE_SNACKBAR_ID = "storage-warning-alert";
+    
+    const checkStorage = () => {
+      const usage = getStorageUsage();
+      const threshold = settings.localStorageThreshold || 90;
+      
+      if (usage.percentage >= threshold) {
+        addSnackbar({
+          title: "Storage Limit Warning",
+          message: `Your browser storage is at ${usage.percentage}% capacity. Clear some data or export a backup.`,
+          duration: 0,
+          isPersistent: true
+        }, STORAGE_SNACKBAR_ID);
+      } else {
+        removeSnackbar(STORAGE_SNACKBAR_ID);
+      }
+    };
+
+    // Check on mount and every 30 seconds
+    checkStorage();
+    const interval = setInterval(checkStorage, 30000);
+    return () => clearInterval(interval);
+  }, [settings.localStorageThreshold, addSnackbar, removeSnackbar]);
 
   const getPositionClasses = () => {
     switch (settings.snackbarPosition) {
@@ -140,7 +179,7 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SignalContext.Provider value={{ activeSignals, snackbars, tripSignal, dismissSignal, removeSnackbar }}>
+    <SignalContext.Provider value={{ activeSignals, snackbars, tripSignal, dismissSignal, addSnackbar, removeSnackbar }}>
       {children}
       
       {/* Snackbar Container */}
@@ -156,12 +195,14 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
               className="pointer-events-auto group relative w-full bg-panel/80 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl shadow-black/40 overflow-hidden"
             >
               {/* Progress bar */}
-              <motion.div 
-                initial={{ width: "100%" }}
-                animate={{ width: "0%" }}
-                transition={{ duration: snack.duration, ease: "linear" }}
-                className="absolute bottom-0 left-0 h-0.5 bg-red-500/50"
-              />
+              {!snack.isPersistent && (
+                <motion.div 
+                  initial={{ width: "100%" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: snack.duration, ease: "linear" }}
+                  className="absolute bottom-0 left-0 h-0.5 bg-red-500/50"
+                />
+              )}
               
               <div className="p-4 flex gap-3">
                 <div className="mt-0.5 p-2 rounded-md bg-red-500/10 text-red-500 shrink-0">
