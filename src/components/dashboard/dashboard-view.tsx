@@ -92,6 +92,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [widgetSearch, setWidgetSearch] = useState("");
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -194,6 +195,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     // Workspaces start as a blank canvas (only show tempWidgets)
     return mergeWidgets([], tempWidgets);
   }, [tempWidgets]);
+
+  const filteredWidgets = useMemo(() => {
+    if (!widgetSearch.trim()) return allWidgets;
+    const searchLow = widgetSearch.toLowerCase();
+    return allWidgets.filter(w => 
+      w.label?.toLowerCase().includes(searchLow) || 
+      w.type?.toLowerCase().includes(searchLow)
+    );
+  }, [allWidgets, widgetSearch]);
 
   const handleSaveWidget = (config: WidgetConfig, afterId: string | null) => {
     try {
@@ -586,6 +596,26 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 <ChevronDown size={16} className={cn("text-muted transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
               </button>
 
+              {/* Widget Search Field */}
+              <div className="relative w-full sm:w-64 group/search ml-0 sm:ml-4">
+                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                 <input
+                   type="text"
+                   placeholder="Search widgets in this workspace..."
+                   value={widgetSearch}
+                   onChange={(e) => setWidgetSearch(e.target.value)}
+                   className="w-full bg-foreground/5 border border-border/50 rounded-[4px] pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all text-foreground font-medium"
+                 />
+                 {widgetSearch && (
+                   <button
+                     onClick={() => setWidgetSearch("")}
+                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground transition-all"
+                   >
+                     <CloseIcon size={12} />
+                   </button>
+                 )}
+              </div>
+
               <AnimatePresence>
                 {isWorkspaceOpen && (
                   <motion.div
@@ -855,7 +885,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       
       {workspaceId ? (
         <WidgetGrid 
-          configs={allWidgets} 
+          configs={filteredWidgets} 
           onEdit={handleEditWidget}
           onDelete={handleDeleteWidget}
           onCopy={handleCopyWidget}
