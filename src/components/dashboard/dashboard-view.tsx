@@ -35,7 +35,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, Check, LayoutDashboard, Search, Database
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -857,25 +857,126 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => moveCarousel("prev")}
-                className="p-3 hover:bg-foreground/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90 bg-foreground/5 border border-border/10 group/prev flex items-center gap-2"
+                className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/prev flex items-center justify-center"
                 title="Previous Workspace (Left Arrow)"
               >
-                <ChevronLeft size={20} className="group-hover/prev:-translate-x-1 transition-transform" />
-                <span className="text-[10px] font-black opacity-30 group-hover:opacity-100 transition-opacity">←</span>
+                <ArrowLeft size={22} className="relative z-10 group-hover/prev:-translate-x-1.5 transition-transform duration-300 ease-out" />
+                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/prev:opacity-100 blur-xl transition-opacity" />
               </button>
-              <div className="flex flex-col items-center px-6">
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted/40 leading-none mb-1.5">Active View</span>
-                <h2 className="text-base font-black text-foreground uppercase tracking-tighter leading-none text-center min-w-[120px]">
-                  {currentWorkspaceName}
-                </h2>
+              <div className="relative" ref={workspaceDropdownRef}>
+                <button 
+                  onClick={() => {
+                    setIsWorkspaceOpen(!isWorkspaceOpen);
+                    if (isWorkspaceOpen) setWorkspaceSearch("");
+                  }}
+                  className="flex flex-col items-center px-4 py-2 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-white/5"
+                >
+                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted/40 leading-none mb-1.5 group-hover/ws:text-primary transition-colors">Active View</span>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-black text-foreground uppercase tracking-tighter leading-none text-center min-w-[120px]">
+                      {currentWorkspaceName}
+                    </h2>
+                    <ChevronDown size={14} className={cn("text-muted/40 transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {isWorkspaceOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 10, scale: 1 }}
+                      exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-background/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                    >
+                      <div className="p-4 border-b border-white/5 bg-white/5">
+                        <div className="relative group/search">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                          <input
+                            type="text"
+                            placeholder="Search Workspace..."
+                            value={workspaceSearch}
+                            onChange={(e) => setWorkspaceSearch(e.target.value)}
+                            className="w-full bg-background/40 border-none rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                            autoFocus
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar bg-black/20">
+                        {workspaces
+                          .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
+                          .map((ws) => (
+                            <button
+                              key={ws.id}
+                              onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("workspace", ws.id);
+                                if (isTVMode) params.set("tv-mode", "yes");
+                                router.push(`/?${params.toString()}`);
+                                setIsWorkspaceOpen(false);
+                                setWorkspaceSearch("");
+                              }}
+                              className={cn(
+                                "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
+                                workspaceId === ws.id
+                                  ? "bg-primary/20 border border-primary/20 shadow-lg shadow-primary/5" 
+                                  : "hover:bg-white/5 border border-transparent"
+                              )}
+                            >
+                              <div className="flex flex-col">
+                                <span className={cn(
+                                  "text-xs font-black uppercase tracking-wider transition-colors",
+                                  workspaceId === ws.id ? "text-primary" : "text-muted group-hover/item:text-foreground"
+                                )}>
+                                  {ws.name}
+                                </span>
+                                <span className="text-[9px] font-bold opacity-30 mt-0.5 uppercase tracking-widest">
+                                  {new Date(ws.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
+                              {workspaceId === ws.id ? (
+                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+                                  <Check size={12} className="text-primary" strokeWidth={3} />
+                                </div>
+                              ) : (
+                                <ChevronRight size={14} className="text-muted/20 group-hover/item:text-muted transition-all group-hover/item:translate-x-0.5" />
+                              )}
+                            </button>
+                          ))}
+                        
+                        {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && (
+                          <div className="py-12 flex flex-col items-center justify-center opacity-40">
+                            <Search size={24} className="mb-2" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">No Matches</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3 border-t border-white/5 bg-white/5">
+                        <button
+                          onClick={() => {
+                            handleAddWorkspace();
+                            setIsWorkspaceOpen(false);
+                            setWorkspaceSearch("");
+                          }}
+                          className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-muted hover:text-foreground hover:bg-white/5 transition-all"
+                        >
+                          <Plus size={14} />
+                          New Workspace
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <button 
                 onClick={() => moveCarousel("next")}
-                className="p-3 hover:bg-foreground/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90 bg-foreground/5 border border-border/10 group/next flex items-center gap-2"
+                className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/next flex items-center justify-center"
                 title="Next Workspace (Right Arrow)"
               >
-                <span className="text-[10px] font-black opacity-30 group-hover:opacity-100 transition-opacity">→</span>
-                <ChevronRight size={20} className="group-hover/next:translate-x-1 transition-transform" />
+                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/next:opacity-100 blur-xl transition-opacity" />
+                <ArrowRight size={22} className="relative z-10 group-hover/next:translate-x-1.5 transition-transform duration-300 ease-out" />
               </button>
             </div>
           </div>
