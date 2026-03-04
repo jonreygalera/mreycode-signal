@@ -177,6 +177,36 @@ export const clearHistory = (workspaceId?: string | null) => {
   localStorage.removeItem(getHistoryKey(workspaceId));
 };
 
+export const clearAllHistory = () => {
+  const workspaces = getWorkspaces();
+  // Clear root history
+  localStorage.removeItem(getHistoryKey(null));
+  // Clear each workspace history
+  workspaces.forEach(ws => localStorage.removeItem(getHistoryKey(ws.id)));
+};
+
+export const getGlobalStats = () => {
+  const workspaces = getWorkspaces();
+  let totalActive = 0;
+  let totalHistory = 0;
+
+  // Root stats (if any)
+  totalActive += getTempWidgets(null).length;
+  totalHistory += getHistoryWidgets(null).length;
+
+  // Workspace stats
+  workspaces.forEach(ws => {
+    totalActive += getTempWidgets(ws.id).length;
+    totalHistory += getHistoryWidgets(ws.id).length;
+  });
+
+  return {
+    workspacesCount: workspaces.length,
+    activeWidgetsCount: totalActive,
+    historyWidgetsCount: totalHistory
+  };
+};
+
 export const getWorkspaces = (): Workspace[] => {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(WORKSPACES_KEY);
