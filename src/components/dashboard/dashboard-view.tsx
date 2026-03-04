@@ -82,6 +82,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     mode: 'add' | 'rename' | 'copy';
     targetId?: string | null;
     initialValue?: string;
+    initialSelectedWidgets?: WidgetConfig[];
     title: string;
   }>({ isOpen: false, mode: 'add', title: '' });
 
@@ -313,12 +314,14 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const ws = workspaces.find(w => w.id === wsId);
     if (!ws) return;
 
+    const currentWidgets = getTempWidgets(wsId).map(tw => tw.config);
     setWorkspaceModal({
       isOpen: true,
       mode: 'rename',
-      title: 'Rename Workspace',
+      title: 'Edit Workspace',
       initialValue: ws.name,
-      targetId: wsId
+      targetId: wsId,
+      initialSelectedWidgets: currentWidgets
     });
   };
 
@@ -344,24 +347,59 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
         saveWorkspace(newWS);
         
-        // Initialize with selected widgets
+        // Initialize with selected widgets in order
+        let lastId: string | null = null;
         selectedWidgets.forEach(config => {
-          saveTempWidget(config, null, id);
+          const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          lastId = uniqueId;
         });
 
         setWorkspaces(getWorkspaces());
         router.push(`/?workspace=${id}`);
       } else if (mode === 'rename' && targetId) {
         updateWorkspace(targetId, name.trim());
+        
+        // reconcile widgets: delete those removed, update/add those kept/added
+        const currentInDb = getTempWidgets(targetId);
+        const selectedIds = new Set(selectedWidgets.map(w => w.id));
+        
+        // Remove permanently deleted ones
+        currentInDb.forEach(tw => {
+          if (!selectedIds.has(tw.config.id)) {
+            // Check if it's in the templates - if so, it was never "real" in this WS until confirmed
+            // But if it's in currentInDb, it IS real.
+            deleteTempWidget(tw.config.id, targetId, true);
+          }
+        });
+
+        // Save order
+        let lastId: string | null = null;
+        selectedWidgets.forEach(config => {
+          let finalConfig = { ...config };
+          // If it's a template (not an instance), generate ID
+          const isTemplate = TEMPLATES.some(t => t.config.id === config.id);
+          if (isTemplate) {
+            finalConfig.id = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          }
+          
+          saveTempWidget(finalConfig, lastId, targetId);
+          lastId = finalConfig.id;
+        });
+
         setWorkspaces(getWorkspaces());
+        setTempWidgets(getTempWidgets(workspaceId));
       } else if (mode === 'copy') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
         saveWorkspace(newWS);
 
-        // Copy selected widgets
+        // Initialize with selected widgets in order
+        let lastId: string | null = null;
         selectedWidgets.forEach(config => {
-          saveTempWidget(config, null, id);
+          const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          lastId = uniqueId;
         });
 
         setWorkspaces(getWorkspaces());
@@ -401,11 +439,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const handleClearAll = async () => {
     const confirmed = await showAlert({
-      title: "Clear All Widgets",
-      message: "This will move all custom widgets to history. This action can be undone from the recycle bin.",
+      title: "Remove All Widgets",
+      message: "This will move all widgets in this workspace to history. You can restore them from the history bin if needed.",
       type: "warning",
       showCancel: true,
-      confirmText: "Clear All",
+      confirmText: "Remove All",
       cancelText: "Cancel"
     });
 
@@ -676,10 +714,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               <button
                 onClick={handleClearAll}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px] whitespace-nowrap"
-                title="Clear temporary widgets"
+                title="Remove all widgets from workspace"
               >
                 <Trash2 size={14} />
-                Clear Temp
+                Remove All Widgets
               </button>
             )}
             
@@ -917,11 +955,13 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         mode={workspaceModal.mode}
         title={workspaceModal.title}
         initialValue={workspaceModal.initialValue}
-        availableWidgets={
+        availableWidgets={useMemo(() => 
           workspaceModal.mode === 'copy' 
             ? allWidgets.map(({ isTemp, ...config }: any) => config) 
-            : TEMPLATES.map(t => t.config)
-        }
+            : TEMPLATES.map(t => t.config),
+          [workspaceModal.mode, allWidgets]
+        )}
+        initialSelectedWidgets={workspaceModal.initialSelectedWidgets}
       />
     </div>
   );
