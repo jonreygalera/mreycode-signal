@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
+import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
+import { appConfig } from "@/config/app";
 
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [tzSearch, setTzSearch] = useState("");
   const [isTzOpen, setIsTzOpen] = useState(false);
   const tzDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Backup/Restore State
+  const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'import_preview' | 'importing'>('idle');
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [importFileData, setImportFileData] = useState<BackupData | null>(null);
+  const [backupSelection, setBackupSelection] = useState({
+    settings: true,
+    workspaces: true,
+    widgets: true,
+    history: true
+  });
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -117,11 +131,92 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-
   const removeImage = () => {
     setLocalBgImage(null);
     setPreviewImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFullExport = async () => {
+    setBackupStatus('exporting');
+    setBackupProgress(0);
+    
+    // Slight delay to show the progress starting
+    await new Promise(r => setTimeout(r, 600));
+
+    const data = await exportFullBackup((p) => setBackupProgress(p));
+    
+    // Filter based on selection
+    const filteredData: Partial<BackupData> = {
+      version: data.version,
+      exportedAt: data.exportedAt
+    };
+    if (backupSelection.settings) filteredData.settings = data.settings;
+    if (backupSelection.workspaces) filteredData.workspaces = data.workspaces;
+    if (backupSelection.widgets) filteredData.widgets = data.widgets;
+    if (backupSelection.history) filteredData.history = data.history;
+
+    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const date = new Date().toISOString().split('T')[0];
+    link.download = `mreycode-signal-full-backup-${date}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    setBackupProgress(100);
+    setTimeout(() => {
+      setBackupStatus('idle');
+      setBackupProgress(0);
+    }, 1000);
+  };
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (!data.version) throw new Error("Invalid backup file: Missing version");
+        setImportFileData(data);
+        setBackupStatus('import_preview');
+      } catch (err: any) {
+        showAlert({ title: "Import Error", message: err.message, type: "error" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleFullImport = async () => {
+    if (!importFileData) return;
+
+    const confirmed = await showAlert({
+      title: "Confirm Master Import",
+      message: "This will overwrite your current configuration for the selected items. Do you want to proceed?",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Yes, Overwrite",
+      cancelText: "Stop"
+    });
+
+    if (!confirmed) return;
+
+    setBackupStatus('importing');
+    setBackupProgress(0);
+    
+    await new Promise(r => setTimeout(r, 800));
+
+    await importFullBackup(importFileData, backupSelection, (p) => setBackupProgress(p));
+
+    setBackupProgress(100);
+    setTimeout(() => {
+      // Refresh to apply everything
+      window.location.reload();
+    }, 1000);
   };
 
   return (
@@ -471,6 +566,144 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                 </div>
               </section>
+
+              {/* Data Management Section */}
+              <section className="space-y-6 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Data Orchestration</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Export Card */}
+                  <div className="p-6 rounded-2xl border border-border bg-muted/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-foreground/5 rounded-lg text-foreground">
+                        <Download size={18} />
+                      </div>
+                      <h4 className="text-sm font-bold uppercase tracking-tight">Master Export</h4>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Backup your entire system: all settings, custom workspaces, and widget configurations into a single JSON file.
+                    </p>
+                    
+                    <div className="space-y-2 pt-2">
+                       {['settings', 'workspaces', 'widgets', 'history'].map(key => (
+                         <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                            <input 
+                              type="checkbox"
+                              checked={(backupSelection as any)[key]}
+                              onChange={(e) => setBackupSelection(prev => ({ ...prev, [key]: e.target.checked }))}
+                              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 bg-background"
+                            />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted group-hover:text-foreground transition-colors text-nowrap">
+                              {key === 'settings' ? 'App Settings' : 
+                               key === 'workspaces' ? 'Workspaces' : 
+                               key === 'widgets' ? 'Widget Configs' : 'Recycle Bin'}
+                            </span>
+                         </label>
+                       ))}
+                    </div>
+
+                    <button
+                      onClick={handleFullExport}
+                      type="button"
+                      disabled={backupStatus !== 'idle' || !Object.values(backupSelection).some(Boolean)}
+                      className="w-full flex items-center justify-center gap-2 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-lg py-2.5 text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {backupStatus === 'exporting' ? (
+                        <>
+                          <RefreshCcw size={14} className="animate-spin" />
+                          {backupProgress}%
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14} />
+                          Download Backup
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Import Card */}
+                  <div className="p-6 rounded-2xl border border-border bg-muted/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-foreground/5 rounded-lg text-foreground">
+                        <Upload size={18} />
+                      </div>
+                      <h4 className="text-sm font-bold uppercase tracking-tight">Master Import</h4>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Restore your system from a previously exported backup file. This will replace existing data based on your selection.
+                    </p>
+
+                    <div className="pt-2">
+                       {backupStatus === 'import_preview' && importFileData ? (
+                         <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                            <div className="flex items-center justify-between text-[10px] font-bold uppercase text-primary">
+                               <div className="flex items-center gap-1.5">
+                                 <AlertCircle size={10} />
+                                 <span>File Ready</span>
+                               </div>
+                               <span>v{importFileData.version}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                               {importFileData.settings && <span className="px-2 py-0.5 bg-primary/20 rounded text-[8px] font-black uppercase">Settings</span>}
+                               {importFileData.workspaces?.length > 0 && <span className="px-2 py-0.5 bg-primary/20 rounded text-[8px] font-black uppercase">{importFileData.workspaces.length} Workspaces</span>}
+                            </div>
+                            <div className="flex gap-2">
+                               <button 
+                                 onClick={handleFullImport}
+                                 type="button"
+                                 className="flex-1 bg-primary text-white py-1.5 rounded text-[10px] font-bold uppercase hover:bg-primary/90 transition-all active:scale-95"
+                               >
+                                 Start Import
+                               </button>
+                               <button 
+                                 onClick={() => { setBackupStatus('idle'); setImportFileData(null); }}
+                                 type="button"
+                                 className="px-3 bg-muted/10 py-1.5 rounded text-[10px] font-bold text-muted hover:text-foreground transition-all"
+                               >
+                                 Cancel
+                               </button>
+                            </div>
+                         </div>
+                       ) : backupStatus === 'importing' ? (
+                          <div className="space-y-2">
+                             <div className="flex items-center justify-between text-[10px] font-black uppercase text-muted">
+                                <span>Importing Progress</span>
+                                <span className="text-primary font-mono">{backupProgress}%</span>
+                             </div>
+                             <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden">
+                                <motion.div 
+                                  className="h-full bg-primary"
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${backupProgress}%` }}
+                                />
+                             </div>
+                          </div>
+                       ) : (
+                         <button
+                           onClick={() => importFileRef.current?.click()}
+                           type="button"
+                           className="w-full flex items-center justify-center gap-2 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-lg py-2.5 text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                         >
+                           <Upload size={14} />
+                           Select Backup File
+                         </button>
+                       )}
+                       <input 
+                         type="file"
+                         ref={importFileRef}
+                         onChange={handleImportFileChange}
+                         accept=".json"
+                         className="hidden"
+                       />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
             </div>
 
             {/* Footer */}
