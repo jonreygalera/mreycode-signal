@@ -182,17 +182,29 @@ export function WorkspaceModal({
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                     Workspace Name
                   </label>
-                  <input
-                    autoFocus
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder={placeholder}
-                    className="w-full bg-background border border-border rounded-[4px] px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground font-medium"
-                  />
+                  <div className="relative group/input">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setError(null);
+                      }}
+                      placeholder={placeholder}
+                      className="w-full bg-background border border-border rounded-[4px] px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground font-medium"
+                    />
+                    {name && (
+                      <button
+                        type="button"
+                        onClick={() => setName("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground opacity-0 group-hover/input:opacity-100 transition-opacity"
+                        title="Clear name"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                   {error && <p className="text-[10px] text-red-500 font-bold uppercase tracking-tight">{error}</p>}
                 </div>
 

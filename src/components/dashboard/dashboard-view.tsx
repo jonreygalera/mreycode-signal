@@ -301,12 +301,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleAddWorkspace = () => {
+    const suffixes = ["Hub", "Nexus", "Matrix", "Pulse", "Flow", "Station", "Vibe", "Base"];
+    const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const randomName = `Signal ${randomSuffix} ${Math.floor(Math.random() * 999)}`;
 
     setWorkspaceModal({
       isOpen: true,
       mode: 'add',
       title: 'Add New Workspace',
-      initialValue: ""
+      initialValue: randomName
     });
   };
 
