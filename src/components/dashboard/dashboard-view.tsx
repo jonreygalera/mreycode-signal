@@ -432,7 +432,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const data = {
       workspaceName: exportData.name,
       version: appConfig.version,
-      widgets: exportData.widgets,
+      widgets: exportData.widgets.map((w, index) => ({
+        ...w,
+        exportOrder: index // Explicitly track order for individual workspace export
+      })),
       exportedAt: new Date().toISOString()
     };
     
@@ -494,9 +497,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       
       saveWorkspace(newWorkspace);
       
-      // Map widgets and save them synchronously
-      importData.widgets.forEach((config: WidgetConfig) => {
-        saveTempWidget(config, null, newWsId);
+      // Sort by exportOrder if available, then import with positional tracking
+      const sortedWidgets = [...importData.widgets].sort((a: any, b: any) => 
+        (a.exportOrder ?? 0) - (b.exportOrder ?? 0)
+      );
+
+      let lastId: string | null = null;
+      sortedWidgets.forEach((config: WidgetConfig) => {
+        saveTempWidget(config, lastId, newWsId);
+        lastId = config.id;
       });
       
       // Direct window location change to refresh state

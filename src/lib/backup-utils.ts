@@ -35,7 +35,10 @@ export const exportFullBackup = async (onProgress?: (progress: number) => void):
   // 2. Workspaces
   const workspacesRaw = localStorage.getItem("mreycode_signal_workspaces");
   const workspaces = workspacesRaw ? JSON.parse(workspacesRaw) : [];
-  data.workspaces = workspaces;
+  data.workspaces = workspaces.map((ws: any, index: number) => ({
+    ...ws,
+    exportOrder: index // Explicitly track order
+  }));
   updateProgress();
 
   // 3. Widgets (Main + Workspaces)
@@ -46,7 +49,13 @@ export const exportFullBackup = async (onProgress?: (progress: number) => void):
 
   widgetKeys.forEach(key => {
     const val = localStorage.getItem(key);
-    if (val) data.widgets[key] = JSON.parse(val);
+    if (val) {
+      const widgets = JSON.parse(val);
+      data.widgets[key] = widgets.map((w: any, index: number) => ({
+        ...w,
+        exportOrder: index // Preserve the exact array position
+      }));
+    }
   });
   updateProgress();
 
@@ -87,12 +96,16 @@ export const importFullBackup = async (
     const existingRaw = localStorage.getItem("mreycode_signal_workspaces");
     const existingWorkspaces = existingRaw ? JSON.parse(existingRaw) : [];
     
-    // Create a Map for easy lookup and overwrite by ID
-    const workspaceMap = new Map();
-    existingWorkspaces.forEach((ws: any) => workspaceMap.set(ws.id, ws));
-    data.workspaces.forEach((ws: any) => workspaceMap.set(ws.id, ws));
+    // Create a Set of imported IDs for fast filtering
+    const importedIds = new Set(data.workspaces.map((ws: any) => ws.id));
     
-    localStorage.setItem("mreycode_signal_workspaces", JSON.stringify(Array.from(workspaceMap.values())));
+    // Merge: Prioritize backup order, then append historical workspaces that aren't in backup
+    const merged = [
+      ...data.workspaces, // Keep backup order
+      ...existingWorkspaces.filter((ws: any) => !importedIds.has(ws.id))
+    ];
+    
+    localStorage.setItem("mreycode_signal_workspaces", JSON.stringify(merged));
     updateProgress();
   }
 
