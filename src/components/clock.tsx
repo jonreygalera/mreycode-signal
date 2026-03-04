@@ -160,7 +160,7 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
           </motion.div>
 
           <span className={cn(
-            "text-[5rem] sm:text-[10rem] md:text-[16rem] lg:text-[20rem] xl:text-[24rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] transition-all",
+            "text-[15vw] sm:text-[16vw] md:text-[14vw] lg:text-[18vw] xl:text-[22rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] transition-all",
             settings.useBgInClock && settings.backgroundImage ? "text-white" : "text-foreground"
           )}>
             {timeString}
@@ -170,11 +170,11 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.8 }}
             transition={{ delay: 0.4 }}
-            className="flex items-center gap-4"
+            className="flex items-center gap-2 md:gap-4"
           >
-            <Calendar size={24} className={cn(settings.useBgInClock && settings.backgroundImage ? "text-white/40" : "text-muted")} />
+            <Calendar size={20} className={cn("md:w-6 md:h-6", settings.useBgInClock && settings.backgroundImage ? "text-white/40" : "text-muted")} />
             <span className={cn(
-              "text-xl sm:text-2xl md:text-4xl font-bold uppercase tracking-[0.2em] italic",
+              "text-lg sm:text-xl md:text-3xl lg:text-4xl font-bold uppercase tracking-[0.2em] italic",
               settings.useBgInClock && settings.backgroundImage ? "text-white/80" : "text-muted"
             )}>
               {dayString}, {dateString}
@@ -182,15 +182,15 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
           </motion.div>
         </div>
 
-        <div className="flex flex-col items-center gap-6">
-          <div className="h-px w-24 bg-linear-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
-            <span className="text-[11px] font-bold text-white/40 uppercase tracking-[0.3em]">Powered by</span>
+        <div className="flex flex-col items-center gap-4 md:gap-6">
+          <div className="h-px w-16 md:w-24 bg-linear-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="flex items-center gap-3 px-4 py-2 md:px-5 md:py-2.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+            <span className="text-[9px] md:text-[11px] font-bold text-white/40 uppercase tracking-[0.3em]">Powered by</span>
             <a 
               href="https://timeapi.io" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-[11px] font-mono font-bold text-primary hover:text-primary/80 transition-colors"
+              className="text-[9px] md:text-[11px] font-mono font-bold text-primary hover:text-primary/80 transition-colors"
             >
               TIMEAPI.IO
             </a>
@@ -199,9 +199,9 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
         
         <button
           onClick={() => setIsMaximized(false)}
-          className="absolute -top-10 md:fixed md:top-12 md:right-12 p-5 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white group active:scale-95"
+          className="fixed top-4 right-4 md:top-12 md:right-12 p-3 md:p-5 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white group active:scale-95 z-50"
         >
-          <X size={48} className="group-hover:rotate-90 transition-transform duration-500" />
+          <X size={32} className="md:w-12 md:h-12 group-hover:rotate-90 transition-transform duration-500" />
         </button>
       </motion.div>
     </motion.div>

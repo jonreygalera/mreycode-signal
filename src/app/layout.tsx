@@ -90,6 +90,8 @@ import { AlertProvider } from "@/context/alert-context";
 import { SignalProvider } from "@/context/signal-context";
 import GuestTracker from "@/components/guest-tracker";
 
+import Script from "next/script";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -121,8 +123,13 @@ export default function RootLayout({
             </SettingsProvider>
           </TVModeProvider>
         </ThemeProvider>
+        <Script 
+          src="http://mrey-ai.vercel.app/js/embed-mreyagent.js?agentName=mreycode-signal-kb" 
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
 }
+
 

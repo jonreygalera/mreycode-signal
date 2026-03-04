@@ -4,6 +4,7 @@ export interface AppSettings {
   useBgInClock: boolean;
   tvCarouselEnabled: boolean;
   tvCarouselInterval: number;
+  snackbarPosition: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -12,4 +13,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   useBgInClock: false,
   tvCarouselEnabled: false,
   tvCarouselInterval: 30,
+  snackbarPosition: 'top-right',
 };
+

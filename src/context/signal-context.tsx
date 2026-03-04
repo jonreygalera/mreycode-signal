@@ -7,6 +7,7 @@ import { ActiveSignal, SignalConfig } from "@/types/signal";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { appConfig } from "@/config/app";
+import { useSettings } from "./settings-context";
 
 interface Snackbar {
   id: string;
@@ -116,20 +117,41 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const { settings } = useSettings();
+
+  const getPositionClasses = () => {
+    switch (settings.snackbarPosition) {
+      case 'top-left': return "top-6 left-6 items-start";
+      case 'top-center': return "top-6 left-1/2 -translate-x-1/2 items-center";
+      case 'top-right': return "top-6 right-6 items-end";
+      case 'bottom-left': return "bottom-6 left-6 items-start";
+      case 'bottom-center': return "bottom-6 left-1/2 -translate-x-1/2 items-center";
+      case 'bottom-right': return "bottom-6 right-6 items-end";
+      default: return "top-6 right-6 items-end";
+    }
+  };
+
+  const getAnimationProps = () => {
+    const pos = settings.snackbarPosition;
+    if (pos.includes('left')) return { initial: { opacity: 0, x: -20, scale: 0.9 }, animate: { opacity: 1, x: 0, scale: 1 } };
+    if (pos.includes('right')) return { initial: { opacity: 0, x: 20, scale: 0.9 }, animate: { opacity: 1, x: 0, scale: 1 } };
+    if (pos.includes('top')) return { initial: { opacity: 0, y: -20, scale: 0.9 }, animate: { opacity: 1, y: 0, scale: 1 } };
+    return { initial: { opacity: 0, y: 20, scale: 0.9 }, animate: { opacity: 1, y: 0, scale: 1 } };
+  };
+
   return (
     <SignalContext.Provider value={{ activeSignals, snackbars, tripSignal, dismissSignal, removeSnackbar }}>
       {children}
       
       {/* Snackbar Container */}
-      <div className="fixed bottom-6 right-6 z-9999 flex flex-col gap-3 items-end pointer-events-none w-full max-w-sm">
+      <div className={cn("fixed z-9999 flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4", getPositionClasses())}>
         <AnimatePresence mode="popLayout">
           {snackbars.map((snack) => (
             <motion.div
               key={snack.id}
               layout
-              initial={{ opacity: 0, x: 100, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95, filter: "blur(4px)" }}
+              {...getAnimationProps()}
+              exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
               transition={{ type: "spring", damping: 20, stiffness: 300 }}
               className="pointer-events-auto group relative w-full bg-panel/80 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl shadow-black/40 overflow-hidden"
             >

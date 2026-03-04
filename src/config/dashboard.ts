@@ -16,6 +16,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 5000, 
     color: 'up',
     config: {},
+    sourceUrl: 'https://api-mreyai.vercel.app',
   },
   {
     id: 'mrey-ai-vercel-app-total-visits',
@@ -32,6 +33,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 5000, 
     color: 'up',
     config: {},
+    sourceUrl: 'https://api-mreyai.vercel.app',
   },
   {
     id: 'jonreygalera-vercel-app-total-visits',
@@ -48,6 +50,7 @@ export const dashboardWidgets: WidgetConfig[] = [
     refreshInterval: 5000, 
     color: 'up',
     config: {},
+    sourceUrl: 'https://api-mreyai.vercel.app',
   },
   {
     id: "baguio-city-ph-temperature",
@@ -151,6 +154,7 @@ export const dashboardWidgets: WidgetConfig[] = [
         action: ['pulse', 'notify-in-app', 'sound'],
         enabled: true,
         duration: 10,
+        cooldown: 3600,
       }
     ],
     config: {},

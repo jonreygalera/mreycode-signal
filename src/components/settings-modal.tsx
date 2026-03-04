@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
 
@@ -23,10 +23,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
   const [localTvCarouselEnabled, setLocalTvCarouselEnabled] = useState(settings.tvCarouselEnabled);
   const [localTvCarouselInterval, setLocalTvCarouselInterval] = useState(settings.tvCarouselInterval);
+  const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
   const [tzSearch, setTzSearch] = useState("");
+  const [isTzOpen, setIsTzOpen] = useState(false);
+  const tzDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -44,8 +47,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalUseBgInClock(settings.useBgInClock);
     setLocalTvCarouselEnabled(settings.tvCarouselEnabled);
     setLocalTvCarouselInterval(settings.tvCarouselInterval);
+    setLocalSnackbarPosition(settings.snackbarPosition);
     setPreviewImage(settings.backgroundImage);
   }, [settings, isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tzDropdownRef.current && !tzDropdownRef.current.contains(event.target as Node)) {
+        setIsTzOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,6 +90,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       useBgInClock: localUseBgInClock,
       tvCarouselEnabled: localTvCarouselEnabled,
       tvCarouselInterval: Math.max(30, localTvCarouselInterval),
+      snackbarPosition: localSnackbarPosition,
     });
     onClose();
   };
@@ -97,6 +112,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalUseBgInClock(DEFAULT_SETTINGS.useBgInClock);
       setLocalTvCarouselEnabled(DEFAULT_SETTINGS.tvCarouselEnabled);
       setLocalTvCarouselInterval(DEFAULT_SETTINGS.tvCarouselInterval);
+      setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -158,55 +174,94 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     Used for all time-based metrics and widgets across the dashboard.
                   </p>
                   <div className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/50" size={14} />
-                      <input
-                        type="text"
-                        placeholder="Search timezones..."
-                        value={tzSearch}
-                        onChange={(e) => setTzSearch(e.target.value)}
-                        className="w-full bg-background border border-border rounded-[4px] pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 p-1 bg-background/50 border border-border/30 rounded-lg">
-                      {timezones
-                        .filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase()))
-                        .map((tz) => (
-                          <button
-                            key={tz}
-                            type="button"
-                            onClick={() => setLocalTimezone(tz)}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
-                              localTimezone === tz
-                                ? "bg-foreground/5 border-foreground/20 shadow-sm"
-                                : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/30"
-                            )}
-                          >
-                            <div className="flex flex-col items-start gap-0.5 text-left">
-                              <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-tight transition-colors",
-                                localTimezone === tz ? "text-foreground" : "text-muted group-hover:text-foreground"
-                              )}>
-                                {tz.split('/').pop()?.replace(/_/g, " ")}
-                              </span>
-                               <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                                 {tz.split('/').slice(0, -1).join('/') || 'Global'}
-                               </span>
-                            </div>
-                            {localTimezone === tz && (
-                              <div className="p-0.5 rounded-sm bg-foreground text-background">
-                                <Check size={10} />
-                              </div>
-                            )}
-                          </button>
-                      ))}
-                      {timezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
-                        <div className="col-span-full py-12 text-center border border-dashed border-border/40 rounded-lg">
-                          <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic text-center">No timezones match your search</p>
+                    <div className="relative" ref={tzDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsTzOpen(!isTzOpen)}
+                        className={cn(
+                          "w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all flex items-center justify-between group",
+                          isTzOpen && "ring-1 ring-foreground/20 border-foreground/20 shadow-sm"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Globe className="text-muted group-hover:text-foreground transition-colors" size={16} />
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted group-hover:text-foreground transition-colors">Current Zone</span>
+                            <span className="font-bold text-foreground">
+                              {localTimezone.split('/').pop()?.replace(/_/g, " ") || 'System Default'}
+                            </span>
+                          </div>
                         </div>
-                      )}
+                        <ChevronDown size={18} className={cn("text-muted transition-transform duration-300", isTzOpen && "rotate-180")} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isTzOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 4, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 z-50 bg-panel border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col mt-1"
+                          >
+                            <div className="p-3 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                                <input
+                                  type="text"
+                                  placeholder="Search timezones..."
+                                  value={tzSearch}
+                                  onChange={(e) => setTzSearch(e.target.value)}
+                                  className="w-full bg-transparent border-none pl-10 pr-4 py-2 text-sm placeholder:text-muted/50 focus:outline-none focus:ring-0"
+                                  autoFocus
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 p-2 max-h-[300px] overflow-y-auto custom-scrollbar bg-background/50">
+                              {timezones
+                                .filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase()))
+                                .map((tz) => (
+                                  <button
+                                    key={tz}
+                                    type="button"
+                                    onClick={() => {
+                                      setLocalTimezone(tz);
+                                      setIsTzOpen(false);
+                                    }}
+                                    className={cn(
+                                      "flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
+                                      localTimezone === tz
+                                        ? "bg-foreground/5 border-foreground/20 shadow-sm"
+                                        : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/10"
+                                    )}
+                                  >
+                                    <div className="flex flex-col items-start gap-0.5 text-left">
+                                      <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                                        localTimezone === tz ? "text-foreground" : "text-muted group-hover:text-foreground"
+                                      )}>
+                                        {tz.split('/').pop()?.replace(/_/g, " ")}
+                                      </span>
+                                       <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
+                                         {tz.split('/').slice(0, -1).join('/') || 'Global'}
+                                       </span>
+                                    </div>
+                                    {localTimezone === tz && (
+                                      <div className="p-0.5 rounded-sm bg-foreground text-background">
+                                        <Check size={10} />
+                                      </div>
+                                    )}
+                                  </button>
+                              ))}
+                              {timezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
+                                <div className="col-span-full py-12 text-center border border-dashed border-border/40 rounded-lg">
+                                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic text-center">No matching timezones</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
@@ -274,6 +329,47 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </AnimatePresence>
                 </div>
               </section>
+              
+              {/* Alerts Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <RotateCcw className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Alerts & Notifications</h3>
+                </div>
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-foreground/80 block mb-1">Signal Snackbar Position</label>
+                    <p className="text-xs text-muted leading-relaxed mb-4">
+                      Choose where you want monitored signals and notifications to appear.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { value: 'top-left', label: 'Top Left' },
+                        { value: 'top-center', label: 'Top Center' },
+                        { value: 'top-right', label: 'Top Right' },
+                        { value: 'bottom-left', label: 'Bottom Left' },
+                        { value: 'bottom-center', label: 'Bottom Center' },
+                        { value: 'bottom-right', label: 'Bottom Right' }
+                      ].map((pos) => (
+                        <button
+                          key={pos.value}
+                          type="button"
+                          onClick={() => setLocalSnackbarPosition(pos.value as any)}
+                          className={cn(
+                            "px-4 py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider transition-all",
+                            localSnackbarPosition === pos.value 
+                              ? "bg-foreground text-background border-foreground shadow-lg shadow-black/20 scale-[1.02]"
+                              : "bg-background border-border text-muted hover:border-foreground/30 hover:text-foreground active:scale-95"
+                          )}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
 
 
               {/* Background Section */}
