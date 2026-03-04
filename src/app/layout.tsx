@@ -124,7 +124,7 @@ export default function RootLayout({
           </TVModeProvider>
         </ThemeProvider>
         <Script 
-          src="http://mrey-ai.vercel.app/js/embed-mreyagent.js?agentName=mreycode-signal-kb" 
+          src="https://mrey-ai.vercel.app/js/embed-mreyagent.js?agentName=mreycode-signal-kb" 
           strategy="afterInteractive"
         />
       </body>
