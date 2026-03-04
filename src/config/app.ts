@@ -1,6 +1,6 @@
 export const appConfig = {
   name: "mreycode-signal",
-  version: "2.1.0",
+  version: "2.2.0",
   description: "A single-page, elegant, bento-style metrics dashboard supporting iframe integration per widget.",
   url: "https://mreycode-signal.vercel.app",
   github: "https://github.com/jonreygalera/mreycode-signal",
@@ -31,5 +31,6 @@ export const appConfig = {
   statsApi: process.env.NEXT_PUBLIC_STATS_API ?? "https://api-mreyai.vercel.app",
   signalSound: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
   defaultSignalDuration: 10,
+  localStorageLimit: 5,
 };
 

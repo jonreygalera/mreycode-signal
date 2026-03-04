@@ -14,6 +14,7 @@ import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
 import { RefreshButton } from "./refresh-button";
 import { ConnectivityStatus } from "./connectivity-status";
+import { getStorageUsage } from "@/lib/storage-utils";
 
 export function Header() {
   const searchParams = useSearchParams();
@@ -41,6 +42,13 @@ export function Header() {
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
   const { settings } = useSettings();
+  const [storageUsage, setStorageUsage] = useState({ usedMB: 0, limitMB: 5, percentage: 0 });
+  
+  useEffect(() => {
+    if (showAbout) {
+      setStorageUsage(getStorageUsage());
+    }
+  }, [showAbout]);
   
   const pathname = usePathname();
   const isIframe = pathname?.includes("/iframe");
@@ -359,6 +367,30 @@ export function Header() {
                     <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
                       <span className="text-foreground/60 font-bold">WIDGETS:</span> Predefined system widgets are <span className="text-foreground">hardcoded</span> directly into the source code for maximum performance and zero-latency availability.
                     </p>
+                    
+                    <div className="pt-2 border-t border-border/20 mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[9px] font-bold text-muted/80 uppercase">
+                        <span>LocalStorage Usage</span>
+                        <span className={cn(
+                          storageUsage.percentage > 80 ? "text-red-500" : 
+                          storageUsage.percentage > 50 ? "text-amber-500" : "text-foreground/60"
+                        )}>
+                          {storageUsage.usedMB} / {storageUsage.limitMB} MB ({storageUsage.percentage}%)
+                        </span>
+                      </div>
+                      <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${storageUsage.percentage}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className={cn(
+                            "h-full rounded-full transition-colors",
+                            storageUsage.percentage > 80 ? "bg-red-500/80" : 
+                            storageUsage.percentage > 50 ? "bg-amber-500/80" : "bg-primary/80"
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
