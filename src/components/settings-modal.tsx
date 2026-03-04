@@ -26,6 +26,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
   const [localTvCarouselEnabled, setLocalTvCarouselEnabled] = useState(settings.tvCarouselEnabled);
   const [localTvCarouselInterval, setLocalTvCarouselInterval] = useState(settings.tvCarouselInterval);
+  const [localMaximizedCarouselEnabled, setLocalMaximizedCarouselEnabled] = useState(settings.maximizedCarouselEnabled);
+  const [localMaximizedCarouselInterval, setLocalMaximizedCarouselInterval] = useState(settings.maximizedCarouselInterval);
   const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
   const [localLocalStorageThreshold, setLocalLocalStorageThreshold] = useState(settings.localStorageThreshold);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
@@ -64,6 +66,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalUseBgInClock(settings.useBgInClock);
     setLocalTvCarouselEnabled(settings.tvCarouselEnabled);
     setLocalTvCarouselInterval(settings.tvCarouselInterval);
+    setLocalMaximizedCarouselEnabled(settings.maximizedCarouselEnabled);
+    setLocalMaximizedCarouselInterval(settings.maximizedCarouselInterval);
     setLocalSnackbarPosition(settings.snackbarPosition);
     setLocalLocalStorageThreshold(settings.localStorageThreshold);
     setPreviewImage(settings.backgroundImage);
@@ -109,6 +113,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       useBgInClock: localUseBgInClock,
       tvCarouselEnabled: localTvCarouselEnabled,
       tvCarouselInterval: Math.max(30, localTvCarouselInterval),
+      maximizedCarouselEnabled: localMaximizedCarouselEnabled,
+      maximizedCarouselInterval: Math.max(20, localMaximizedCarouselInterval),
       snackbarPosition: localSnackbarPosition,
       localStorageThreshold: localLocalStorageThreshold,
     });
@@ -132,6 +138,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalUseBgInClock(DEFAULT_SETTINGS.useBgInClock);
       setLocalTvCarouselEnabled(DEFAULT_SETTINGS.tvCarouselEnabled);
       setLocalTvCarouselInterval(DEFAULT_SETTINGS.tvCarouselInterval);
+      setLocalMaximizedCarouselEnabled(DEFAULT_SETTINGS.maximizedCarouselEnabled);
+      setLocalMaximizedCarouselInterval(DEFAULT_SETTINGS.maximizedCarouselInterval);
       setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
       setLocalLocalStorageThreshold(DEFAULT_SETTINGS.localStorageThreshold);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
@@ -421,6 +429,62 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               min="30"
                               value={localTvCarouselInterval}
                               onChange={(e) => setLocalTvCarouselInterval(Number(e.target.value))}
+                              className="w-32 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                            />
+                            <span className="text-xs font-bold text-muted uppercase tracking-widest">Seconds</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="pt-6 border-t border-border/50 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <label className="text-sm font-semibold text-foreground/80">Maximized Widget Carousel</label>
+                        {localMaximizedCarouselEnabled && (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-[10px] font-bold text-primary uppercase tracking-wider animate-pulse">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                            Auto-Next
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted leading-relaxed">
+                        Automatically cycle through widgets in the workspace when one is maximized.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={localMaximizedCarouselEnabled}
+                        onChange={(e) => setLocalMaximizedCarouselEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-muted/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary transition-all"></div>
+                    </label>
+                  </div>
+
+                  <AnimatePresence>
+                    {localMaximizedCarouselEnabled && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-2">
+                          <label className="text-sm font-semibold text-foreground/80 block mb-1">Cycle Interval (Seconds)</label>
+                          <p className="text-xs text-muted leading-relaxed mb-4">
+                            Set the dwell time for each maximized widget (Minimum 20 seconds).
+                          </p>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="number"
+                              min="20"
+                              value={localMaximizedCarouselInterval}
+                              onChange={(e) => setLocalMaximizedCarouselInterval(Number(e.target.value))}
                               className="w-32 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                             />
                             <span className="text-xs font-bold text-muted uppercase tracking-widest">Seconds</span>
