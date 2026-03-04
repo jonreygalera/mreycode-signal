@@ -61,18 +61,6 @@ To add a new widget, append a `WidgetConfig` object to the `dashboardWidgets` ar
   }
 }
 ```
-
-### Iframe Embedding (Snippet)
-
-```html
-<iframe
-  src="https://your-domain.com/widget/[ID]/iframe?theme=dark"
-  width="100%"
-  height="400"
-  frameborder="0"
-></iframe>
-```
-
 ---
 
 ## Credits

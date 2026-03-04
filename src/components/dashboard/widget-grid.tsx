@@ -46,14 +46,30 @@ export function WidgetGrid({
           <WidgetCard 
             key={config.id} 
             config={config} 
+            allConfigs={configs}
             index={index} 
             onEdit={onEdit}
             onDelete={onDelete}
             onCopy={onCopy}
             isMaximized={config.id === maximizedWidgetId}
-            onMaximize={(max) => onMaximizeChange?.(max ? config.id : null)}
+            onMaximize={(max) => onMaximizeChange?.(typeof max === 'string' ? max : (max ? config.id : null))}
           />
         ))}
+        {/* Ensure the maximized widget is ALWAYS rendered so its fixed overlay is visible 
+            even if it's not in the initial visible slice */}
+        {maximizedWidgetId && !configs.slice(0, visibleCount).some(c => c.id === maximizedWidgetId) && (
+          configs.filter(c => c.id === maximizedWidgetId).map((config, index) => (
+            <div key={config.id} className="hidden">
+              <WidgetCard 
+                config={config} 
+                allConfigs={configs}
+                index={index} 
+                isMaximized={true}
+                onMaximize={(max) => onMaximizeChange?.(typeof max === 'string' ? max : (max ? config.id : null))}
+              />
+            </div>
+          ))
+        )}
       </div>
       {visibleCount < configs.length && (
         <div ref={observerRef} className="h-10 w-full" />

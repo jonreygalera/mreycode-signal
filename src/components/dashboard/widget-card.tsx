@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -109,7 +109,8 @@ export function WidgetCard({
   onDelete,
   onCopy,
   isMaximized: isMaximizedProp,
-  onMaximize
+  onMaximize,
+  allConfigs = []
 }: { 
   config: WidgetConfig; 
   index: number;
@@ -117,16 +118,17 @@ export function WidgetCard({
   onDelete?: (id: string) => void;
   onCopy?: (config: WidgetConfig) => void;
   isMaximized?: boolean;
-  onMaximize?: (maximized: boolean) => void;
+  onMaximize?: (maximized: boolean | string) => void;
+  allConfigs?: WidgetConfig[];
 }) {
   const [internalMaximized, setInternalMaximized] = useState(false);
   const isMaximized = isMaximizedProp !== undefined ? isMaximizedProp : internalMaximized;
   
-  const handleSetMaximized = (val: boolean) => {
+  const handleSetMaximized = (val: boolean | string) => {
     if (onMaximize) {
       onMaximize(val);
     } else {
-      setInternalMaximized(val);
+      setInternalMaximized(typeof val === 'string' ? true : val);
     }
   };
 
@@ -135,6 +137,21 @@ export function WidgetCard({
   const { settings } = useSettings();
   const { isOnline } = useConnectivity();
   const { activeSignals, tripSignal, dismissSignal } = useSignals();
+  const [carouselTimeLeft, setCarouselTimeLeft] = useState<number | null>(null);
+  const [isWidgetDropdownOpen, setIsWidgetDropdownOpen] = useState(false);
+  const [widgetSearch, setWidgetSearch] = useState("");
+  const widgetDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (widgetDropdownRef.current && !widgetDropdownRef.current.contains(event.target as Node)) {
+        setIsWidgetDropdownOpen(false);
+        setWidgetSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Find active signals for this widget
   const widgetActiveSignals = useMemo(() => 
@@ -269,6 +286,63 @@ export function WidgetCard({
 
     setLastValue(val);
   }, [parsedData, config, tripSignal, dismissSignal, lastValue]);
+  
+  const moveCarousel = (dir: "next" | "prev") => {
+    if (!allConfigs || allConfigs.length <= 1) return;
+    const currentIndex = allConfigs.findIndex(c => c.id === config.id);
+    let nextIndex;
+    if (dir === "next") {
+      nextIndex = (currentIndex + 1) % allConfigs.length;
+    } else {
+      nextIndex = (currentIndex - 1 + allConfigs.length) % allConfigs.length;
+    }
+    const nextId = allConfigs[nextIndex].id;
+    handleSetMaximized(nextId);
+  };
+  
+  // Carousel Timer Logic
+  useEffect(() => {
+    if (!isMaximized || !settings.maximizedCarouselEnabled || allConfigs.length <= 1) {
+      setCarouselTimeLeft(null);
+      return;
+    }
+
+    const intervalSeconds = Math.max(20, settings.maximizedCarouselInterval);
+    setCarouselTimeLeft(intervalSeconds);
+
+    const timer = setInterval(() => {
+      setCarouselTimeLeft(prev => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          moveCarousel("next");
+          return intervalSeconds;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isMaximized, settings.maximizedCarouselEnabled, settings.maximizedCarouselInterval, allConfigs.length, config.id]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isMaximized) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      if (e.key === "ArrowRight") {
+        moveCarousel("next");
+      } else if (e.key === "ArrowLeft") {
+        moveCarousel("prev");
+      } else if (e.key === "Escape") {
+        handleSetMaximized(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMaximized, allConfigs.length, config.id]);
 
   const sourceLabel = useMemo(() => {
     if (config.source) return config.source;
@@ -301,12 +375,77 @@ export function WidgetCard({
 
   const renderContent = (isMaximizedView = false) => (
     <>
-      <div className="flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-b border-border/40">
-        <div className="flex flex-col">
+      <div className={cn("flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-border/40", !isMaximizedView && "border-b")}>
+        <div className="flex flex-col relative">
           <div className="flex items-center gap-2">
-            <h3 className={cn("font-semibold uppercase tracking-wider text-muted", isMaximizedView ? "text-sm" : "text-xs")}>
-              {config.label}
-            </h3>
+            {!isMaximizedView ? (
+              <h3 className="font-semibold uppercase tracking-wider text-muted text-xs">
+                {config.label}
+              </h3>
+            ) : (
+              <div className="flex items-center gap-2 mr-2" ref={widgetDropdownRef}>
+                <button 
+                  onClick={() => {
+                    setIsWidgetDropdownOpen(!isWidgetDropdownOpen);
+                    if (isWidgetDropdownOpen) setWidgetSearch("");
+                  }}
+                  className="flex flex-col items-start px-3 py-1.5 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-border/30 relative z-10"
+                >
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/60 leading-none mb-1 group-hover/ws:text-primary transition-colors">Active Widget</span>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black text-foreground uppercase tracking-tight leading-none text-left">
+                      {config.label}
+                    </h2>
+                    {allConfigs.length > 1 && <ChevronDown size={14} className={cn("text-muted/60 transition-transform duration-300", isWidgetDropdownOpen && "rotate-180")} />}
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {isWidgetDropdownOpen && allConfigs.length > 1 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 5, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border/50 bg-panel shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                    >
+                      <div className="p-3 border-b border-border/30 bg-muted/5">
+                        <div className="relative group/search">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                          <input
+                            type="text"
+                            placeholder="Search widgets..."
+                            value={widgetSearch}
+                            onChange={(e) => setWidgetSearch(e.target.value)}
+                            className="w-full bg-background/50 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                            autoFocus
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {allConfigs.filter(w => w.label.toLowerCase().includes(widgetSearch.toLowerCase())).map(w => (
+                          <button
+                            key={w.id}
+                            onClick={() => {
+                              handleSetMaximized(w.id);
+                              setIsWidgetDropdownOpen(false);
+                              setWidgetSearch("");
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
+                              config.id === w.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/10 border border-transparent"
+                            )}
+                          >
+                            <span className={cn("text-xs font-black uppercase tracking-wider", config.id === w.id ? "text-primary" : "text-muted group-hover/item:text-foreground")}>{w.label}</span>
+                            {config.id === w.id && <Check size={14} className="text-primary" />}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
             {hasActiveSignal && (
               <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-[2px] shadow-[0_0_8px_rgba(239,68,68,0.2)]">
                 <span className="relative flex h-1.5 w-1.5">
@@ -340,6 +479,70 @@ export function WidgetCard({
               <Trash2 size={14} />
             </button>
           </div>
+          {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
+            <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 mr-4">
+              <div className="relative flex items-center justify-center w-5 h-5">
+                <svg className="w-full h-full -rotate-90">
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="8"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="transparent"
+                    className="text-foreground/5"
+                  />
+                  <motion.circle
+                    cx="10"
+                    cy="10"
+                    r="8"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="transparent"
+                    strokeDasharray={50}
+                    initial={{ strokeDashoffset: 50 }}
+                    animate={{ 
+                      strokeDashoffset: 50 - (50 * (carouselTimeLeft / settings.maximizedCarouselInterval))
+                    }}
+                    transition={{ duration: 0.5, ease: "linear" }}
+                    className="text-primary"
+                  />
+                </svg>
+                <span className="absolute text-[8px] font-black text-foreground">
+                  {carouselTimeLeft}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Widget</span>
+                <span className="text-[9px] font-bold text-muted uppercase tracking-wider leading-none">Auto-Next ON</span>
+              </div>
+            </div>
+          )}
+          {isMaximizedView && allConfigs.length > 1 && (
+            <div className="flex items-center gap-2 mr-4 pr-4 border-r border-border/40">
+              <button
+                onClick={() => moveCarousel("prev")}
+                className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/prev flex items-center justify-center"
+                title="Previous Widget (Left Arrow)"
+              >
+                <ArrowLeft size={18} className="relative z-10 group-hover/prev:-translate-x-1 transition-transform" />
+              </button>
+              
+              <div className="flex flex-col items-center min-w-[60px] mx-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
+                  {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
+                </span>
+              </div>
+
+              <button
+                onClick={() => moveCarousel("next")}
+                className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/next flex items-center justify-center"
+                title="Next Widget (Right Arrow)"
+              >
+                <ArrowRight size={18} className="relative z-10 group-hover/next:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          )}
           {!isMaximizedView && (
             <>
               <button
