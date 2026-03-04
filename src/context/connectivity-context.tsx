@@ -98,7 +98,8 @@ export function ConnectivityProvider({ children }: ConnectivityProviderProps) {
       </AnimatePresence>
 
       {/* Persistence Status Indicator (Bottom Right) */}
-      <div className="fixed bottom-6 right-6 z-100 pointer-events-none">
+      <div className="fixed bottom-8 right-24 z-100 pointer-events-none">
+
         <AnimatePresence>
           {!isOnline && (
             <motion.div

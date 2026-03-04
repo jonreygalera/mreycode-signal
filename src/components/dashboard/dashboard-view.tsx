@@ -35,7 +35,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, Check, LayoutDashboard, Search
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, Check, LayoutDashboard, Search, Database
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -82,6 +82,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     mode: 'add' | 'rename' | 'copy';
     targetId?: string | null;
     initialValue?: string;
+    initialSelectedWidgets?: WidgetConfig[];
     title: string;
   }>({ isOpen: false, mode: 'add', title: '' });
 
@@ -91,6 +92,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [widgetSearch, setWidgetSearch] = useState("");
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -140,22 +142,68 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   }, [searchParams, tempWidgets]);
 
   useEffect(() => {
-    setWorkspaces(getWorkspaces());
+    const ws = getWorkspaces();
+    setWorkspaces(ws);
+    const visited = localStorage.getItem("mreycode_signal_visited");
+    
+    // Auto-generate initial workspace ONLY on first visit and if none exist
+    if (!workspaceId && ws.length === 0 && !visited) {
+      localStorage.setItem("mreycode_signal_visited", "true");
+      const suffixes = ["Hub", "Nexus", "Matrix", "Pulse", "Flow", "Station", "Vibe", "Base"];
+      const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+      const randomName = `Signal ${randomSuffix} ${Math.floor(Math.random() * 999)}`;
+      const randomId = `ws-auto-${Date.now()}`;
+      
+      const newWS = { id: randomId, name: randomName, createdAt: Date.now() };
+      saveWorkspace(newWS);
+      
+      // Always include Signal Vercel Visits as the first widget
+      const priorityWidget = TEMPLATES.find(t => t.config.id === 'mreycode-signal-vercel-app-total-visits');
+      const otherTemplates = TEMPLATES.filter(t => t.config.id !== 'mreycode-signal-vercel-app-total-visits');
+      
+      // Select 4 more random widgets from the remaining templates
+      const shuffled = [...otherTemplates].sort(() => 0.5 - Math.random());
+      const selected = priorityWidget ? [priorityWidget, ...shuffled.slice(0, 4)] : shuffled.slice(0, 5);
+      
+      let lastId: string | null = null;
+      selected.forEach(t => {
+        const uniqueId = `${t.config.id}-${Math.random().toString(36).substring(2, 6)}`;
+        saveTempWidget({ ...t.config, id: uniqueId } as WidgetConfig, lastId, randomId);
+        lastId = uniqueId;
+      });
+      
+      router.replace(`/?workspace=${randomId}`);
+      return;
+    }
+
+    // Auto-redirect to first workspace if on root and workspaces exist
+    if (!workspaceId && ws.length > 0) {
+      router.replace(`/?workspace=${ws[0].id}`);
+      return;
+    }
+
     setTempWidgets(getTempWidgets(workspaceId));
     setHistoryWidgets(getHistoryWidgets(workspaceId));
-  }, [workspaceId]);
+  }, [workspaceId, router]);
 
   const currentWorkspaceName = useMemo(() => {
-    if (!workspaceId) return "Main Dashboard";
+    if (!workspaceId) return "";
     return workspaces.find(w => w.id === workspaceId)?.name || "Unknown Workspace";
   }, [workspaceId, workspaces]);
 
   const allWidgets = useMemo(() => {
-    // Only show default widgets on the Main dashboard
     // Workspaces start as a blank canvas (only show tempWidgets)
-    const configsToMerge = workspaceId ? [] : baseConfigs;
-    return mergeWidgets(configsToMerge, tempWidgets);
-  }, [baseConfigs, tempWidgets, workspaceId]);
+    return mergeWidgets([], tempWidgets);
+  }, [tempWidgets]);
+
+  const filteredWidgets = useMemo(() => {
+    if (!widgetSearch.trim()) return allWidgets;
+    const searchLow = widgetSearch.toLowerCase();
+    return allWidgets.filter(w => 
+      w.label?.toLowerCase().includes(searchLow) || 
+      w.type?.toLowerCase().includes(searchLow)
+    );
+  }, [allWidgets, widgetSearch]);
 
   const handleSaveWidget = (config: WidgetConfig, afterId: string | null) => {
     try {
@@ -263,12 +311,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleAddWorkspace = () => {
+    const suffixes = ["Hub", "Nexus", "Matrix", "Pulse", "Flow", "Station", "Vibe", "Base"];
+    const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const randomName = `Signal ${randomSuffix} ${Math.floor(Math.random() * 999)}`;
 
     setWorkspaceModal({
       isOpen: true,
       mode: 'add',
       title: 'Add New Workspace',
-      initialValue: ""
+      initialValue: randomName
     });
   };
 
@@ -276,12 +327,14 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const ws = workspaces.find(w => w.id === wsId);
     if (!ws) return;
 
+    const currentWidgets = getTempWidgets(wsId).map(tw => tw.config);
     setWorkspaceModal({
       isOpen: true,
       mode: 'rename',
-      title: 'Rename Workspace',
+      title: 'Edit Workspace',
       initialValue: ws.name,
-      targetId: wsId
+      targetId: wsId,
+      initialSelectedWidgets: currentWidgets
     });
   };
 
@@ -307,24 +360,59 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
         saveWorkspace(newWS);
         
-        // Initialize with selected widgets
+        // Initialize with selected widgets in order
+        let lastId: string | null = null;
         selectedWidgets.forEach(config => {
-          saveTempWidget(config, null, id);
+          const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          lastId = uniqueId;
         });
 
         setWorkspaces(getWorkspaces());
         router.push(`/?workspace=${id}`);
       } else if (mode === 'rename' && targetId) {
         updateWorkspace(targetId, name.trim());
+        
+        // reconcile widgets: delete those removed, update/add those kept/added
+        const currentInDb = getTempWidgets(targetId);
+        const selectedIds = new Set(selectedWidgets.map(w => w.id));
+        
+        // Remove permanently deleted ones
+        currentInDb.forEach(tw => {
+          if (!selectedIds.has(tw.config.id)) {
+            // Check if it's in the templates - if so, it was never "real" in this WS until confirmed
+            // But if it's in currentInDb, it IS real.
+            deleteTempWidget(tw.config.id, targetId, true);
+          }
+        });
+
+        // Save order
+        let lastId: string | null = null;
+        selectedWidgets.forEach(config => {
+          let finalConfig = { ...config };
+          // If it's a template (not an instance), generate ID
+          const isTemplate = TEMPLATES.some(t => t.config.id === config.id);
+          if (isTemplate) {
+            finalConfig.id = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          }
+          
+          saveTempWidget(finalConfig, lastId, targetId);
+          lastId = finalConfig.id;
+        });
+
         setWorkspaces(getWorkspaces());
+        setTempWidgets(getTempWidgets(workspaceId));
       } else if (mode === 'copy') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
         saveWorkspace(newWS);
 
-        // Copy selected widgets
+        // Initialize with selected widgets in order
+        let lastId: string | null = null;
         selectedWidgets.forEach(config => {
-          saveTempWidget(config, null, id);
+          const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
+          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          lastId = uniqueId;
         });
 
         setWorkspaces(getWorkspaces());
@@ -364,11 +452,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const handleClearAll = async () => {
     const confirmed = await showAlert({
-      title: "Clear All Widgets",
-      message: "This will move all custom widgets to history. This action can be undone from the recycle bin.",
+      title: "Remove All Widgets",
+      message: "This will move all widgets in this workspace to history. You can restore them from the history bin if needed.",
       type: "warning",
       showCancel: true,
-      confirmText: "Clear All",
+      confirmText: "Remove All",
       cancelText: "Cancel"
     });
 
@@ -395,7 +483,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const data = {
       workspaceName: exportData.name,
       version: appConfig.version,
-      widgets: exportData.widgets,
+      widgets: exportData.widgets.map((w, index) => ({
+        ...w,
+        exportOrder: index // Explicitly track order for individual workspace export
+      })),
       exportedAt: new Date().toISOString()
     };
     
@@ -457,9 +548,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       
       saveWorkspace(newWorkspace);
       
-      // Map widgets and save them synchronously
-      importData.widgets.forEach((config: WidgetConfig) => {
-        saveTempWidget(config, null, newWsId);
+      // Sort by exportOrder if available, then import with positional tracking
+      const sortedWidgets = [...importData.widgets].sort((a: any, b: any) => 
+        (a.exportOrder ?? 0) - (b.exportOrder ?? 0)
+      );
+
+      let lastId: string | null = null;
+      sortedWidgets.forEach((config: WidgetConfig) => {
+        saveTempWidget(config, lastId, newWsId);
+        lastId = config.id;
       });
       
       // Direct window location change to refresh state
@@ -493,11 +590,31 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                     {currentWorkspaceName}
                   </h1>
                   <span className="flex items-center justify-center bg-foreground/10 text-foreground text-[10px] font-bold px-2 py-0.5 rounded-full border border-foreground/10 backdrop-blur-sm">
-                    {workspaces.length + 1}
+                    {workspaces.length}
                   </span>
                 </div>
                 <ChevronDown size={16} className={cn("text-muted transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
               </button>
+
+              {/* Widget Search Field */}
+              <div className="relative w-full sm:w-64 group/search ml-0 sm:ml-4">
+                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                 <input
+                   type="text"
+                   placeholder="Search widgets in this workspace..."
+                   value={widgetSearch}
+                   onChange={(e) => setWidgetSearch(e.target.value)}
+                   className="w-full bg-foreground/5 border border-border/50 rounded-[4px] pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all text-foreground font-medium"
+                 />
+                 {widgetSearch && (
+                   <button
+                     onClick={() => setWidgetSearch("")}
+                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground transition-all"
+                   >
+                     <CloseIcon size={12} />
+                   </button>
+                 )}
+              </div>
 
               <AnimatePresence>
                 {isWorkspaceOpen && (
@@ -513,7 +630,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                         <LayoutDashboard size={12} className="text-muted" />
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Workspaces</span>
                       </div>
-                      <span className="text-[10px] font-black text-muted/50">{workspaces.length + 1} TOTAL</span>
+                      <span className="text-[10px] font-black text-muted/50">{workspaces.length} TOTAL</span>
                     </div>
 
                     <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
@@ -532,32 +649,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                     </div>
                     
                     <div className="p-1.5 max-h-[320px] overflow-y-auto custom-scrollbar">
-                      {/* Main Dashboard option - Only show if it matches search or search is empty */}
-                      {("Main Dashboard".toLowerCase().includes(workspaceSearch.toLowerCase())) && (
-                        <>
-                          <button
-                            onClick={() => {
-                              router.push("/");
-                              setIsWorkspaceOpen(false);
-                              setWorkspaceSearch("");
-                            }}
-                            className={cn(
-                              "flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-xs transition-colors",
-                              !workspaceId
-                                ? "bg-primary/10 text-primary font-bold" 
-                                : "text-muted hover:bg-muted/20 hover:text-foreground"
-                            )}
-                          >
-                            <div className="flex flex-col">
-                               <span className="uppercase tracking-tight">Main Dashboard</span>
-                               <span className="text-[9px] opacity-60">Master View</span>
-                            </div>
-                            {!workspaceId && <Check size={14} className="shrink-0" />}
-                          </button>
-                          <div className="h-px bg-border/40 my-1 mx-2" />
-                        </>
-                      )}
-
                       {workspaces
                         .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
                         .map((ws) => (
@@ -583,8 +674,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                         </button>
                       ))}
 
-                      {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && 
-                       !"Main Dashboard".toLowerCase().includes(workspaceSearch.toLowerCase()) && (
+                      {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && (
                         <div className="px-3 py-4 text-center">
                           <p className="text-[10px] text-muted italic">No matching workspaces found</p>
                         </div>
@@ -657,10 +747,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               <button
                 onClick={handleClearAll}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px] whitespace-nowrap"
-                title="Clear temporary widgets"
+                title="Remove all widgets from workspace"
               >
                 <Trash2 size={14} />
-                Clear Temp
+                Remove All Widgets
               </button>
             )}
             
@@ -688,7 +778,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap"
             >
               <Plus size={14} />
-              Fast Widget
+              Add Widget
             </button>
 
             <div className="h-6 w-px bg-border mx-1" />
@@ -793,14 +883,64 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         </div>
       )}
       
-      <WidgetGrid 
-        configs={allWidgets} 
-        onEdit={handleEditWidget}
-        onDelete={handleDeleteWidget}
-        onCopy={handleCopyWidget}
-        maximizedWidgetId={maximizedWidgetId}
-        onMaximizeChange={(id) => handleParamChange("widget", id)}
-      />
+      {workspaceId ? (
+        <WidgetGrid 
+          configs={filteredWidgets} 
+          onEdit={handleEditWidget}
+          onDelete={handleDeleteWidget}
+          onCopy={handleCopyWidget}
+          maximizedWidgetId={maximizedWidgetId}
+          onMaximizeChange={(id) => handleParamChange("widget", id)}
+        />
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex-1 flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center px-6"
+        >
+          <div className="mb-12 relative">
+             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
+             <div className="relative p-8 bg-panel border-2 border-primary/20 rounded-[40px] shadow-2xl backdrop-blur-3xl animate-float">
+                <LayoutDashboard size={80} className="text-primary" />
+             </div>
+             <div className="absolute -bottom-4 -right-4 h-12 w-12 bg-foreground text-background rounded-2xl flex items-center justify-center shadow-xl rotate-12">
+                <Plus size={24} strokeWidth={3} />
+             </div>
+          </div>
+          
+          <h2 className="text-4xl font-black tracking-tight uppercase mb-4 text-foreground leading-[1.1]">
+             Welcome to <span className="text-primary tracking-tighter italic">Signal</span>
+          </h2>
+          <p className="text-lg text-muted font-medium mb-12 leading-relaxed">
+             This represents the peak of performance tracking. Create your first workspace to start monitoring your signals with surgical precision.
+          </p>
+          
+          <button
+            onClick={handleAddWorkspace}
+            className="group relative flex items-center gap-4 bg-foreground text-background px-10 py-5 rounded-2xl text-base font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-foreground/90 transition-all active:scale-[0.98]"
+          >
+            <span>Create Workspace</span>
+            <div className="p-1 rounded-lg bg-background/20 group-hover:translate-x-1 transition-transform">
+               <Plus size={20} />
+            </div>
+          </button>
+          
+          <div className="mt-16 grid grid-cols-3 gap-8 opacity-40">
+             <div className="flex flex-col items-center gap-2">
+                <LayoutDashboard size={20} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Infinity Layout</span>
+             </div>
+             <div className="flex flex-col items-center gap-2">
+                <Database size={20} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">100% Local</span>
+             </div>
+             <div className="flex flex-col items-center gap-2">
+                <Check size={20} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Fast Deployment</span>
+             </div>
+          </div>
+        </motion.div>
+      )}
 
       <FastWidgetModal
         isOpen={isModalOpen}
@@ -848,11 +988,13 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         mode={workspaceModal.mode}
         title={workspaceModal.title}
         initialValue={workspaceModal.initialValue}
-        availableWidgets={
+        availableWidgets={useMemo(() => 
           workspaceModal.mode === 'copy' 
             ? allWidgets.map(({ isTemp, ...config }: any) => config) 
-            : TEMPLATES.map(t => t.config)
-        }
+            : TEMPLATES.map(t => t.config),
+          [workspaceModal.mode, allWidgets]
+        )}
+        initialSelectedWidgets={workspaceModal.initialSelectedWidgets}
       />
     </div>
   );

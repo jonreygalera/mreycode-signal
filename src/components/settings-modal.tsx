@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
+import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
+import { appConfig } from "@/config/app";
 
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
@@ -23,10 +25,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localUseBgInClock, setLocalUseBgInClock] = useState(settings.useBgInClock);
   const [localTvCarouselEnabled, setLocalTvCarouselEnabled] = useState(settings.tvCarouselEnabled);
   const [localTvCarouselInterval, setLocalTvCarouselInterval] = useState(settings.tvCarouselInterval);
+  const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timezones, setTimezones] = useState<string[]>([]);
   const [tzSearch, setTzSearch] = useState("");
+  const [isTzOpen, setIsTzOpen] = useState(false);
+  const tzDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Backup/Restore State
+  const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'import_preview' | 'importing'>('idle');
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [importFileData, setImportFileData] = useState<BackupData | null>(null);
+  const [backupSelection, setBackupSelection] = useState({
+    settings: true,
+    workspaces: true,
+    widgets: true,
+    history: true
+  });
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -44,8 +61,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalUseBgInClock(settings.useBgInClock);
     setLocalTvCarouselEnabled(settings.tvCarouselEnabled);
     setLocalTvCarouselInterval(settings.tvCarouselInterval);
+    setLocalSnackbarPosition(settings.snackbarPosition);
     setPreviewImage(settings.backgroundImage);
   }, [settings, isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tzDropdownRef.current && !tzDropdownRef.current.contains(event.target as Node)) {
+        setIsTzOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,6 +104,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       useBgInClock: localUseBgInClock,
       tvCarouselEnabled: localTvCarouselEnabled,
       tvCarouselInterval: Math.max(30, localTvCarouselInterval),
+      snackbarPosition: localSnackbarPosition,
     });
     onClose();
   };
@@ -97,15 +126,97 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalUseBgInClock(DEFAULT_SETTINGS.useBgInClock);
       setLocalTvCarouselEnabled(DEFAULT_SETTINGS.tvCarouselEnabled);
       setLocalTvCarouselInterval(DEFAULT_SETTINGS.tvCarouselInterval);
+      setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
-
 
   const removeImage = () => {
     setLocalBgImage(null);
     setPreviewImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFullExport = async () => {
+    setBackupStatus('exporting');
+    setBackupProgress(0);
+    
+    // Slight delay to show the progress starting
+    await new Promise(r => setTimeout(r, 600));
+
+    const data = await exportFullBackup((p) => setBackupProgress(p));
+    
+    // Filter based on selection
+    const filteredData: Partial<BackupData> = {
+      version: data.version,
+      exportedAt: data.exportedAt
+    };
+    if (backupSelection.settings) filteredData.settings = data.settings;
+    if (backupSelection.workspaces) filteredData.workspaces = data.workspaces;
+    if (backupSelection.widgets) filteredData.widgets = data.widgets;
+    if (backupSelection.history) filteredData.history = data.history;
+
+    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const date = new Date().toISOString().split('T')[0];
+    link.download = `mreycode-signal-full-backup-${date}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    setBackupProgress(100);
+    setTimeout(() => {
+      setBackupStatus('idle');
+      setBackupProgress(0);
+    }, 1000);
+  };
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (!data.version) throw new Error("Invalid backup file: Missing version");
+        setImportFileData(data);
+        setBackupStatus('import_preview');
+      } catch (err: any) {
+        showAlert({ title: "Import Error", message: err.message, type: "error" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleFullImport = async () => {
+    if (!importFileData) return;
+
+    const confirmed = await showAlert({
+      title: "Confirm Master Import",
+      message: "This will overwrite your current configuration for the selected items. Do you want to proceed?",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Yes, Overwrite",
+      cancelText: "Stop"
+    });
+
+    if (!confirmed) return;
+
+    setBackupStatus('importing');
+    setBackupProgress(0);
+    
+    await new Promise(r => setTimeout(r, 800));
+
+    await importFullBackup(importFileData, backupSelection, (p) => setBackupProgress(p));
+
+    setBackupProgress(100);
+    setTimeout(() => {
+      // Refresh to apply everything
+      window.location.reload();
+    }, 1000);
   };
 
   return (
@@ -158,55 +269,94 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     Used for all time-based metrics and widgets across the dashboard.
                   </p>
                   <div className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/50" size={14} />
-                      <input
-                        type="text"
-                        placeholder="Search timezones..."
-                        value={tzSearch}
-                        onChange={(e) => setTzSearch(e.target.value)}
-                        className="w-full bg-background border border-border rounded-[4px] pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all text-foreground"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 p-1 bg-background/50 border border-border/30 rounded-lg">
-                      {timezones
-                        .filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase()))
-                        .map((tz) => (
-                          <button
-                            key={tz}
-                            type="button"
-                            onClick={() => setLocalTimezone(tz)}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
-                              localTimezone === tz
-                                ? "bg-foreground/5 border-foreground/20 shadow-sm"
-                                : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/30"
-                            )}
-                          >
-                            <div className="flex flex-col items-start gap-0.5 text-left">
-                              <span className={cn(
-                                "text-[10px] font-bold uppercase tracking-tight transition-colors",
-                                localTimezone === tz ? "text-foreground" : "text-muted group-hover:text-foreground"
-                              )}>
-                                {tz.split('/').pop()?.replace(/_/g, " ")}
-                              </span>
-                               <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                                 {tz.split('/').slice(0, -1).join('/') || 'Global'}
-                               </span>
-                            </div>
-                            {localTimezone === tz && (
-                              <div className="p-0.5 rounded-sm bg-foreground text-background">
-                                <Check size={10} />
-                              </div>
-                            )}
-                          </button>
-                      ))}
-                      {timezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
-                        <div className="col-span-full py-12 text-center border border-dashed border-border/40 rounded-lg">
-                          <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic text-center">No timezones match your search</p>
+                    <div className="relative" ref={tzDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsTzOpen(!isTzOpen)}
+                        className={cn(
+                          "w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all flex items-center justify-between group",
+                          isTzOpen && "ring-1 ring-foreground/20 border-foreground/20 shadow-sm"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Globe className="text-muted group-hover:text-foreground transition-colors" size={16} />
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted group-hover:text-foreground transition-colors">Current Zone</span>
+                            <span className="font-bold text-foreground">
+                              {localTimezone.split('/').pop()?.replace(/_/g, " ") || 'System Default'}
+                            </span>
+                          </div>
                         </div>
-                      )}
+                        <ChevronDown size={18} className={cn("text-muted transition-transform duration-300", isTzOpen && "rotate-180")} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isTzOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 4, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 z-50 bg-panel border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col mt-1"
+                          >
+                            <div className="p-3 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                                <input
+                                  type="text"
+                                  placeholder="Search timezones..."
+                                  value={tzSearch}
+                                  onChange={(e) => setTzSearch(e.target.value)}
+                                  className="w-full bg-transparent border-none pl-10 pr-4 py-2 text-sm placeholder:text-muted/50 focus:outline-none focus:ring-0"
+                                  autoFocus
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 p-2 max-h-[300px] overflow-y-auto custom-scrollbar bg-background/50">
+                              {timezones
+                                .filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase()))
+                                .map((tz) => (
+                                  <button
+                                    key={tz}
+                                    type="button"
+                                    onClick={() => {
+                                      setLocalTimezone(tz);
+                                      setIsTzOpen(false);
+                                    }}
+                                    className={cn(
+                                      "flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
+                                      localTimezone === tz
+                                        ? "bg-foreground/5 border-foreground/20 shadow-sm"
+                                        : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/10"
+                                    )}
+                                  >
+                                    <div className="flex flex-col items-start gap-0.5 text-left">
+                                      <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                                        localTimezone === tz ? "text-foreground" : "text-muted group-hover:text-foreground"
+                                      )}>
+                                        {tz.split('/').pop()?.replace(/_/g, " ")}
+                                      </span>
+                                       <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
+                                         {tz.split('/').slice(0, -1).join('/') || 'Global'}
+                                       </span>
+                                    </div>
+                                    {localTimezone === tz && (
+                                      <div className="p-0.5 rounded-sm bg-foreground text-background">
+                                        <Check size={10} />
+                                      </div>
+                                    )}
+                                  </button>
+                              ))}
+                              {timezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
+                                <div className="col-span-full py-12 text-center border border-dashed border-border/40 rounded-lg">
+                                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic text-center">No matching timezones</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
@@ -274,6 +424,47 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </AnimatePresence>
                 </div>
               </section>
+              
+              {/* Alerts Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <RotateCcw className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Alerts & Notifications</h3>
+                </div>
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-foreground/80 block mb-1">Signal Snackbar Position</label>
+                    <p className="text-xs text-muted leading-relaxed mb-4">
+                      Choose where you want monitored signals and notifications to appear.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { value: 'top-left', label: 'Top Left' },
+                        { value: 'top-center', label: 'Top Center' },
+                        { value: 'top-right', label: 'Top Right' },
+                        { value: 'bottom-left', label: 'Bottom Left' },
+                        { value: 'bottom-center', label: 'Bottom Center' },
+                        { value: 'bottom-right', label: 'Bottom Right' }
+                      ].map((pos) => (
+                        <button
+                          key={pos.value}
+                          type="button"
+                          onClick={() => setLocalSnackbarPosition(pos.value as any)}
+                          className={cn(
+                            "px-4 py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider transition-all",
+                            localSnackbarPosition === pos.value 
+                              ? "bg-foreground text-background border-foreground shadow-lg shadow-black/20 scale-[1.02]"
+                              : "bg-background border-border text-muted hover:border-foreground/30 hover:text-foreground active:scale-95"
+                          )}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
 
 
               {/* Background Section */}
@@ -375,6 +566,144 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                 </div>
               </section>
+
+              {/* Data Management Section */}
+              <section className="space-y-6 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Data Orchestration</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Export Card */}
+                  <div className="p-6 rounded-2xl border border-border bg-muted/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-foreground/5 rounded-lg text-foreground">
+                        <Download size={18} />
+                      </div>
+                      <h4 className="text-sm font-bold uppercase tracking-tight">Master Export</h4>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Backup your entire system: all settings, custom workspaces, and widget configurations into a single JSON file.
+                    </p>
+                    
+                    <div className="space-y-2 pt-2">
+                       {['settings', 'workspaces', 'widgets', 'history'].map(key => (
+                         <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                            <input 
+                              type="checkbox"
+                              checked={(backupSelection as any)[key]}
+                              onChange={(e) => setBackupSelection(prev => ({ ...prev, [key]: e.target.checked }))}
+                              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 bg-background"
+                            />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted group-hover:text-foreground transition-colors text-nowrap">
+                              {key === 'settings' ? 'App Settings' : 
+                               key === 'workspaces' ? 'Workspaces' : 
+                               key === 'widgets' ? 'Widget Configs' : 'Recycle Bin'}
+                            </span>
+                         </label>
+                       ))}
+                    </div>
+
+                    <button
+                      onClick={handleFullExport}
+                      type="button"
+                      disabled={backupStatus !== 'idle' || !Object.values(backupSelection).some(Boolean)}
+                      className="w-full flex items-center justify-center gap-2 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-lg py-2.5 text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {backupStatus === 'exporting' ? (
+                        <>
+                          <RefreshCcw size={14} className="animate-spin" />
+                          {backupProgress}%
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14} />
+                          Download Backup
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Import Card */}
+                  <div className="p-6 rounded-2xl border border-border bg-muted/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-foreground/5 rounded-lg text-foreground">
+                        <Upload size={18} />
+                      </div>
+                      <h4 className="text-sm font-bold uppercase tracking-tight">Master Import</h4>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">
+                      Restore your system from a previously exported backup file. This will replace existing data based on your selection.
+                    </p>
+
+                    <div className="pt-2">
+                       {backupStatus === 'import_preview' && importFileData ? (
+                         <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                            <div className="flex items-center justify-between text-[10px] font-bold uppercase text-primary">
+                               <div className="flex items-center gap-1.5">
+                                 <AlertCircle size={10} />
+                                 <span>File Ready</span>
+                               </div>
+                               <span>v{importFileData.version}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                               {importFileData.settings && <span className="px-2 py-0.5 bg-primary/20 rounded text-[8px] font-black uppercase">Settings</span>}
+                               {importFileData.workspaces?.length > 0 && <span className="px-2 py-0.5 bg-primary/20 rounded text-[8px] font-black uppercase">{importFileData.workspaces.length} Workspaces</span>}
+                            </div>
+                            <div className="flex gap-2">
+                               <button 
+                                 onClick={handleFullImport}
+                                 type="button"
+                                 className="flex-1 bg-primary text-white py-1.5 rounded text-[10px] font-bold uppercase hover:bg-primary/90 transition-all active:scale-95"
+                               >
+                                 Start Import
+                               </button>
+                               <button 
+                                 onClick={() => { setBackupStatus('idle'); setImportFileData(null); }}
+                                 type="button"
+                                 className="px-3 bg-muted/10 py-1.5 rounded text-[10px] font-bold text-muted hover:text-foreground transition-all"
+                               >
+                                 Cancel
+                               </button>
+                            </div>
+                         </div>
+                       ) : backupStatus === 'importing' ? (
+                          <div className="space-y-2">
+                             <div className="flex items-center justify-between text-[10px] font-black uppercase text-muted">
+                                <span>Importing Progress</span>
+                                <span className="text-primary font-mono">{backupProgress}%</span>
+                             </div>
+                             <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden">
+                                <motion.div 
+                                  className="h-full bg-primary"
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${backupProgress}%` }}
+                                />
+                             </div>
+                          </div>
+                       ) : (
+                         <button
+                           onClick={() => importFileRef.current?.click()}
+                           type="button"
+                           className="w-full flex items-center justify-center gap-2 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-lg py-2.5 text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                         >
+                           <Upload size={14} />
+                           Select Backup File
+                         </button>
+                       )}
+                       <input 
+                         type="file"
+                         ref={importFileRef}
+                         onChange={handleImportFileChange}
+                         accept=".json"
+                         className="hidden"
+                       />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
             </div>
 
             {/* Footer */}

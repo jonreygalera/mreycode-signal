@@ -39,7 +39,7 @@ export function BackToTop() {
           whileTap={{ scale: 0.95 }}
           onClick={scrollToTop}
           className={cn(
-            "fixed bottom-8 right-8 z-50 flex h-12 w-12 items-center justify-center rounded-sm",
+            "fixed bottom-28 right-8 z-50 flex h-12 w-12 items-center justify-center rounded-sm",
             "bg-panel border border-border text-foreground shadow-2xl backdrop-blur-md",
             "transition-colors hover:border-muted hover:bg-muted/5",
             "focus:outline-none focus:ring-1 focus:ring-foreground/20"

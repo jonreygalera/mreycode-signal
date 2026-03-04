@@ -307,15 +307,6 @@ export function WidgetCard({
             <h3 className={cn("font-semibold uppercase tracking-wider text-muted", isMaximizedView ? "text-sm" : "text-xs")}>
               {config.label}
             </h3>
-            {config.isTemp && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-400/10 border border-yellow-400/20 rounded-[2px] shadow-[0_0_8px_rgba(250,204,21,0.1)]">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-500"></span>
-                </span>
-                <span className="text-[8px] font-mono leading-none font-bold text-yellow-500/90 tracking-tighter">TEMP</span>
-              </div>
-            )}
             {hasActiveSignal && (
               <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-[2px] shadow-[0_0_8px_rgba(239,68,68,0.2)]">
                 <span className="relative flex h-1.5 w-1.5">
@@ -333,24 +324,22 @@ export function WidgetCard({
           )}
         </div>
         <div className="flex items-center gap-1">
-          {config.isTemp && (
-            <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
-              <button 
-                onClick={() => onEdit?.(config.id)}
-                className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
-                title="Edit configuration"
-              >
-                <Zap size={14} className="text-yellow-500/80" />
-              </button>
-              <button 
-                onClick={() => onDelete?.(config.id)}
-                className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
-                title="Delete widget"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
+            <button 
+              onClick={() => onEdit?.(config.id)}
+              className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
+              title="Edit configuration"
+            >
+              <Zap size={14} className="text-yellow-500/80" />
+            </button>
+            <button 
+              onClick={() => onDelete?.(config.id)}
+              className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
+              title="Delete widget"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
           {!isMaximizedView && (
             <>
               <button
@@ -367,15 +356,6 @@ export function WidgetCard({
               >
                 <Maximize2 size={14} />
               </button>
-              {!config.isTemp && !isTVMode && (
-                <Link
-                  href={`/widget/${config.id}`}
-                  className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-                  title="Open in new page"
-                >
-                  <ExternalLink size={14} />
-                </Link>
-              )}
             </>
           )}
           {isMaximizedView && (
