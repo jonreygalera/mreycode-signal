@@ -110,10 +110,10 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight uppercase">
-                    {initialConfig ? "Edit Widget" : "Fast Widget"}
+                    {initialConfig ? "Edit Widget" : "Add Widget"}
                   </h2>
                   <p className="text-xs text-muted/70">
-                    {initialConfig ? "Update existing widget configuration" : "Create a temporary widget in local storage"}
+                    {initialConfig ? "Update existing widget configuration" : "Create a new custom widget in this workspace"}
                   </p>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                 className="flex items-center gap-2 bg-foreground text-background px-6 py-2 rounded-[4px] text-sm font-semibold hover:bg-foreground/90 transition-all active:scale-[0.98]"
               >
                 <Save size={16} />
-                Deploy Widget
+                {initialConfig ? "Update Widget" : "Add Widget"}
               </button>
             </div>
           </div>
