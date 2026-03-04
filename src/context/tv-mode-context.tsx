@@ -23,48 +23,57 @@ const TVModeContext = createContext<TVModeContextType | undefined>(undefined);
 
 export function TVModeProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [tvParam, setTvParam] = useState(false);
-  const [isTVMode, setIsTVMode] = useState(false);
+  
+  // Initialize state from URL if in browser to avoid flicker
+  const [isTVMode, setIsTVMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("tv-mode") === "yes";
+    }
+    return false;
+  });
+
+  const [tvParam, setTvParam] = useState(isTVMode);
 
   // Sync state from URL changes via TVModeParamSync
   useEffect(() => {
-    setIsTVMode(tvParam);
-    
-    // Attempt to automatically re-enter fullscreen if TV mode is in URL
-    const attemptFullscreen = async () => {
-      if (tvParam && !document.fullscreenElement) {
-        try {
-          await document.documentElement.requestFullscreen();
-        } catch (err) {
-          // This usually fails on refresh due to lack of user gesture
-          // We handle this by waiting for the first click below
-        }
-      }
-    };
-
-    attemptFullscreen();
-
-    // Fallback: If fullscreen failed on load, trigger it on first user interaction
-    const handleFirstInteraction = async () => {
-      if (tvParam && !document.fullscreenElement) {
-        try {
-          await document.documentElement.requestFullscreen();
-          // Remove listener after success
-          document.removeEventListener("click", handleFirstInteraction);
-        } catch (err) {
-          // If it still fails, we keep the listener for the next attempt
-        }
-      } else {
-        document.removeEventListener("click", handleFirstInteraction);
-      }
-    };
-
-    if (tvParam && !document.fullscreenElement) {
-      document.addEventListener("click", handleFirstInteraction);
+    // Only update if it actually changed to avoid unnecessary re-renders
+    if (isTVMode !== tvParam) {
+      setIsTVMode(tvParam);
     }
+    
+    if (tvParam) {
+      // Attempt to automatically re-enter fullscreen if TV mode is in URL
+      const attemptFullscreen = async () => {
+        if (!document.fullscreenElement) {
+          try {
+            await document.documentElement.requestFullscreen();
+          } catch (err) {
+            // This usually fails on refresh due to lack of user gesture
+          }
+        }
+      };
 
-    return () => document.removeEventListener("click", handleFirstInteraction);
-  }, [tvParam]);
+      attemptFullscreen();
+
+      // Fallback: If fullscreen failed on load, trigger it on first user interaction
+      const handleFirstInteraction = async () => {
+        if (!document.fullscreenElement) {
+          try {
+            await document.documentElement.requestFullscreen();
+            document.removeEventListener("click", handleFirstInteraction);
+          } catch (err) {
+          }
+        } else {
+          document.removeEventListener("click", handleFirstInteraction);
+        }
+      };
+
+      if (!document.fullscreenElement) {
+        document.addEventListener("click", handleFirstInteraction);
+        return () => document.removeEventListener("click", handleFirstInteraction);
+      }
+    }
+  }, [tvParam, isTVMode]);
 
   const updateURL = useCallback((enabled: boolean) => {
     const params = new URLSearchParams(window.location.search);

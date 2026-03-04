@@ -35,7 +35,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, Check, LayoutDashboard, Search, Database
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, Check, LayoutDashboard, Search, Database
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -47,7 +47,7 @@ import { useSettings } from "@/context/settings-context";
 
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
-  const { settings, timeLeft } = useSettings();
+  const { settings, timeLeft, moveCarousel } = useSettings();
   const { isTVMode, toggleTVMode } = useTVMode();
 
   const { showAlert } = useAlert();
@@ -66,6 +66,12 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         params.delete(key);
       }
     });
+
+    // Always preserve tv-mode if currently active
+    if (isTVMode) {
+      params.set("tv-mode", "yes");
+    }
+
     router.replace(`/?${params.toString()}`, { scroll: false });
   };
 
@@ -74,6 +80,23 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
   
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [direction, setDirection] = useState(0);
+  const prevWorkspaceId = useRef<string | null>(workspaceId);
+
+  useEffect(() => {
+    if (workspaceId !== prevWorkspaceId.current) {
+      // In TV Mode, we ignore 'null' (Main) if workspaces exist
+      const relevantWS = isTVMode && workspaces.length > 0 
+        ? workspaces.map(w => w.id) 
+        : [null, ...workspaces.map(w => w.id)];
+        
+      const prevIdx = relevantWS.indexOf(prevWorkspaceId.current as any);
+      const currIdx = relevantWS.indexOf(workspaceId as any);
+      setDirection(currIdx > prevIdx ? 1 : -1);
+      prevWorkspaceId.current = workspaceId;
+    }
+  }, [workspaceId, workspaces, isTVMode]);
+
   const [widgetToEdit, setWidgetToEdit] = useState<{ config: WidgetConfig; afterId: string | null } | null>(null);
   const [tempWidgets, setTempWidgets] = useState<{ config: WidgetConfig; afterId: string | null }[]>([]);
   const [historyWidgets, setHistoryWidgets] = useState<TempWidget[]>([]);
@@ -369,7 +392,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         });
 
         setWorkspaces(getWorkspaces());
-        router.push(`/?workspace=${id}`);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("workspace", id);
+        if (isTVMode) params.set("tv-mode", "yes");
+        router.push(`/?${params.toString()}`);
       } else if (mode === 'rename' && targetId) {
         updateWorkspace(targetId, name.trim());
         
@@ -416,7 +442,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         });
 
         setWorkspaces(getWorkspaces());
-        router.push(`/?workspace=${id}`);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("workspace", id);
+        if (isTVMode) params.set("tv-mode", "yes");
+        router.push(`/?${params.toString()}`);
       }
     } catch (e: any) {
       showAlert({
@@ -445,7 +474,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       deleteWorkspace(wsId);
       setWorkspaces(getWorkspaces());
       if (workspaceId === wsId) {
-        router.push("/");
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("workspace");
+        if (isTVMode) params.set("tv-mode", "yes");
+        router.push(`/?${params.toString()}`);
       }
     }
   };
@@ -655,7 +687,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                         <button
                           key={ws.id}
                           onClick={() => {
-                            router.push(`/?workspace=${ws.id}`);
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.set("workspace", ws.id);
+                            if (isTVMode) params.set("tv-mode", "yes");
+                            router.push(`/?${params.toString()}`);
                             setIsWorkspaceOpen(false);
                             setWorkspaceSearch("");
                           }}
@@ -819,11 +854,29 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               Exit Mode
             </button>
             <div className="h-4 w-px bg-border/30 mx-1" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-1">Active View</span>
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-tight leading-none">
-                {currentWorkspaceName}
-              </h2>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => moveCarousel("prev")}
+                className="p-3 hover:bg-foreground/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90 bg-foreground/5 border border-border/10 group/prev flex items-center gap-2"
+                title="Previous Workspace (Left Arrow)"
+              >
+                <ChevronLeft size={20} className="group-hover/prev:-translate-x-1 transition-transform" />
+                <span className="text-[10px] font-black opacity-30 group-hover:opacity-100 transition-opacity">←</span>
+              </button>
+              <div className="flex flex-col items-center px-6">
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted/40 leading-none mb-1.5">Active View</span>
+                <h2 className="text-base font-black text-foreground uppercase tracking-tighter leading-none text-center min-w-[120px]">
+                  {currentWorkspaceName}
+                </h2>
+              </div>
+              <button 
+                onClick={() => moveCarousel("next")}
+                className="p-3 hover:bg-foreground/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90 bg-foreground/5 border border-border/10 group/next flex items-center gap-2"
+                title="Next Workspace (Right Arrow)"
+              >
+                <span className="text-[10px] font-black opacity-30 group-hover:opacity-100 transition-opacity">→</span>
+                <ChevronRight size={20} className="group-hover/next:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
 
@@ -883,64 +936,78 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         </div>
       )}
       
-      {workspaceId ? (
-        <WidgetGrid 
-          configs={filteredWidgets} 
-          onEdit={handleEditWidget}
-          onDelete={handleDeleteWidget}
-          onCopy={handleCopyWidget}
-          maximizedWidgetId={maximizedWidgetId}
-          onMaximizeChange={(id) => handleParamChange("widget", id)}
-        />
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex-1 flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center px-6"
-        >
-          <div className="mb-12 relative">
-             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
-             <div className="relative p-8 bg-panel border-2 border-primary/20 rounded-[40px] shadow-2xl backdrop-blur-3xl animate-float">
-                <LayoutDashboard size={80} className="text-primary" />
-             </div>
-             <div className="absolute -bottom-4 -right-4 h-12 w-12 bg-foreground text-background rounded-2xl flex items-center justify-center shadow-xl rotate-12">
-                <Plus size={24} strokeWidth={3} />
-             </div>
-          </div>
-          
-          <h2 className="text-4xl font-black tracking-tight uppercase mb-4 text-foreground leading-[1.1]">
-             Welcome to <span className="text-primary tracking-tighter italic">Signal</span>
-          </h2>
-          <p className="text-lg text-muted font-medium mb-12 leading-relaxed">
-             This represents the peak of performance tracking. Create your first workspace to start monitoring your signals with surgical precision.
-          </p>
-          
-          <button
-            onClick={handleAddWorkspace}
-            className="group relative flex items-center gap-4 bg-foreground text-background px-10 py-5 rounded-2xl text-base font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-foreground/90 transition-all active:scale-[0.98]"
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        {workspaceId ? (
+          <motion.div
+            key={workspaceId}
+            custom={direction}
+            initial={{ opacity: 0, x: direction * 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction * -100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="flex-1"
           >
-            <span>Create Workspace</span>
-            <div className="p-1 rounded-lg bg-background/20 group-hover:translate-x-1 transition-transform">
-               <Plus size={20} />
+            <WidgetGrid 
+              configs={filteredWidgets} 
+              onEdit={handleEditWidget}
+              onDelete={handleDeleteWidget}
+              onCopy={handleCopyWidget}
+              maximizedWidgetId={maximizedWidgetId}
+              onMaximizeChange={(id) => handleParamChange("widget", id)}
+            />
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="empty"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex-1 flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center px-6"
+          >
+            <div className="mb-12 relative">
+               <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
+               <div className="relative p-8 bg-panel border-2 border-primary/20 rounded-[40px] shadow-2xl backdrop-blur-3xl animate-float">
+                  <LayoutDashboard size={80} className="text-primary" />
+               </div>
+               <div className="absolute -bottom-4 -right-4 h-12 w-12 bg-foreground text-background rounded-2xl flex items-center justify-center shadow-xl rotate-12">
+                  <Plus size={24} strokeWidth={3} />
+               </div>
             </div>
-          </button>
-          
-          <div className="mt-16 grid grid-cols-3 gap-8 opacity-40">
-             <div className="flex flex-col items-center gap-2">
-                <LayoutDashboard size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Infinity Layout</span>
-             </div>
-             <div className="flex flex-col items-center gap-2">
-                <Database size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">100% Local</span>
-             </div>
-             <div className="flex flex-col items-center gap-2">
-                <Check size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Fast Deployment</span>
-             </div>
-          </div>
-        </motion.div>
-      )}
+            
+            <h2 className="text-4xl font-black tracking-tight uppercase mb-4 text-foreground leading-[1.1]">
+               Welcome to <span className="text-primary tracking-tighter italic">Signal</span>
+            </h2>
+            <p className="text-lg text-muted font-medium mb-12 leading-relaxed">
+               This represents the peak of performance tracking. Create your first workspace to start monitoring your signals with surgical precision.
+            </p>
+            
+            <button
+              onClick={handleAddWorkspace}
+              className="group relative flex items-center gap-4 bg-foreground text-background px-10 py-5 rounded-2xl text-base font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-foreground/90 transition-all active:scale-[0.98]"
+            >
+              <span>Create Workspace</span>
+              <div className="p-1 rounded-lg bg-background/20 group-hover:translate-x-1 transition-transform">
+                 <Plus size={20} />
+              </div>
+            </button>
+            
+            <div className="mt-16 grid grid-cols-3 gap-8 opacity-40">
+               <div className="flex flex-col items-center gap-2">
+                  <LayoutDashboard size={20} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Infinity Layout</span>
+               </div>
+               <div className="flex flex-col items-center gap-2">
+                  <Database size={20} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">100% Local</span>
+               </div>
+               <div className="flex flex-col items-center gap-2">
+                  <Check size={20} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-nowrap">Fast Deployment</span>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       <FastWidgetModal
         isOpen={isModalOpen}
