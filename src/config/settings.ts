@@ -8,6 +8,15 @@ export interface AppSettings {
   localStorageThreshold: number;
   maximizedCarouselEnabled: boolean;
   maximizedCarouselInterval: number;
+  storageType: 'local' | 'supabase';
+  supabaseConfig: {
+    url: string;
+    key: string;
+    isConfigured: boolean;
+  };
+  supabaseRealtimeEnabled: boolean;
+  maxWorkspaces: number;
+  maxWidgetsPerWorkspace: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -20,5 +29,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   localStorageThreshold: 90,
   maximizedCarouselEnabled: false,
   maximizedCarouselInterval: 20,
+  storageType: 'local',
+  supabaseConfig: {
+    url: '',
+    key: '',
+    isConfigured: false
+  },
+  supabaseRealtimeEnabled: false,
+  maxWorkspaces: 3,
+  maxWidgetsPerWorkspace: 5,
 };
 
