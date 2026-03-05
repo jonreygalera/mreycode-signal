@@ -332,30 +332,53 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
 
                   {settings.storageType === 'supabase' && (
-                    <div className="mt-6 pt-6 border-t border-border/50 flex items-center justify-between">
-                      <p className="text-[10px] text-muted italic">
-                        Connected to: <span className="font-mono text-foreground/60">{atob(settings.supabaseConfig.url).replace('https://', '').split('.')[0]}</span>
-                      </p>
-                      <button
-                        onClick={async () => {
-                           const confirmed = await showAlert({
-                             title: "Switch to Local Storage",
-                             message: "Are you sure you want to disconnect from Supabase and use local browser storage? Your cloud data will NOT be deleted, but it will no longer be visible until you reconnect.",
-                             type: "warning",
-                             showCancel: true,
-                             confirmText: "Switch to Local",
-                             cancelText: "Stay with Cloud"
-                           });
-                           if (confirmed) {
-                             updateSettings({ storageType: 'local' });
-                             window.location.reload();
-                           }
-                        }}
-                        className="flex items-center gap-2 text-red-500/60 hover:text-red-500 transition-colors text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md hover:bg-red-500/5"
-                      >
-                        <RotateCcw size={12} />
-                        Switch to Local
-                      </button>
+                    <div className="mt-6 pt-6 border-t border-border/50 space-y-4">
+                      <div className="flex items-center justify-between group">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Realtime Pulse</span>
+                            <span className="px-1.5 py-0.5 bg-[#3ecf8e]/10 text-[#3ecf8e] text-[8px] font-bold rounded uppercase">Beta</span>
+                          </div>
+                          <p className="text-[10px] text-muted max-w-[280px]">
+                            Automatically sync changes from other devices without refreshing.
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={settings.supabaseRealtimeEnabled}
+                            onChange={(e) => updateSettings({ supabaseRealtimeEnabled: e.target.checked })}
+                          />
+                          <div className="w-10 h-5 bg-muted/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#3ecf8e]"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted italic">
+                          Connected to: <span className="font-mono text-foreground/60">{atob(settings.supabaseConfig.url).replace('https://', '').split('.')[0]}</span>
+                        </p>
+                        <button
+                          onClick={async () => {
+                             const confirmed = await showAlert({
+                               title: "Switch to Local Storage",
+                               message: "Are you sure you want to disconnect from Supabase and use local browser storage? Your cloud data will NOT be deleted, but it will no longer be visible until you reconnect.",
+                               type: "warning",
+                               showCancel: true,
+                               confirmText: "Switch to Local",
+                               cancelText: "Stay with Cloud"
+                             });
+                             if (confirmed) {
+                               updateSettings({ storageType: 'local' });
+                               window.location.reload();
+                             }
+                          }}
+                          className="flex items-center gap-2 text-red-500/60 hover:text-red-500 transition-colors text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md hover:bg-red-500/5"
+                        >
+                          <RotateCcw size={12} />
+                          Switch to Local
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

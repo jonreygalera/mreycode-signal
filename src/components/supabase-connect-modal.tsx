@@ -51,7 +51,16 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_widgets_workspace_id ON widgets(workspace_id);`;
+CREATE INDEX IF NOT EXISTS idx_widgets_workspace_id ON widgets(workspace_id);
+
+-- ENABLE REALTIME
+-- Run this to allow the "Realtime Pulse" feature to sync changes instantly!
+begin;
+  -- remove tables from publication if they exist
+  alter publication supabase_realtime drop table if exists workspaces, widgets, app_settings;
+  -- add tables to publication
+  alter publication supabase_realtime add table workspaces, widgets, app_settings;
+commit;`;
 
   const copySql = () => {
     navigator.clipboard.writeText(sqlQuery);

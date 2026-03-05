@@ -170,6 +170,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isInitialized && settings.storageType === 'supabase' && settings.supabaseConfig.isConfigured) {
+      import("@/lib/widgets").then(({ getStorageAdapter }) => {
+        const adapter = getStorageAdapter();
+        if (adapter.onDataChange) {
+          adapter.onDataChange(() => {
+            console.log("Realtime update detected, refreshing data...");
+            // Use triggerRefresh or a more subtle way to reload the specific SWR keys if needed
+            // For now, simple reload as per "no need to refresh page" (meaning manual refresh)
+            window.location.reload();
+          }, settings.supabaseRealtimeEnabled);
+        }
+      });
+    }
+  }, [isInitialized, settings.storageType, settings.supabaseConfig.isConfigured, settings.supabaseRealtimeEnabled]);
+
+  useEffect(() => {
     if (isInitialized) {
       // Save specific settings to LocalStorage
       const localOnly = {

@@ -17,6 +17,7 @@ export interface StorageAdapter {
   // Settings
   getSettings(): Promise<Partial<AppSettings>>;
   saveSettings(settings: Partial<AppSettings>): Promise<void>;
+  onDataChange?(callback: () => void, enabled: boolean): void;
 }
 
 // LocalStorage Adapter (Legacy / Default)
@@ -82,5 +83,10 @@ export class LocalStorageAdapter implements StorageAdapter {
   async saveSettings(settings: Partial<AppSettings>): Promise<void> {
     const current = await this.getSettings();
     localStorage.setItem("app-settings", JSON.stringify({ ...current, ...settings }));
+  }
+
+  onDataChange(callback: () => void, enabled: boolean): void {
+    // Local storage doesn't support realtime events within the same tab easily
+    // We could use storage event for cross-tab, but not requested
   }
 }

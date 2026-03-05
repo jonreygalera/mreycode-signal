@@ -4,11 +4,30 @@ import { Workspace, TempWidget } from "./widgets";
 import { AppSettings } from "@/config/settings";
 import { getSupabaseClient } from "./supabase";
 
+import { createClient, RealtimeChannel } from "@supabase/supabase-js";
+
 export class SupabaseAdapter implements StorageAdapter {
+  private subscription: RealtimeChannel | null = null;
+  private readonly WRITE_GUARD_KEY = 'mrey_last_supabase_write';
+  private readonly GUARD_DURATION = 3500; // 3.5s grace period
+
   private get client() {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase client not initialized");
     return client;
+  }
+
+  private markLocalWrite() {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(this.WRITE_GUARD_KEY, Date.now().toString());
+    }
+  }
+
+  private isLocalWrite(): boolean {
+    if (typeof window === 'undefined') return false;
+    const lastWrite = sessionStorage.getItem(this.WRITE_GUARD_KEY);
+    if (!lastWrite) return false;
+    return (Date.now() - parseInt(lastWrite)) < this.GUARD_DURATION;
   }
 
   async getWorkspaces(): Promise<Workspace[]> {
@@ -34,6 +53,7 @@ export class SupabaseAdapter implements StorageAdapter {
         created_at: workspace.createdAt
       });
     if (error) throw error;
+    this.markLocalWrite();
   }
 
   async updateWorkspace(id: string, name: string): Promise<void> {
@@ -42,6 +62,7 @@ export class SupabaseAdapter implements StorageAdapter {
       .update({ name, updated_at: new Date().toISOString() })
       .eq('id', id);
     if (error) throw error;
+    this.markLocalWrite();
   }
 
   async deleteWorkspace(id: string): Promise<void> {
@@ -50,6 +71,7 @@ export class SupabaseAdapter implements StorageAdapter {
       .delete()
       .eq('id', id);
     if (error) throw error;
+    this.markLocalWrite();
   }
 
   async getWidgets(workspaceId: string | null): Promise<TempWidget[]> {
@@ -83,6 +105,7 @@ export class SupabaseAdapter implements StorageAdapter {
         updated_at: new Date().toISOString()
       });
     if (error) throw error;
+    this.markLocalWrite();
   }
 
   async deleteWidget(id: string, workspaceId: string | null): Promise<void> {
@@ -92,6 +115,7 @@ export class SupabaseAdapter implements StorageAdapter {
       .delete()
       .eq('id', id);
     if (error) throw error;
+    this.markLocalWrite();
   }
 
   async getSettings(): Promise<Partial<AppSettings>> {
@@ -114,5 +138,51 @@ export class SupabaseAdapter implements StorageAdapter {
         updated_at: new Date().toISOString()
       });
     if (error) throw error;
+    this.markLocalWrite();
+  }
+
+  onDataChange(callback: () => void, enabled: boolean): void {
+    if (!enabled) {
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      }
+      return;
+    }
+
+    if (this.subscription) return;
+
+    this.subscription = this.client
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'workspaces' },
+        (payload: any) => {
+          if (this.isLocalWrite()) return;
+          console.log("Supabase: Workspace change detected", payload);
+          callback();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'widgets' },
+        (payload: any) => {
+          if (this.isLocalWrite()) return;
+          console.log("Supabase: Widget change detected", payload);
+          callback();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings' },
+        (payload: any) => {
+          if (this.isLocalWrite()) return;
+          console.log("Supabase: Settings change detected", payload);
+          callback();
+        }
+      )
+      .subscribe((status: string) => {
+        console.log(`Supabase Realtime Status: ${status}`);
+      });
   }
 }

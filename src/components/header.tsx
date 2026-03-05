@@ -415,7 +415,18 @@ export function Header() {
                   </p>
                   <div className="p-3 rounded-sm border border-border/40 bg-muted/5 space-y-2">
                     <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
-                      <span className="text-foreground/60 font-bold">STORAGE:</span> This application has <span className="text-red-500/80">no database</span>. All configurations, custom widgets, and workspace data are stored purely in your <span className="text-foreground">browser's local storage</span>.
+                      <span className="text-foreground/60 font-bold uppercase tracking-wider">Storage Engine:</span> {settings.storageType === 'supabase' ? (
+                        <span className="text-[#3ecf8e] font-bold">Supabase Cloud Active</span>
+                      ) : (
+                        <span className="text-foreground/60 italic">Local Browser (Offline)</span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
+                      <span className="text-foreground/60 font-bold uppercase tracking-wider">Sync:</span> {settings.storageType === 'supabase' ? (
+                        "Workspaces & widgets are synced to your cloud database."
+                      ) : (
+                        "All data is stored purely in your browser's local storage."
+                      )}
                     </p>
                     <p className="text-[11px] text-muted/80 leading-relaxed font-mono">
                       <span className="text-foreground/60 font-bold">WIDGETS:</span> Predefined system widgets are <span className="text-foreground">hardcoded</span> directly into the source code for maximum performance and zero-latency availability.

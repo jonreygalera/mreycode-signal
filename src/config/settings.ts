@@ -14,6 +14,7 @@ export interface AppSettings {
     key: string;
     isConfigured: boolean;
   };
+  supabaseRealtimeEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -32,5 +33,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     key: '',
     isConfigured: false
   },
+  supabaseRealtimeEnabled: false,
 };
 
