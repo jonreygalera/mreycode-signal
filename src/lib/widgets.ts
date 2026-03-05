@@ -1,4 +1,6 @@
 import { WidgetConfig } from "@/types/widget";
+import { LocalStorageAdapter, StorageAdapter } from "./storage-adapter";
+import { SupabaseAdapter } from "./supabase-adapter";
 
 export interface TempWidget {
   config: WidgetConfig;
@@ -16,6 +18,14 @@ const HISTORY_KEY_BASE = "mreycode_signal_widget_history";
 const WORKSPACES_KEY = "mreycode_signal_workspaces";
 
 export const MAX_WIDGETS_PER_WORKSPACE = 12;
+
+let currentAdapter: StorageAdapter = new LocalStorageAdapter();
+
+export const setStorageAdapter = (adapter: StorageAdapter) => {
+  currentAdapter = adapter;
+};
+
+export const getStorageAdapter = () => currentAdapter;
 
 const getStorageKey = (workspaceId?: string | null) => 
   workspaceId ? `${STORAGE_KEY_BASE}_${workspaceId}` : STORAGE_KEY_BASE;
@@ -77,6 +87,7 @@ const migrateWidgetConfig = (oldConfig: any): WidgetConfig => {
 };
 
 export const getTempWidgets = (workspaceId?: string | null): TempWidget[] => {
+  // Legacy sync version for components that haven't been migrated yet
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(getStorageKey(workspaceId));
   if (!stored) return [];
@@ -91,28 +102,25 @@ export const getTempWidgets = (workspaceId?: string | null): TempWidget[] => {
   }
 };
 
-export const saveTempWidget = (config: WidgetConfig, afterId: string | null, workspaceId?: string | null) => {
-  const current = getTempWidgets(workspaceId);
-  const existingIndex = current.findIndex(w => w.config.id === config.id);
-  
-  /* 
-  if (existingIndex === -1 && current.length >= MAX_WIDGETS_PER_WORKSPACE) {
-    throw new Error(`Maximum of ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed per workspace.`);
+export const getTempWidgetsAsync = async (workspaceId?: string | null): Promise<TempWidget[]> => {
+  try {
+    const widgets = await currentAdapter.getWidgets(workspaceId ?? null);
+    return widgets.map(tw => ({
+      ...tw,
+      config: migrateWidgetConfig(tw.config)
+    }));
+  } catch (e) {
+    console.error("Failed to fetch widgets", e);
+    return getTempWidgets(workspaceId); // Fallback to local
   }
-  */
+};
 
-  let updated;
-  if (existingIndex !== -1) {
-    updated = [...current];
-    updated[existingIndex] = { config, afterId };
-  } else {
-    updated = [...current, { config, afterId }];
-  }
-  
-  localStorage.setItem(getStorageKey(workspaceId), JSON.stringify(updated));
+export const saveTempWidget = async (config: WidgetConfig, afterId: string | null, workspaceId?: string | null) => {
+  await currentAdapter.saveWidget(config, afterId, workspaceId || null);
 };
 
 export const getHistoryWidgets = (workspaceId?: string | null): TempWidget[] => {
+  // History ALWAYS stays in localStorage as per user requirement
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(getHistoryKey(workspaceId));
   if (!stored) return [];
@@ -127,17 +135,16 @@ export const getHistoryWidgets = (workspaceId?: string | null): TempWidget[] => 
   }
 };
 
-export const deleteTempWidget = (id: string, workspaceId?: string | null, permanently = false) => {
-  const current = getTempWidgets(workspaceId);
+export const deleteTempWidget = async (id: string, workspaceId?: string | null, permanently = false) => {
+  const current = await getTempWidgetsAsync(workspaceId || null);
   const widgetToDelete = current.find(w => w.config.id === id);
   
   if (!widgetToDelete) return;
 
-  // Remove from current
-  const updated = current.filter(w => w.config.id !== id);
-  localStorage.setItem(getStorageKey(workspaceId), JSON.stringify(updated));
+  // Remove from Supabase/Local active storage
+  await currentAdapter.deleteWidget(id, workspaceId || null);
 
-  // Add to history if not permanent
+  // Add to history if not permanent (History stays in LocalStorage)
   if (!permanently) {
     const history = getHistoryWidgets(workspaceId);
     if (!history.find(w => w.config.id === id)) {
@@ -147,18 +154,18 @@ export const deleteTempWidget = (id: string, workspaceId?: string | null, perman
   }
 };
 
-export const restoreWidgetFromHistory = (id: string, workspaceId?: string | null) => {
+export const restoreWidgetFromHistory = async (id: string, workspaceId?: string | null) => {
   const history = getHistoryWidgets(workspaceId);
   const widgetToRestore = history.find(w => w.config.id === id);
   
   if (!widgetToRestore) return;
 
-  // Remove from history
+  // Remove from history (LocalStorage)
   const updatedHistory = history.filter(w => w.config.id !== id);
   localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
 
-  // Add back to temp
-  saveTempWidget(widgetToRestore.config, widgetToRestore.afterId, workspaceId);
+  // Add back to active storage (Supabase/Local)
+  await saveTempWidget(widgetToRestore.config, widgetToRestore.afterId, workspaceId);
 };
 
 export const permadeleteFromHistory = (id: string, workspaceId?: string | null) => {
@@ -167,9 +174,11 @@ export const permadeleteFromHistory = (id: string, workspaceId?: string | null) 
   localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
 };
 
-export const restoreAllHistory = (workspaceId?: string | null) => {
+export const restoreAllHistory = async (workspaceId?: string | null) => {
   const history = getHistoryWidgets(workspaceId);
-  history.forEach(w => saveTempWidget(w.config, w.afterId, workspaceId));
+  for (const w of history) {
+    await saveTempWidget(w.config, w.afterId, workspaceId);
+  }
   localStorage.removeItem(getHistoryKey(workspaceId));
 };
 
@@ -178,36 +187,16 @@ export const clearHistory = (workspaceId?: string | null) => {
 };
 
 export const clearAllHistory = () => {
-  const workspaces = getWorkspaces();
-  // Clear root history
+  // We need workspaces to clear all history
+  const stored = localStorage.getItem(WORKSPACES_KEY);
+  const workspaces: Workspace[] = stored ? JSON.parse(stored) : [];
+  
   localStorage.removeItem(getHistoryKey(null));
-  // Clear each workspace history
   workspaces.forEach(ws => localStorage.removeItem(getHistoryKey(ws.id)));
 };
 
-export const getGlobalStats = () => {
-  const workspaces = getWorkspaces();
-  let totalActive = 0;
-  let totalHistory = 0;
-
-  // Root stats (if any)
-  totalActive += getTempWidgets(null).length;
-  totalHistory += getHistoryWidgets(null).length;
-
-  // Workspace stats
-  workspaces.forEach(ws => {
-    totalActive += getTempWidgets(ws.id).length;
-    totalHistory += getHistoryWidgets(ws.id).length;
-  });
-
-  return {
-    workspacesCount: workspaces.length,
-    activeWidgetsCount: totalActive,
-    historyWidgetsCount: totalHistory
-  };
-};
-
 export const getWorkspaces = (): Workspace[] => {
+  // Legacy sync version
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(WORKSPACES_KEY);
   if (!stored) return [];
@@ -218,69 +207,52 @@ export const getWorkspaces = (): Workspace[] => {
   }
 };
 
-export const saveWorkspace = (workspace: Workspace) => {
-  const current = getWorkspaces();
-  
-  /* 
-  if (current.length >= MAX_WORKSPACES) {
-    throw new Error(`Maximum of ${MAX_WORKSPACES} workspaces allowed.`);
+export const getWorkspacesAsync = async (): Promise<Workspace[]> => {
+  try {
+    return await currentAdapter.getWorkspaces();
+  } catch (e) {
+    console.error("Failed to fetch workspaces", e);
+    return getWorkspaces();
   }
-  */
+};
 
+export const saveWorkspace = async (workspace: Workspace) => {
+  const current = await getWorkspacesAsync();
   if (current.some(ws => ws.name.toLowerCase() === workspace.name.toLowerCase())) {
     throw new Error(`A workspace with the name "${workspace.name}" already exists.`);
   }
-
-  const updated = [...current, workspace];
-  localStorage.setItem(WORKSPACES_KEY, JSON.stringify(updated));
+  await currentAdapter.saveWorkspace(workspace);
 };
 
-export const updateWorkspace = (id: string, name: string) => {
-  const current = getWorkspaces();
-  
+export const updateWorkspace = async (id: string, name: string) => {
+  const current = await getWorkspacesAsync();
   if (current.some(ws => ws.id !== id && ws.name.toLowerCase() === name.toLowerCase())) {
     throw new Error(`A workspace with the name "${name}" already exists.`);
   }
-
-  const updated = current.map(ws => ws.id === id ? { ...ws, name } : ws);
-  localStorage.setItem(WORKSPACES_KEY, JSON.stringify(updated));
+  await currentAdapter.updateWorkspace(id, name);
 };
 
-export const duplicateWorkspace = (sourceId: string | null, newWorkspace: Workspace) => {
-  // Save the new workspace first (checks limits and uniqueness)
-  saveWorkspace(newWorkspace);
-  
-  // Copy widgets
-  const sourceWidgets = getTempWidgets(sourceId);
-  const sourceHistory = getHistoryWidgets(sourceId);
-  
-  localStorage.setItem(getStorageKey(newWorkspace.id), JSON.stringify(sourceWidgets));
-  localStorage.setItem(getHistoryKey(newWorkspace.id), JSON.stringify(sourceHistory));
+export const duplicateWorkspace = async (sourceId: string | null, newWorkspace: Workspace) => {
+  await saveWorkspace(newWorkspace);
+  const sourceWidgets = await getTempWidgetsAsync(sourceId);
+  // Copy widgets to new workspace
+  for (const sw of sourceWidgets) {
+    await saveTempWidget(sw.config, sw.afterId, newWorkspace.id);
+  }
 };
 
-export const deleteWorkspace = (id: string) => {
-  const current = getWorkspaces();
-  const updated = current.filter(ws => ws.id !== id);
-  localStorage.setItem(WORKSPACES_KEY, JSON.stringify(updated));
-  
-  // Clean up associated storage
-  localStorage.removeItem(getStorageKey(id));
-  localStorage.removeItem(getHistoryKey(id));
+export const deleteWorkspace = async (id: string) => {
+  await currentAdapter.deleteWorkspace(id);
 };
 
 export const mergeWidgets = (baseConfigs: WidgetConfig[], tempWidgets: TempWidget[]): WidgetConfig[] => {
   let result = [...baseConfigs];
-  
-  // Sort temp widgets to maintain order if they refer to each other or original list
-  // For simplicity, we just process them one by one
   tempWidgets.forEach(temp => {
     const configWithFlag = { ...temp.config, isTemp: true };
-    
     if (!temp.afterId) {
       result.unshift(configWithFlag);
       return;
     }
-    
     const index = result.findIndex(w => w.id === temp.afterId);
     if (index !== -1) {
       result.splice(index + 1, 0, configWithFlag);
@@ -288,6 +260,32 @@ export const mergeWidgets = (baseConfigs: WidgetConfig[], tempWidgets: TempWidge
       result.push(configWithFlag);
     }
   });
-  
   return result;
+};
+
+export const getGlobalStats = async () => {
+  const workspaces = await getWorkspacesAsync();
+  let activeWidgetsCount = 0;
+  let historyWidgetsCount = 0;
+
+  // Root widgets
+  const rootWidgets = await getTempWidgetsAsync(null);
+  activeWidgetsCount += rootWidgets.length;
+  
+  const rootHistory = getHistoryWidgets(null);
+  historyWidgetsCount += rootHistory.length;
+
+  for (const ws of workspaces) {
+    const widgets = await getTempWidgetsAsync(ws.id);
+    activeWidgetsCount += widgets.length;
+    
+    const history = getHistoryWidgets(ws.id);
+    historyWidgetsCount += history.length;
+  }
+
+  return {
+    workspacesCount: workspaces.length,
+    activeWidgetsCount,
+    historyWidgetsCount
+  };
 };

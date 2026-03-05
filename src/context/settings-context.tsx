@@ -127,21 +127,96 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem("app-settings");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setSettings((prev) => ({ ...prev, ...parsed }));
-      } catch (e) {
-        console.error("Failed to parse settings", e);
+    const initStorage = async () => {
+      // 1. Load basic bootstrap settings from LocalStorage
+      const stored = localStorage.getItem("app-settings");
+      let currentSettings = { ...DEFAULT_SETTINGS };
+      
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          currentSettings = { ...currentSettings, ...parsed };
+        } catch (e) {
+          console.error("Failed to parse settings", e);
+        }
       }
-    }
-    setIsInitialized(true);
+
+      // 2. Initialize Adapter
+      if (currentSettings.storageType === 'supabase' && currentSettings.supabaseConfig.isConfigured) {
+        try {
+          const { url, key } = currentSettings.supabaseConfig;
+          const { SupabaseAdapter } = await import("@/lib/supabase-adapter");
+          const { setStorageAdapter } = await import("@/lib/widgets");
+          const { decodeCredential } = await import("@/lib/supabase");
+          
+          setStorageAdapter(new SupabaseAdapter());
+          
+          // 3. Load Supabase settings
+          const adapter = new SupabaseAdapter();
+          const supabaseSettings = await adapter.getSettings();
+          
+          // Merge (Supabase settings take priority for shared keys)
+          currentSettings = { ...currentSettings, ...supabaseSettings };
+        } catch (e) {
+          console.error("Failed to initialize Supabase adapter", e);
+        }
+      }
+
+      setSettings(currentSettings);
+      setIsInitialized(true);
+    };
+
+    initStorage();
   }, []);
 
   useEffect(() => {
+    if (isInitialized && settings.storageType === 'supabase' && settings.supabaseConfig.isConfigured) {
+      import("@/lib/widgets").then(({ getStorageAdapter }) => {
+        const adapter = getStorageAdapter();
+        if (adapter.onDataChange) {
+          adapter.onDataChange(() => {
+            console.log("Realtime update detected, refreshing data...");
+            // Use triggerRefresh or a more subtle way to reload the specific SWR keys if needed
+            // For now, simple reload as per "no need to refresh page" (meaning manual refresh)
+            window.location.reload();
+          }, settings.supabaseRealtimeEnabled);
+        }
+      });
+    }
+  }, [isInitialized, settings.storageType, settings.supabaseConfig.isConfigured, settings.supabaseRealtimeEnabled]);
+
+  useEffect(() => {
     if (isInitialized) {
-      localStorage.setItem("app-settings", JSON.stringify(settings));
+      // Save specific settings to LocalStorage
+      const localOnly = {
+        storageType: settings.storageType,
+        supabaseConfig: settings.supabaseConfig,
+        backgroundImage: settings.backgroundImage,
+        useBgInClock: settings.useBgInClock,
+        localStorageThreshold: settings.localStorageThreshold,
+      };
+      localStorage.setItem("app-settings", JSON.stringify({ ...settings, ...localOnly }));
+
+      // Save shared settings to Supabase if active
+      if (settings.storageType === 'supabase' && settings.supabaseConfig.isConfigured) {
+        const sharedSettings = {
+          timezone: settings.timezone,
+          tvCarouselEnabled: settings.tvCarouselEnabled,
+          tvCarouselInterval: settings.tvCarouselInterval,
+          snackbarPosition: settings.snackbarPosition,
+          maximizedCarouselEnabled: settings.maximizedCarouselEnabled,
+          maximizedCarouselInterval: settings.maximizedCarouselInterval,
+          supabaseRealtimeEnabled: settings.supabaseRealtimeEnabled,
+          maxWorkspaces: settings.maxWorkspaces,
+          maxWidgetsPerWorkspace: settings.maxWidgetsPerWorkspace,
+        };
+        
+        // Non-blocking save
+        import("@/lib/widgets").then(({ getStorageAdapter }) => {
+          const adapter = getStorageAdapter();
+          adapter.saveSettings(sharedSettings).catch(console.error);
+        });
+      }
     }
   }, [settings, isInitialized]);
 
