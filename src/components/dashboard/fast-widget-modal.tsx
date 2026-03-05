@@ -204,133 +204,130 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted/70">
-                  <Hash size={14} />
-                  Insert After
-                </label>
-                <select
-                  value={afterId || ""}
-                  onChange={(e) => setAfterId(e.target.value || null)}
-                  className="w-full bg-background border border-border rounded-[4px] px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all appearance-none cursor-pointer text-foreground"
-                >
-                  <option value="">(At the Beginning)</option>
-                  {existingWidgets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.label}
-                    </option>
-                  ))}
-                  <option value="end">(At the End)</option>
-                </select>
-              </div>
-
-              {!initialConfig && (
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-6 pb-2 space-y-6 shrink-0 bg-panel/50 backdrop-blur-sm z-10 border-b border-border/10">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                     Quick Template
+                  <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted/70">
+                    <Hash size={14} />
+                    Insert After
                   </label>
-                  <div className="relative" ref={templateDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => setIsTemplatesOpen(!isTemplatesOpen)}
-                      className={cn(
-                        "w-full bg-background border border-border rounded-[4px] px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all flex items-center justify-between group",
-                        isTemplatesOpen && "ring-1 ring-foreground/20 border-foreground/20"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 rounded-sm bg-foreground/5 text-foreground/70">
-                          <Type size={12} />
-                        </div>
-                        <span className={cn(
-                          "font-bold uppercase tracking-wider",
-                          selectedTemplateLabel ? "text-foreground" : "text-muted"
-                        )}>
-                          {selectedTemplateLabel || "Select a base template..."}
-                        </span>
-                      </div>
-                      <ChevronDown size={14} className={cn("text-muted transition-transform duration-300", isTemplatesOpen && "rotate-180")} />
-                    </button>
-
-                    <AnimatePresence>
-                      {isTemplatesOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                          animate={{ opacity: 1, y: 4, scale: 1 }}
-                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                          transition={{ duration: 0.15, ease: "easeOut" }}
-                          className="absolute top-full left-0 right-0 z-50 bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col mt-1"
-                        >
-                          <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
-                            <div className="relative">
-                              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
-                              <input
-                                type="text"
-                                placeholder="Search widgets..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-transparent border-none pl-8 pr-2 py-1.5 text-xs placeholder:text-muted/50 focus:outline-none focus:ring-0"
-                                autoFocus
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-1.5 max-h-[260px] overflow-y-auto custom-scrollbar bg-background/50">
-                            {TEMPLATES
-                              .filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map((template, i) => (
-                                <button
-                                  key={`${template.config.id}-${i}`}
-                                  type="button"
-                                  onClick={() => {
-                                    const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
-                                    const newConfig = { ...template.config, id: newId };
-                                    setConfigText(JSON.stringify(newConfig, null, 2));
-                                    setParsedConfig(newConfig);
-                                    setSelectedTemplateLabel(template.label);
-                                    setIsTemplatesOpen(false);
-                                    setError(null);
-                                  }}
-                                  className={cn(
-                                    "w-full flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
-                                    selectedTemplateLabel === template.label
-                                      ? "bg-foreground/5 border-foreground/10 shadow-sm"
-                                      : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/10"
-                                  )}
-                                >
-                                  <div className="flex flex-col items-start gap-1 text-left">
-                                    <span className={cn(
-                                      "text-[10px] font-bold uppercase tracking-tight transition-colors",
-                                      selectedTemplateLabel === template.label ? "text-foreground" : "text-muted group-hover:text-foreground"
-                                    )}>
-                                      {template.label}
-                                    </span>
-                                     <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest flex items-center gap-1">
-                                       <Type size={8} /> {template.config.type}
-                                     </span>
-                                  </div>
-                                  {selectedTemplateLabel === template.label && (
-                                    <div className="p-0.5 rounded-sm bg-foreground text-background">
-                                      <Check size={10} />
-                                    </div>
-                                  )}
-                                </button>
-                              ))}
-                            {TEMPLATES.filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
-                              <div className="col-span-full py-8 text-center border border-dashed border-border/40 rounded-lg">
-                                <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic">No matching templates</p>
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <select
+                    value={afterId || ""}
+                    onChange={(e) => setAfterId(e.target.value || null)}
+                    className="w-full bg-background border border-border rounded-[4px] px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all appearance-none cursor-pointer text-foreground"
+                  >
+                    <option value="">(At the Beginning)</option>
+                    {existingWidgets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.label}
+                      </option>
+                    ))}
+                    <option value="end">(At the End)</option>
+                  </select>
                 </div>
-              )}
-              <div className="space-y-4">
+
+                {!initialConfig && (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                       Quick Template
+                    </label>
+                    <div className="relative" ref={templateDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsTemplatesOpen(!isTemplatesOpen)}
+                        className={cn(
+                          "w-full bg-background border border-border rounded-[4px] px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all flex items-center justify-between group",
+                          isTemplatesOpen && "ring-1 ring-foreground/20 border-foreground/20"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="p-1 rounded-sm bg-foreground/5 text-foreground/70">
+                            <Type size={12} />
+                          </div>
+                          <span className={cn(
+                            "font-bold uppercase tracking-wider",
+                            selectedTemplateLabel ? "text-foreground" : "text-muted"
+                          )}>
+                            {selectedTemplateLabel || "Select a base template..."}
+                          </span>
+                        </div>
+                        <ChevronDown size={14} className={cn("text-muted transition-transform duration-300", isTemplatesOpen && "rotate-180")} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isTemplatesOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 4, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute top-full left-0 right-0 z-50 bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col mt-1"
+                          >
+                            <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
+                              <div className="relative">
+                                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                                <input
+                                  type="text"
+                                  placeholder="Search widgets..."
+                                  value={searchTerm}
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  className="w-full bg-transparent border-none pl-8 pr-2 py-1.5 text-xs placeholder:text-muted/50 focus:outline-none focus:ring-0"
+                                  autoFocus
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-1.5 max-h-[260px] overflow-y-auto custom-scrollbar bg-background/50">
+                              {TEMPLATES
+                                .filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map((template, i) => (
+                                  <button
+                                    key={`${template.config.id}-${i}`}
+                                    type="button"
+                                    onClick={() => {
+                                      const newId = `${template.config.id}-${Date.now().toString().slice(-4)}`;
+                                      const newConfig = { ...template.config, id: newId };
+                                      setConfigText(JSON.stringify(newConfig, null, 2));
+                                      setParsedConfig(newConfig);
+                                      setSelectedTemplateLabel(template.label);
+                                      setIsTemplatesOpen(false);
+                                      setError(null);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center justify-between p-3 rounded-md border transition-all group shrink-0",
+                                      selectedTemplateLabel === template.label
+                                        ? "bg-foreground/5 border-foreground/10 shadow-sm"
+                                        : "bg-transparent border-transparent hover:bg-foreground/5 hover:border-border/10"
+                                    )}
+                                  >
+                                    <div className="flex flex-col items-start gap-1 text-left">
+                                      <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                                        selectedTemplateLabel === template.label ? "text-foreground" : "text-muted group-hover:text-foreground"
+                                      )}>
+                                        {template.label}
+                                      </span>
+                                       <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest flex items-center gap-1">
+                                         <Type size={8} /> {template.config.type}
+                                       </span>
+                                    </div>
+                                    {selectedTemplateLabel === template.label && (
+                                      <div className="p-0.5 rounded-sm bg-foreground text-background">
+                                        <Check size={10} />
+                                      </div>
+                                    )}
+                                  </button>
+                                ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-1 p-1 bg-foreground/5 rounded-lg border border-border/50">
                   <button
+                    type="button"
                     onClick={() => setActiveTab('form')}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
@@ -343,6 +340,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     Form View
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActiveTab('json')}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
@@ -355,6 +353,10 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     JSON Editor
                   </button>
                 </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 pt-4 space-y-6 custom-scrollbar">
+                {error && <p className="text-xs text-red-500 font-medium mb-4">{error}</p>}
 
                 {activeTab === 'form' ? (
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1018,7 +1020,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-4 animate-in fade-in duration-300 h-full flex flex-col">
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted/70">
                         <Terminal size={14} />
@@ -1048,24 +1050,23 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                         setError(null);
                       }}
                       placeholder='{ "id": "my-widget", "type": "stat", "label": "My Widget", ... }'
-                      className="w-full bg-background border border-border rounded-[4px] px-4 py-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all min-h-[400px] resize-none text-foreground leading-relaxed"
+                      className="w-full bg-background border border-border rounded-[4px] px-4 py-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all min-h-[400px] flex-1 resize-none text-foreground leading-relaxed shadow-inner"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowDocs(!showDocs)}
+                      className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors mt-4 self-start"
+                      title="Toggle Configuration Dictionary"
+                    >
+                      {showDocs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      Configuration Dictionary
+                    </button>
                   </div>
                 )}
-                {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
               </div>
-
-              <button
-                onClick={() => setShowDocs(!showDocs)}
-                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors"
-                title="Toggle Configuration Dictionary"
-              >
-                {showDocs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                Configuration Dictionary
-              </button>
             </div>
 
-            <div className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-end gap-3 mt-auto">
+            <div className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-muted hover:text-foreground transition-colors"
@@ -1090,7 +1091,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                   Dictionary
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono custom-scrollbar">
                 {CONFIG_DOCS.map((doc) => (
                   <div key={doc.key} className="space-y-1 p-2 hover:bg-foreground/5 rounded transition-colors group">
                     <div className="flex items-center gap-2">
