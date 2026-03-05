@@ -588,7 +588,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         }
 
         const rawName = (data.workspaceName || "Imported Dashboard").split('-')[0].trim();
-        const existing = getWorkspaces();
+        const existing = await getWorkspacesAsync();
         const nameExists = existing.some(ws => ws.name.toLowerCase() === rawName.toLowerCase());
         const finalName = nameExists ? `${rawName} (Imported)` : rawName;
 
