@@ -16,6 +16,7 @@ import { HistoryModal } from "./history-modal";
 import { WorkspaceModal } from "./workspace-modal";
 import { 
   getTempWidgets, 
+  getTempWidgetsAsync,
   saveTempWidget, 
   mergeWidgets,
   getHistoryWidgets,
@@ -25,10 +26,12 @@ import {
   restoreAllHistory,
   clearHistory,
   getWorkspaces,
+  getWorkspacesAsync,
   saveWorkspace,
   deleteWorkspace,
   updateWorkspace,
   duplicateWorkspace,
+  MAX_WIDGETS_PER_WORKSPACE,
   type TempWidget,
   type Workspace
 } from "@/lib/widgets";
@@ -164,9 +167,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     }
   }, [searchParams, tempWidgets]);
 
-  useEffect(() => {
-    const ws = getWorkspaces();
+  const loadData = async () => {
+    const ws = await getWorkspacesAsync();
     setWorkspaces(ws);
+    
     const visited = localStorage.getItem("mreycode_signal_visited");
     
     // Auto-generate initial workspace ONLY on first visit and if none exist
@@ -178,7 +182,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       const randomId = `ws-auto-${Date.now()}`;
       
       const newWS = { id: randomId, name: randomName, createdAt: Date.now() };
-      saveWorkspace(newWS);
+      await saveWorkspace(newWS);
       
       // Always include Signal Vercel Visits as the first widget
       const priorityWidget = TEMPLATES.find(t => t.config.id === 'mreycode-signal-vercel-app-total-visits');
@@ -189,11 +193,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       const selected = priorityWidget ? [priorityWidget, ...shuffled.slice(0, 4)] : shuffled.slice(0, 5);
       
       let lastId: string | null = null;
-      selected.forEach(t => {
+      for (const t of selected) {
         const uniqueId = `${t.config.id}-${Math.random().toString(36).substring(2, 6)}`;
-        saveTempWidget({ ...t.config, id: uniqueId } as WidgetConfig, lastId, randomId);
+        await saveTempWidget({ ...t.config, id: uniqueId } as WidgetConfig, lastId, randomId);
         lastId = uniqueId;
-      });
+      }
       
       router.replace(`/?workspace=${randomId}`);
       return;
@@ -205,8 +209,13 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       return;
     }
 
-    setTempWidgets(getTempWidgets(workspaceId));
+    const currentWidgets = await getTempWidgetsAsync(workspaceId);
+    setTempWidgets(currentWidgets);
     setHistoryWidgets(getHistoryWidgets(workspaceId));
+  };
+
+  useEffect(() => {
+    loadData();
   }, [workspaceId, router]);
 
   const currentWorkspaceName = useMemo(() => {
@@ -228,15 +237,19 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     );
   }, [allWidgets, widgetSearch]);
 
-  const handleSaveWidget = (config: WidgetConfig, afterId: string | null) => {
+  const handleSaveWidget = async (config: WidgetConfig, afterId: string | null) => {
     try {
-      saveTempWidget(config, afterId, workspaceId);
-      setTempWidgets(getTempWidgets(workspaceId));
+      if (tempWidgets.length >= MAX_WIDGETS_PER_WORKSPACE && !tempWidgets.find(w => w.config.id === config.id)) {
+         throw new Error(`Workspace limit reached. Maximum ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed.`);
+      }
+      await saveTempWidget(config, afterId, workspaceId);
+      const updated = await getTempWidgetsAsync(workspaceId);
+      setTempWidgets(updated);
       setWidgetToEdit(null);
       setIsModalOpen(false);
     } catch (e: any) {
       showAlert({
-        title: "Workspace Limit",
+        title: "Error Saving Widget",
         message: e.message,
         type: "error"
       });
@@ -275,16 +288,18 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      deleteTempWidget(id, workspaceId);
-      setTempWidgets(getTempWidgets(workspaceId));
+      await deleteTempWidget(id, workspaceId);
+      const updatedTemp = await getTempWidgetsAsync(workspaceId);
+      setTempWidgets(updatedTemp);
       setHistoryWidgets(getHistoryWidgets(workspaceId));
     }
   };
 
-  const handleRestoreFromHistory = (id: string) => {
+  const handleRestoreFromHistory = async (id: string) => {
     try {
-      restoreWidgetFromHistory(id, workspaceId);
-      setTempWidgets(getTempWidgets(workspaceId));
+      await restoreWidgetFromHistory(id, workspaceId);
+      const updatedTemp = await getTempWidgetsAsync(workspaceId);
+      setTempWidgets(updatedTemp);
       setHistoryWidgets(getHistoryWidgets(workspaceId));
     } catch (e: any) {
       showAlert({
@@ -300,10 +315,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     setHistoryWidgets(getHistoryWidgets(workspaceId));
   };
 
-  const handleRestoreAllHistory = () => {
+  const handleRestoreAllHistory = async () => {
     try {
-      restoreAllHistory(workspaceId);
-      setTempWidgets(getTempWidgets(workspaceId));
+      await restoreAllHistory(workspaceId);
+      const updatedTemp = await getTempWidgetsAsync(workspaceId);
+      setTempWidgets(updatedTemp);
       setHistoryWidgets(getHistoryWidgets(workspaceId));
       setIsHistoryOpen(false);
     } catch (e: any) {
@@ -312,7 +328,8 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         message: "Some widgets were not restored because the workspace limit was reached.",
         type: "warning"
       });
-      setTempWidgets(getTempWidgets(workspaceId));
+      const updatedTemp = await getTempWidgetsAsync(workspaceId);
+      setTempWidgets(updatedTemp);
       setHistoryWidgets(getHistoryWidgets(workspaceId));
     }
   };
@@ -350,7 +367,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     const ws = workspaces.find(w => w.id === wsId);
     if (!ws) return;
 
-    const currentWidgets = getTempWidgets(wsId).map(tw => tw.config);
+    const currentWidgets = (await getTempWidgetsAsync(wsId)).map(tw => tw.config);
     setWorkspaceModal({
       isOpen: true,
       mode: 'rename',
@@ -381,40 +398,39 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       if (mode === 'add') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
-        saveWorkspace(newWS);
+        await saveWorkspace(newWS);
         
         // Initialize with selected widgets in order
         let lastId: string | null = null;
-        selectedWidgets.forEach(config => {
+        for (const config of selectedWidgets) {
           const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
-          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          await saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
           lastId = uniqueId;
-        });
+        }
 
-        setWorkspaces(getWorkspaces());
+        const wsList = await getWorkspacesAsync();
+        setWorkspaces(wsList);
         const params = new URLSearchParams(searchParams.toString());
         params.set("workspace", id);
         if (isTVMode) params.set("tv-mode", "yes");
         router.push(`/?${params.toString()}`);
       } else if (mode === 'rename' && targetId) {
-        updateWorkspace(targetId, name.trim());
+        await updateWorkspace(targetId, name.trim());
         
         // reconcile widgets: delete those removed, update/add those kept/added
-        const currentInDb = getTempWidgets(targetId);
+        const currentInDb = await getTempWidgetsAsync(targetId);
         const selectedIds = new Set(selectedWidgets.map(w => w.id));
         
         // Remove permanently deleted ones
-        currentInDb.forEach(tw => {
+        for (const tw of currentInDb) {
           if (!selectedIds.has(tw.config.id)) {
-            // Check if it's in the templates - if so, it was never "real" in this WS until confirmed
-            // But if it's in currentInDb, it IS real.
-            deleteTempWidget(tw.config.id, targetId, true);
+            await deleteTempWidget(tw.config.id, targetId, true);
           }
-        });
+        }
 
         // Save order
         let lastId: string | null = null;
-        selectedWidgets.forEach(config => {
+        for (const config of selectedWidgets) {
           let finalConfig = { ...config };
           // If it's a template (not an instance), generate ID
           const isTemplate = TEMPLATES.some(t => t.config.id === config.id);
@@ -422,26 +438,29 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             finalConfig.id = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
           }
           
-          saveTempWidget(finalConfig, lastId, targetId);
+          await saveTempWidget(finalConfig, lastId, targetId);
           lastId = finalConfig.id;
-        });
+        }
 
-        setWorkspaces(getWorkspaces());
-        setTempWidgets(getTempWidgets(workspaceId));
+        const wsList = await getWorkspacesAsync();
+        setWorkspaces(wsList);
+        const updatedTemp = await getTempWidgetsAsync(workspaceId);
+        setTempWidgets(updatedTemp);
       } else if (mode === 'copy') {
         const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString().slice(-4);
         const newWS = { id, name: name.trim(), createdAt: Date.now() };
-        saveWorkspace(newWS);
+        await saveWorkspace(newWS);
 
         // Initialize with selected widgets in order
         let lastId: string | null = null;
-        selectedWidgets.forEach(config => {
+        for (const config of selectedWidgets) {
           const uniqueId = `${config.id}-${Math.random().toString(36).substring(2, 6)}`;
-          saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
+          await saveTempWidget({ ...config, id: uniqueId } as WidgetConfig, lastId, id);
           lastId = uniqueId;
-        });
+        }
 
-        setWorkspaces(getWorkspaces());
+        const wsList = await getWorkspacesAsync();
+        setWorkspaces(wsList);
         const params = new URLSearchParams(searchParams.toString());
         params.set("workspace", id);
         if (isTVMode) params.set("tv-mode", "yes");
@@ -471,8 +490,9 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      deleteWorkspace(wsId);
-      setWorkspaces(getWorkspaces());
+      await deleteWorkspace(wsId);
+      const wsList = await getWorkspacesAsync();
+      setWorkspaces(wsList);
       if (workspaceId === wsId) {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("workspace");
@@ -493,8 +513,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     });
 
     if (confirmed) {
-      const current = getTempWidgets(workspaceId);
-      current.forEach(w => deleteTempWidget(w.config.id, workspaceId));
+      const current = await getTempWidgetsAsync(workspaceId);
+      for (const w of current) {
+        await deleteTempWidget(w.config.id, workspaceId);
+      }
       setTempWidgets([]);
       setHistoryWidgets(getHistoryWidgets(workspaceId));
     }

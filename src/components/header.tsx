@@ -14,6 +14,7 @@ import { useSettings } from "@/context/settings-context";
 import { cn } from "@/lib/utils";
 import { RefreshButton } from "./refresh-button";
 import { ConnectivityStatus } from "./connectivity-status";
+import { SupabaseStatus } from "./supabase-status";
 import { getStorageUsage } from "@/lib/storage-utils";
 import { getGlobalStats, clearAllHistory } from "@/lib/widgets";
 import { useAlert } from "@/context/alert-context";
@@ -48,9 +49,10 @@ export function Header() {
   const [storageUsage, setStorageUsage] = useState({ usedMB: 0, limitMB: 5, percentage: 0 });
   const [globalStats, setGlobalStats] = useState({ workspacesCount: 0, activeWidgetsCount: 0, historyWidgetsCount: 0 });
   
-  const refreshStats = () => {
+  const refreshStats = async () => {
     setStorageUsage(getStorageUsage());
-    setGlobalStats(getGlobalStats());
+    const stats = await getGlobalStats();
+    setGlobalStats(stats);
   };
 
   useEffect(() => {
@@ -208,6 +210,8 @@ export function Header() {
             <div className="h-4 w-px bg-border mx-1" />
             <RefreshButton />
             <div className="h-4 w-px bg-border mx-1" />
+            <SupabaseStatus />
+            {settings.storageType === 'supabase' && <div className="h-4 w-px bg-border mx-1" />}
             <ConnectivityStatus />
             <div className="h-4 w-px bg-border mx-1" />
             <ThemeToggle />
@@ -316,10 +320,11 @@ export function Header() {
 
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between px-4 py-2">
                    <span className="text-xs font-bold text-muted uppercase tracking-widest">Theme Mode</span>
-                   <div className="flex items-center gap-2">
-                     <ConnectivityStatus />
-                     <ThemeToggle />
-                   </div>
+                     <div className="flex items-center gap-2">
+                       <SupabaseStatus />
+                       <ConnectivityStatus />
+                       <ThemeToggle />
+                     </div>
                 </div>
               </div>
             </motion.div>

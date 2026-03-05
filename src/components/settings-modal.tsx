@@ -11,6 +11,7 @@ import { appConfig } from "@/config/app";
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
 import { getStorageUsage } from "@/lib/storage-utils";
+import { SupabaseConnectModal } from "./supabase-connect-modal";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isTzOpen, setIsTzOpen] = useState(false);
   const tzDropdownRef = useRef<HTMLDivElement>(null);
   
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+
   // Backup/Restore State
   const [backupStatus, setBackupStatus] = useState<'idle' | 'exporting' | 'import_preview' | 'importing'>('idle');
   const [backupProgress, setBackupProgress] = useState(0);
@@ -235,6 +238,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-100 flex items-center justify-center sm:p-4">
@@ -272,8 +276,93 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10">
-              {/* Timezone Section */}
+              {/* Storage Section - MOVED TO TOP FOR VISIBILITY */}
               <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Cloud & Storage</h3>
+                </div>
+                
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/5 p-6">
+                  {/* Subtle decorative background */}
+                  <div className="absolute -right-8 -top-8 text-primary/5 rotate-12 pointer-events-none">
+                    <Database size={120} />
+                  </div>
+
+                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-base font-bold text-foreground">Storage Engine</h4>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest",
+                          settings.storageType === 'supabase' 
+                            ? "bg-[#3ecf8e]/10 text-[#3ecf8e] border border-[#3ecf8e]/20" 
+                            : "bg-primary/10 text-primary border border-primary/20"
+                        )}>
+                          {settings.storageType === 'supabase' ? 'Supabase Active' : 'Local Instance'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted leading-relaxed max-w-xl">
+                        {settings.storageType === 'supabase' 
+                          ? "Your configuration and workspaces are currently synchronized with your private Supabase cloud instance."
+                          : "Your data is currently stored only in this browser. Connect to Supabase to enable multi-device synchronization and cloud backups."}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0">
+                      {settings.storageType === 'supabase' ? (
+                        <button
+                          onClick={() => setIsSupabaseModalOpen(true)}
+                          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-panel border border-border text-xs font-black uppercase tracking-widest hover:bg-muted transition-all active:scale-95 shadow-sm"
+                        >
+                          <SettingsIcon size={14} />
+                          Manage Cloud
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setIsSupabaseModalOpen(true)}
+                          className="group relative flex items-center gap-3 px-8 py-4 rounded-xl bg-[#3ecf8e] text-[#1c1c1c] text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-[#3ecf8e]/20 active:scale-95 overflow-hidden border-none"
+                        >
+                          <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                          <Database size={16} fill="currentColor" fillOpacity={0.2} />
+                          Connect Supabase
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {settings.storageType === 'supabase' && (
+                    <div className="mt-6 pt-6 border-t border-border/50 flex items-center justify-between">
+                      <p className="text-[10px] text-muted italic">
+                        Connected to: <span className="font-mono text-foreground/60">{atob(settings.supabaseConfig.url).replace('https://', '').split('.')[0]}</span>
+                      </p>
+                      <button
+                        onClick={async () => {
+                           const confirmed = await showAlert({
+                             title: "Switch to Local Storage",
+                             message: "Are you sure you want to disconnect from Supabase and use local browser storage? Your cloud data will NOT be deleted, but it will no longer be visible until you reconnect.",
+                             type: "warning",
+                             showCancel: true,
+                             confirmText: "Switch to Local",
+                             cancelText: "Stay with Cloud"
+                           });
+                           if (confirmed) {
+                             updateSettings({ storageType: 'local' });
+                             window.location.reload();
+                           }
+                        }}
+                        className="flex items-center gap-2 text-red-500/60 hover:text-red-500 transition-colors text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md hover:bg-red-500/5"
+                      >
+                        <RotateCcw size={12} />
+                        Switch to Local
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Timezone Section */}
+              <section className="space-y-4 pt-1 border-t border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="text-primary w-4 h-4" />
                   <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Time & Region</h3>
@@ -353,7 +442,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         {tz.split('/').pop()?.replace(/_/g, " ")}
                                       </span>
                                        <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
-                                         {tz.split('/').slice(0, -1).join('/') || 'Global'}
+                                          {tz.split('/').slice(0, -1).join('/') || 'Global'}
                                        </span>
                                     </div>
                                     {localTimezone === tz && (
@@ -362,7 +451,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                       </div>
                                     )}
                                   </button>
-                              ))}
+                                ))}
                               {timezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).length === 0 && (
                                 <div className="col-span-full py-12 text-center border border-dashed border-border/40 rounded-lg">
                                   <p className="text-[10px] text-muted font-bold uppercase tracking-widest italic text-center">No matching timezones</p>
@@ -378,7 +467,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </section>
 
               {/* TV Carousel Section */}
-              <section className="space-y-4">
+              <section className="space-y-4 pt-1 border-t border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <RotateCcw className="text-primary w-4 h-4" />
                   <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Dashboard Automation</h3>
@@ -534,90 +623,90 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-border/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <label className="text-sm font-semibold text-foreground/80 block mb-1">Storage Usage Warning Threshold</label>
-                        <p className="text-[10px] text-muted leading-relaxed">
-                          Trigger a snackbar notification when your browser's local storage exceeds this percentage.
-                        </p>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-primary">{localLocalStorageThreshold}%</span>
-                    </div>
-
-                    <div className="bg-muted/5 border border-border/50 rounded-xl p-4 mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <HardDrive size={14} className="text-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Current Status</span>
-                          <button 
-                            onClick={() => setStorageStatus(getStorageUsage())}
-                            className="p-1 hover:bg-foreground/5 rounded-full transition-colors text-muted hover:text-primary active:rotate-180"
-                            title="Refresh usage"
-                          >
-                            <RefreshCcw size={10} />
-                          </button>
+                  {settings.storageType !== 'supabase' && (
+                    <div className="pt-6 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <label className="text-sm font-semibold text-foreground/80 block mb-1">Storage Usage Warning Threshold</label>
+                          <p className="text-[10px] text-muted leading-relaxed">
+                            Trigger a snackbar notification when your browser's local storage exceeds this percentage.
+                          </p>
                         </div>
-                        <span className={cn(
-                          "text-[10px] font-black px-2 py-0.5 rounded-full border",
-                          storageStatus.percentage >= localLocalStorageThreshold 
-                            ? "bg-red-500/10 text-red-500 border-red-500/20" 
-                            : "bg-primary/10 text-primary border-primary/20"
-                        )}>
-                          {storageStatus.percentage >= localLocalStorageThreshold ? "THRESHOLD EXCEEDED" : "OPTIMAL"}
-                        </span>
+                        <span className="text-xs font-mono font-bold text-primary">{localLocalStorageThreshold}%</span>
                       </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-end justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-xl font-black text-foreground tabular-nums">
-                              {storageStatus.usedMB} <span className="text-[10px] font-bold text-muted uppercase tracking-tighter ml-1">MB</span>
-                            </span>
-                            <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">
-                              Used of {storageStatus.limitMB} MB Limit
-                            </span>
+
+                      <div className="bg-muted/5 border border-border/50 rounded-xl p-4 mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <HardDrive size={14} className="text-primary" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Current Status</span>
+                            <button 
+                              onClick={() => setStorageStatus(getStorageUsage())}
+                              className="p-1 hover:bg-foreground/5 rounded-full transition-colors text-muted hover:text-primary active:rotate-180"
+                              title="Refresh usage"
+                            >
+                              <RefreshCcw size={10} />
+                            </button>
                           </div>
-                          <div className="text-right">
-                            <span className={cn(
-                              "text-lg font-black tabular-nums",
-                              storageStatus.percentage >= localLocalStorageThreshold ? "text-red-500" : "text-primary"
-                            )}>
-                              {storageStatus.percentage}%
-                            </span>
+                          <span className={cn(
+                            "text-[10px] font-black px-2 py-0.5 rounded-full border",
+                            storageStatus.percentage >= localLocalStorageThreshold 
+                              ? "bg-red-500/10 text-red-500 border-red-500/20" 
+                              : "bg-primary/10 text-primary border-primary/20"
+                          )}>
+                            {storageStatus.percentage >= localLocalStorageThreshold ? "THRESHOLD EXCEEDED" : "OPTIMAL"}
+                          </span>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-end justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-xl font-black text-foreground tabular-nums">
+                                {storageStatus.usedMB} <span className="text-[10px] font-bold text-muted uppercase tracking-tighter ml-1">MB</span>
+                              </span>
+                              <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">
+                                Used of {storageStatus.limitMB} MB Limit
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className={cn(
+                                "text-lg font-black tabular-nums",
+                                storageStatus.percentage >= localLocalStorageThreshold ? "text-red-500" : "text-primary"
+                              )}>
+                                {storageStatus.percentage}%
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden mt-1">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${storageStatus.percentage}%` }}
+                              className={cn(
+                                "h-full transition-colors duration-500",
+                                storageStatus.percentage >= 90 ? "bg-red-500" : 
+                                storageStatus.percentage >= localLocalStorageThreshold ? "bg-amber-500" : "bg-primary"
+                              )}
+                            />
                           </div>
                         </div>
+                      </div>
 
-                        <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden mt-1">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${storageStatus.percentage}%` }}
-                            className={cn(
-                              "h-full transition-colors duration-500",
-                              storageStatus.percentage >= 90 ? "bg-red-500" : 
-                              storageStatus.percentage >= localLocalStorageThreshold ? "bg-amber-500" : "bg-primary"
-                            )}
-                          />
-                        </div>
+                      <div className="flex items-center gap-4">
+                         <input 
+                           type="range"
+                           min="50"
+                           max="98"
+                           value={localLocalStorageThreshold}
+                           onChange={(e) => setLocalLocalStorageThreshold(Number(e.target.value))}
+                           className="flex-1 accent-primary cursor-pointer"
+                         />
+                         <span className="text-[10px] font-bold text-muted w-8">98%</span>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                       <input 
-                         type="range"
-                         min="50"
-                         max="98"
-                         value={localLocalStorageThreshold}
-                         onChange={(e) => setLocalLocalStorageThreshold(Number(e.target.value))}
-                         className="flex-1 accent-primary cursor-pointer"
-                       />
-                       <span className="text-[10px] font-bold text-muted w-8">98%</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </section>
-
-
 
               {/* Background Section */}
               <section className="space-y-4">
@@ -888,5 +977,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
       )}
     </AnimatePresence>
+    
+    <SupabaseConnectModal 
+      isOpen={isSupabaseModalOpen} 
+      onClose={() => setIsSupabaseModalOpen(false)} 
+    />
+    </>
   );
 }
