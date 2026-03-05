@@ -16,6 +16,7 @@ export interface AppSettings {
   };
   supabaseRealtimeEnabled: boolean;
   maxWorkspaces: number;
+  maxWidgetsPerWorkspace: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -36,5 +37,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   supabaseRealtimeEnabled: false,
   maxWorkspaces: 3,
+  maxWidgetsPerWorkspace: 5,
 };
 

@@ -208,6 +208,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           maximizedCarouselInterval: settings.maximizedCarouselInterval,
           supabaseRealtimeEnabled: settings.supabaseRealtimeEnabled,
           maxWorkspaces: settings.maxWorkspaces,
+          maxWidgetsPerWorkspace: settings.maxWidgetsPerWorkspace,
         };
         
         // Non-blocking save

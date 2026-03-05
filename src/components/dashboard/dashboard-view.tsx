@@ -239,8 +239,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
 
   const handleSaveWidget = async (config: WidgetConfig, afterId: string | null) => {
     try {
-      if (tempWidgets.length >= MAX_WIDGETS_PER_WORKSPACE && !tempWidgets.find(w => w.config.id === config.id)) {
-         throw new Error(`Workspace limit reached. Maximum ${MAX_WIDGETS_PER_WORKSPACE} widgets allowed.`);
+      const currentLimit = settings.storageType === 'supabase' ? settings.maxWidgetsPerWorkspace : MAX_WIDGETS_PER_WORKSPACE;
+      
+      if (tempWidgets.length >= currentLimit && !tempWidgets.find(w => w.config.id === config.id)) {
+         throw new Error(`Workspace limit reached. Maximum ${currentLimit} widgets allowed.`);
       }
       await saveTempWidget(config, afterId, workspaceId);
       const updated = await getTempWidgetsAsync(workspaceId);

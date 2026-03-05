@@ -32,6 +32,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
   const [localLocalStorageThreshold, setLocalLocalStorageThreshold] = useState(settings.localStorageThreshold);
   const [localMaxWorkspaces, setLocalMaxWorkspaces] = useState(settings.maxWorkspaces);
+  const [localMaxWidgetsPerWorkspace, setLocalMaxWidgetsPerWorkspace] = useState(settings.maxWidgetsPerWorkspace);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const [storageStatus, setStorageStatus] = useState(getStorageUsage());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +76,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalSnackbarPosition(settings.snackbarPosition);
     setLocalLocalStorageThreshold(settings.localStorageThreshold);
     setLocalMaxWorkspaces(settings.maxWorkspaces);
+    setLocalMaxWidgetsPerWorkspace(settings.maxWidgetsPerWorkspace);
     setPreviewImage(settings.backgroundImage);
     setStorageStatus(getStorageUsage());
   }, [settings, isOpen]);
@@ -123,6 +125,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       snackbarPosition: localSnackbarPosition,
       localStorageThreshold: localLocalStorageThreshold,
       maxWorkspaces: localMaxWorkspaces,
+      maxWidgetsPerWorkspace: localMaxWidgetsPerWorkspace,
     });
     onClose();
   };
@@ -149,6 +152,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
       setLocalLocalStorageThreshold(DEFAULT_SETTINGS.localStorageThreshold);
       setLocalMaxWorkspaces(DEFAULT_SETTINGS.maxWorkspaces);
+      setLocalMaxWidgetsPerWorkspace(DEFAULT_SETTINGS.maxWidgetsPerWorkspace);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -383,6 +387,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           />
                           <span className="text-[10px] font-mono font-bold bg-muted/20 px-2 py-1 rounded min-w-[20px] text-center">
                             {localMaxWorkspaces}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between group pt-4 border-t border-border/30">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Widget Limit</span>
+                          <p className="text-[10px] text-muted max-w-[280px]">
+                            Maximum widgets allowed per workspace in cloud sync.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="range"
+                            min="1"
+                            max="20"
+                            step="1"
+                            value={localMaxWidgetsPerWorkspace}
+                            onChange={(e) => setLocalMaxWidgetsPerWorkspace(parseInt(e.target.value))}
+                            className="w-24 accent-[#3ecf8e]"
+                          />
+                          <span className="text-[10px] font-mono font-bold bg-muted/20 px-2 py-1 rounded min-w-[20px] text-center">
+                            {localMaxWidgetsPerWorkspace}
                           </span>
                         </div>
                       </div>
