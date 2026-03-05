@@ -118,7 +118,16 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
       setConfigText(JSON.stringify(initialConfig.config, null, 2));
     } else {
       setAfterId(null);
-      setConfigText("");
+      const randomId = `widget-${Math.floor(1000 + Math.random() * 9000)}`;
+      const defaultConfig = {
+        id: randomId,
+        label: `New Widget ${randomId.split('-')[1]}`,
+        type: "stat",
+        size: "sm"
+      };
+      setConfigText(JSON.stringify(defaultConfig, null, 2));
+      setParsedConfig(defaultConfig);
+      setSelectedTemplateLabel(null);
     }
   }, [initialConfig]);
 
@@ -196,12 +205,24 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-muted/10 rounded-full transition-colors text-muted hover:text-foreground"
-              >
-                <X size={20} />
-              </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDocs(!showDocs)}
+                    className={cn(
+                      "p-2 rounded-full transition-all",
+                      showDocs ? "bg-primary/10 text-primary" : "hover:bg-muted/10 text-muted hover:text-foreground"
+                    )}
+                    title="Documentation"
+                  >
+                    <BookOpen size={20} />
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="p-2 hover:bg-muted/10 rounded-full transition-colors text-muted hover:text-foreground"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -362,7 +383,10 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Widget ID</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60 flex items-center gap-1">
+                          Widget ID
+                          <span className="text-red-500 font-black text-xs">*</span>
+                        </label>
                         <input
                           type="text"
                           value={parsedConfig.id || ""}
@@ -372,7 +396,10 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Display Label</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60 flex items-center gap-1">
+                          Display Label
+                          <span className="text-red-500 font-black text-xs">*</span>
+                        </label>
                         <input
                           type="text"
                           value={parsedConfig.label || ""}
@@ -385,7 +412,10 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Widget Type</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted/60 flex items-center gap-1">
+                          Widget Type
+                          <span className="text-red-500 font-black text-xs">*</span>
+                        </label>
                         <select
                           value={parsedConfig.type || ""}
                           onChange={(e) => updateParsedConfig({ type: e.target.value })}
@@ -1052,15 +1082,6 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                       placeholder='{ "id": "my-widget", "type": "stat", "label": "My Widget", ... }'
                       className="w-full bg-background border border-border rounded-[4px] px-4 py-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all min-h-[400px] flex-1 resize-none text-foreground leading-relaxed shadow-inner"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowDocs(!showDocs)}
-                      className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors mt-4 self-start"
-                      title="Toggle Configuration Dictionary"
-                    >
-                      {showDocs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      Configuration Dictionary
-                    </button>
                   </div>
                 )}
               </div>
