@@ -1,12 +1,18 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { DEFAULT_SETTINGS, AppSettings } from "@/config/settings";
 import { useSWRConfig } from "swr";
 import { useTVMode } from "./tv-mode-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { getWorkspaces } from "@/lib/widgets";
+import { getWorkspaces, getWorkspacesAsync } from "@/lib/widgets";
 
 interface SettingsContextType {
   settings: AppSettings;
@@ -17,85 +23,91 @@ interface SettingsContextType {
   moveCarousel: (direction: "next" | "prev") => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined,
+);
 
-function SettingsInner({ 
-  children, 
-  settings, 
-  updateSettings, 
-  resetSettings, 
-  triggerRefresh, 
+function SettingsInner({
+  children,
+  settings,
+  updateSettings,
+  resetSettings,
+  triggerRefresh,
   timeLeft,
-  onTimeUpdate
+  onTimeUpdate,
 }: any) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const { isTVMode } = useTVMode();
 
-  const moveCarousel = useCallback((direction: "next" | "prev") => {
-    const workspaces = getWorkspaces();
-    const currentWorkspace = searchParams.get("workspace");
-    
-    // EXCLUDE Main (null) from the carousel loop if we have actual workspaces
-    const viewList: (string | null)[] = workspaces.length > 0 
-      ? workspaces.map(ws => ws.id) 
-      : [null];
-    
-    let currentIndex = viewList.indexOf(currentWorkspace);
-    let nextIndex;
+  const moveCarousel = useCallback(
+    async (direction: "next" | "prev") => {
+      const workspaces = await getWorkspacesAsync();
+      const currentWorkspace = searchParams.get("workspace");
 
-    if (currentIndex === -1) {
-      // If we are currently on Main (which is excluded), jump to the first/last workspace
-      nextIndex = direction === "next" ? 0 : viewList.length - 1;
-    } else {
-      if (direction === "next") {
-        nextIndex = (currentIndex + 1) % viewList.length;
+      // EXCLUDE Main (null) from the carousel loop if we have actual workspaces
+      const viewList: (string | null)[] =
+        workspaces.length > 0 ? workspaces.map((ws) => ws.id) : [null];
+
+      let currentIndex = viewList.indexOf(currentWorkspace);
+      let nextIndex;
+
+      if (currentIndex === -1) {
+        // If we are currently on Main (which is excluded), jump to the first/last workspace
+        nextIndex = direction === "next" ? 0 : viewList.length - 1;
       } else {
-        nextIndex = (currentIndex - 1 + viewList.length) % viewList.length;
+        if (direction === "next") {
+          nextIndex = (currentIndex + 1) % viewList.length;
+        } else {
+          nextIndex = (currentIndex - 1 + viewList.length) % viewList.length;
+        }
       }
-    }
-    
-    const nextWorkspace = viewList[nextIndex];
 
-    const params = new URLSearchParams(searchParams.toString());
-    
-    // Explicitly preserve or set tv-mode if we are in TV mode
-    if (isTVMode) {
-      params.set("tv-mode", "yes");
-    }
+      const nextWorkspace = viewList[nextIndex];
 
-    if (nextWorkspace) {
-      params.set("workspace", nextWorkspace);
-    } else {
-      params.delete("workspace");
-    }
-    
-    router.push(`/?${params.toString()}`);
-  }, [searchParams, router, isTVMode]);
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Explicitly preserve or set tv-mode if we are in TV mode
+      if (isTVMode) {
+        params.set("tv-mode", "yes");
+      }
+
+      if (nextWorkspace) {
+        params.set("workspace", nextWorkspace);
+      } else {
+        params.delete("workspace");
+      }
+
+      router.push(`/?${params.toString()}`);
+    },
+    [searchParams, router, isTVMode],
+  );
 
   return (
-    <SettingsContext.Provider value={{ 
-      settings, 
-      updateSettings, 
-      resetSettings, 
-      triggerRefresh,
-      timeLeft,
-      moveCarousel
-    }}>
+    <SettingsContext.Provider
+      value={{
+        settings,
+        updateSettings,
+        resetSettings,
+        triggerRefresh,
+        timeLeft,
+        moveCarousel,
+      }}
+    >
       <div className="relative min-h-screen">
         <Suspense fallback={null}>
-          <SettingsSync 
-            isTVMode={useTVMode().isTVMode} 
-            settings={settings} 
-            isInitialized={true} 
+          <SettingsSync
+            isTVMode={useTVMode().isTVMode}
+            settings={settings}
+            isInitialized={true}
             onTimeUpdate={onTimeUpdate}
             onMove={moveCarousel}
           />
         </Suspense>
         {settings.backgroundImage && (
           <>
-            <div 
+            <div
               className="fixed inset-0 -z-20 pointer-events-none transition-opacity duration-1000"
               style={{
                 backgroundImage: `url(${settings.backgroundImage})`,
@@ -108,9 +120,7 @@ function SettingsInner({
             <div className="fixed inset-0 bg-background/40 -z-10 pointer-events-none" />
           </>
         )}
-        <div className="relative z-0">
-          {children}
-        </div>
+        <div className="relative z-0">{children}</div>
       </div>
     </SettingsContext.Provider>
   );
@@ -131,7 +141,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       // 1. Load basic bootstrap settings from LocalStorage
       const stored = localStorage.getItem("app-settings");
       let currentSettings = { ...DEFAULT_SETTINGS };
-      
+
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -142,19 +152,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Initialize Adapter
-      if (currentSettings.storageType === 'supabase' && currentSettings.supabaseConfig.isConfigured) {
+      if (
+        currentSettings.storageType === "supabase" &&
+        currentSettings.supabaseConfig.isConfigured
+      ) {
         try {
           const { url, key } = currentSettings.supabaseConfig;
           const { SupabaseAdapter } = await import("@/lib/supabase-adapter");
           const { setStorageAdapter } = await import("@/lib/widgets");
           const { decodeCredential } = await import("@/lib/supabase");
-          
+
           setStorageAdapter(new SupabaseAdapter());
-          
+
           // 3. Load Supabase settings
           const adapter = new SupabaseAdapter();
           const supabaseSettings = await adapter.getSettings();
-          
+
           // Merge (Supabase settings take priority for shared keys)
           currentSettings = { ...currentSettings, ...supabaseSettings };
         } catch (e) {
@@ -170,7 +183,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isInitialized && settings.storageType === 'supabase' && settings.supabaseConfig.isConfigured) {
+    if (
+      isInitialized &&
+      settings.storageType === "supabase" &&
+      settings.supabaseConfig.isConfigured
+    ) {
       import("@/lib/widgets").then(({ getStorageAdapter }) => {
         const adapter = getStorageAdapter();
         if (adapter.onDataChange) {
@@ -183,7 +200,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
       });
     }
-  }, [isInitialized, settings.storageType, settings.supabaseConfig.isConfigured, settings.supabaseRealtimeEnabled]);
+  }, [
+    isInitialized,
+    settings.storageType,
+    settings.supabaseConfig.isConfigured,
+    settings.supabaseRealtimeEnabled,
+  ]);
 
   useEffect(() => {
     if (isInitialized) {
@@ -195,10 +217,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         useBgInClock: settings.useBgInClock,
         localStorageThreshold: settings.localStorageThreshold,
       };
-      localStorage.setItem("app-settings", JSON.stringify({ ...settings, ...localOnly }));
+      localStorage.setItem(
+        "app-settings",
+        JSON.stringify({ ...settings, ...localOnly }),
+      );
 
       // Save shared settings to Supabase if active
-      if (settings.storageType === 'supabase' && settings.supabaseConfig.isConfigured) {
+      if (
+        settings.storageType === "supabase" &&
+        settings.supabaseConfig.isConfigured
+      ) {
         const sharedSettings = {
           timezone: settings.timezone,
           tvCarouselEnabled: settings.tvCarouselEnabled,
@@ -210,7 +238,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           maxWorkspaces: settings.maxWorkspaces,
           maxWidgetsPerWorkspace: settings.maxWidgetsPerWorkspace,
         };
-        
+
         // Non-blocking save
         import("@/lib/widgets").then(({ getStorageAdapter }) => {
           const adapter = getStorageAdapter();
@@ -219,7 +247,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [settings, isInitialized]);
-
 
   useEffect(() => {
     if (settings.backgroundImage) {
@@ -239,10 +266,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Suspense fallback={null}>
-      <SettingsInner 
-        settings={settings} 
-        updateSettings={updateSettings} 
-        resetSettings={resetSettings} 
+      <SettingsInner
+        settings={settings}
+        updateSettings={updateSettings}
+        resetSettings={resetSettings}
         triggerRefresh={triggerRefresh}
         timeLeft={timeLeft}
         onTimeUpdate={setTimeLeft} // Pass this down
@@ -253,21 +280,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SettingsSync({ 
-  isTVMode, 
-  settings, 
+function SettingsSync({
+  isTVMode,
+  settings,
   isInitialized,
   onTimeUpdate,
-  onMove
-}: { 
-  isTVMode: boolean, 
-  settings: AppSettings, 
-  isInitialized: boolean,
-  onTimeUpdate: (time: number | null) => void,
-  onMove: (direction: "next" | "prev") => void
+  onMove,
+}: {
+  isTVMode: boolean;
+  settings: AppSettings;
+  isInitialized: boolean;
+  onTimeUpdate: (time: number | null) => void;
+  onMove: (direction: "next" | "prev") => void;
 }) {
   const searchParams = useSearchParams();
-  
+
   useEffect(() => {
     if (!isTVMode || !isInitialized) {
       onTimeUpdate(null);
@@ -276,10 +303,13 @@ function SettingsSync({
 
     const totalSeconds = Math.max(30, settings.tvCarouselInterval);
     let remaining = totalSeconds;
-    
+
     // Always handle keyboard navigation in TV mode
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -316,7 +346,14 @@ function SettingsSync({
       if (timer) clearInterval(timer);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isTVMode, settings.tvCarouselEnabled, settings.tvCarouselInterval, isInitialized, onTimeUpdate, onMove]);
+  }, [
+    isTVMode,
+    settings.tvCarouselEnabled,
+    settings.tvCarouselInterval,
+    isInitialized,
+    onTimeUpdate,
+    onMove,
+  ]);
 
   return null;
 }
