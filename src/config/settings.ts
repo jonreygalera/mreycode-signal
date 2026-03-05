@@ -23,11 +23,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   timezone: typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
   backgroundImage: null,
   useBgInClock: false,
-  tvCarouselEnabled: false,
+  tvCarouselEnabled: true,
   tvCarouselInterval: 30,
   snackbarPosition: 'top-right',
   localStorageThreshold: 90,
-  maximizedCarouselEnabled: false,
+  maximizedCarouselEnabled: true,
   maximizedCarouselInterval: 20,
   storageType: 'local',
   supabaseConfig: {
