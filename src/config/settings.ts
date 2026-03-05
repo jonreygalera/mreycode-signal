@@ -15,6 +15,7 @@ export interface AppSettings {
     isConfigured: boolean;
   };
   supabaseRealtimeEnabled: boolean;
+  maxWorkspaces: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,5 +35,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     isConfigured: false
   },
   supabaseRealtimeEnabled: false,
+  maxWorkspaces: 3,
 };
 

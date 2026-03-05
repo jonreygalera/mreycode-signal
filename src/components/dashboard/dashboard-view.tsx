@@ -351,6 +351,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleAddWorkspace = () => {
+    if (settings.storageType === 'supabase' && workspaces.length >= settings.maxWorkspaces) {
+      showAlert({
+        title: "Workspace Limit Reached",
+        message: `You have reached the maximum of ${settings.maxWorkspaces} workspaces allowed in cloud sync. Please delete an existing one to add more.`,
+        type: "warning"
+      });
+      return;
+    }
+
     const suffixes = ["Hub", "Nexus", "Pulse", "Flow", "Vibe", "Base", "Core", "Node"];
     const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
     const randomName = `${randomSuffix}-${Math.floor(Math.random() * 999)}`;
@@ -379,6 +388,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleCopyWorkspace = async (wsId: string | null) => {
+    if (settings.storageType === 'supabase' && workspaces.length >= settings.maxWorkspaces) {
+      showAlert({
+        title: "Workspace Limit Reached",
+        message: `You have reached the maximum of ${settings.maxWorkspaces} workspaces allowed in cloud sync. Please delete an existing one to copy more.`,
+        type: "warning"
+      });
+      return;
+    }
+
     const ws = workspaces.find(w => w.id === wsId);
     const sourceName = ws ? ws.name : "Main Dashboard";
     
@@ -589,6 +607,15 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   };
 
   const handleConfirmImport = async (importData: { name: string; widgets: WidgetConfig[] }) => {
+    if (settings.storageType === 'supabase' && workspaces.length >= settings.maxWorkspaces) {
+      showAlert({
+        title: "Import Limit Reached",
+        message: `Your cloud storage is limited to ${settings.maxWorkspaces} workspaces. Please clear space to import this new workspace.`,
+        type: "warning"
+      });
+      return;
+    }
+
     // Simulate slight delay for the progress bar
     await new Promise(resolve => setTimeout(resolve, 2000));
 

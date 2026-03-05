@@ -31,6 +31,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localMaximizedCarouselInterval, setLocalMaximizedCarouselInterval] = useState(settings.maximizedCarouselInterval);
   const [localSnackbarPosition, setLocalSnackbarPosition] = useState(settings.snackbarPosition);
   const [localLocalStorageThreshold, setLocalLocalStorageThreshold] = useState(settings.localStorageThreshold);
+  const [localMaxWorkspaces, setLocalMaxWorkspaces] = useState(settings.maxWorkspaces);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const [storageStatus, setStorageStatus] = useState(getStorageUsage());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,6 +74,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalMaximizedCarouselInterval(settings.maximizedCarouselInterval);
     setLocalSnackbarPosition(settings.snackbarPosition);
     setLocalLocalStorageThreshold(settings.localStorageThreshold);
+    setLocalMaxWorkspaces(settings.maxWorkspaces);
     setPreviewImage(settings.backgroundImage);
     setStorageStatus(getStorageUsage());
   }, [settings, isOpen]);
@@ -120,6 +122,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       maximizedCarouselInterval: Math.max(20, localMaximizedCarouselInterval),
       snackbarPosition: localSnackbarPosition,
       localStorageThreshold: localLocalStorageThreshold,
+      maxWorkspaces: localMaxWorkspaces,
     });
     onClose();
   };
@@ -145,6 +148,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalMaximizedCarouselInterval(DEFAULT_SETTINGS.maximizedCarouselInterval);
       setLocalSnackbarPosition(DEFAULT_SETTINGS.snackbarPosition);
       setLocalLocalStorageThreshold(DEFAULT_SETTINGS.localStorageThreshold);
+      setLocalMaxWorkspaces(DEFAULT_SETTINGS.maxWorkspaces);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -358,6 +362,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           />
                           <div className="w-10 h-5 bg-muted/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#3ecf8e]"></div>
                         </label>
+                      </div>
+
+                      <div className="flex items-center justify-between group pt-4 border-t border-border/30">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Workspace Limit</span>
+                          <p className="text-[10px] text-muted max-w-[280px]">
+                            Maximum number of workspaces allowed in cloud sync.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="range"
+                            min="1"
+                            max="10"
+                            step="1"
+                            value={localMaxWorkspaces}
+                            onChange={(e) => setLocalMaxWorkspaces(parseInt(e.target.value))}
+                            className="w-24 accent-[#3ecf8e]"
+                          />
+                          <span className="text-[10px] font-mono font-bold bg-muted/20 px-2 py-1 rounded min-w-[20px] text-center">
+                            {localMaxWorkspaces}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between">

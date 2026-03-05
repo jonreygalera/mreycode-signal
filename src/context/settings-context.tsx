@@ -207,6 +207,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           maximizedCarouselEnabled: settings.maximizedCarouselEnabled,
           maximizedCarouselInterval: settings.maximizedCarouselInterval,
           supabaseRealtimeEnabled: settings.supabaseRealtimeEnabled,
+          maxWorkspaces: settings.maxWorkspaces,
         };
         
         // Non-blocking save
