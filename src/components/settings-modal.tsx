@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive, Info } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
 import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
@@ -342,6 +342,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <p className="text-[10px] text-muted max-w-[280px]">
                             Automatically sync changes from other devices without refreshing.
                           </p>
+                          <div className="mt-2 text-[9px] bg-blue-500/5 text-blue-500/80 border border-blue-500/10 rounded-md p-2 flex items-start gap-2">
+                             <Info size={12} className="shrink-0 mt-0.5" />
+                             <p className="leading-relaxed">
+                               Prerequisite: You must enable **Realtime** on your Supabase tables. Click <strong>Manage Cloud</strong> to copy the updated SQL script.
+                             </p>
+                          </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input 

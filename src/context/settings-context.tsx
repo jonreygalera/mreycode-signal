@@ -206,6 +206,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           snackbarPosition: settings.snackbarPosition,
           maximizedCarouselEnabled: settings.maximizedCarouselEnabled,
           maximizedCarouselInterval: settings.maximizedCarouselInterval,
+          supabaseRealtimeEnabled: settings.supabaseRealtimeEnabled,
         };
         
         // Non-blocking save
