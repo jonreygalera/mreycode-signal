@@ -3,9 +3,9 @@
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 import { Clock } from "./clock";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu, RotateCcw, Trash2 } from "lucide-react";
+import { Info, X, Zap, Cpu, Sparkles, ExternalLink, BookOpen, Download, Monitor, MonitorOff, Settings, Menu, RotateCcw, Trash2, MoreHorizontal } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useTVMode } from "@/context/tv-mode-context";
 import { SettingsModal } from "./settings-modal";
@@ -41,7 +41,19 @@ export function Header() {
   };
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavDropdownOpen, setIsNavDropdownOpen] = useState(false);
+  const navDropdownRef = useRef<HTMLDivElement>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navDropdownRef.current && !navDropdownRef.current.contains(event.target as Node)) {
+        setIsNavDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [isInstallable, setIsInstallable] = useState(false);
   const { isTVMode, toggleTVMode } = useTVMode();
   const { settings } = useSettings();
@@ -174,29 +186,82 @@ export function Header() {
               </button>
             )}
 
-            {navItems.map((item) => (
-              item.href ? (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  target={item.external ? "_blank" : undefined}
-                  rel={item.external ? "noopener noreferrer" : undefined}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-                >
-                  {item.icon}
-                  <span className="hidden lg:inline">{item.label}</span>
-                </Link>
-              ) : (
-                <button
-                  key={item.label}
-                  onClick={item.onClick}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
-                >
-                  {item.icon}
-                  <span className="hidden lg:inline">{item.label}</span>
-                </button>
-              )
-            ))}
+            <div className="hidden lg:flex items-center gap-2">
+              {navItems.map((item) => (
+                item.href ? (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    target={item.external ? "_blank" : undefined}
+                    rel={item.external ? "noopener noreferrer" : undefined}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+                  >
+                    {item.icon}
+                    <span className="hidden xl:inline">{item.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+                  >
+                    {item.icon}
+                    <span className="hidden xl:inline">{item.label}</span>
+                  </button>
+                )
+              ))}
+            </div>
+
+            {/* Tablet Navigation More Menu */}
+            <div className="relative lg:hidden" ref={navDropdownRef}>
+              <button
+                onClick={() => setIsNavDropdownOpen(!isNavDropdownOpen)}
+                className="flex items-center justify-center p-1.5 text-muted hover:text-foreground transition-colors rounded-md hover:bg-muted/10 font-medium"
+                title="More Options"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+              <AnimatePresence>
+                {isNavDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 5, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute top-full right-0 z-50 mt-2 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
+                  >
+                    {navItems.map((item) => (
+                      item.href ? (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          target={item.external ? "_blank" : undefined}
+                          rel={item.external ? "noopener noreferrer" : undefined}
+                          onClick={() => setIsNavDropdownOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full group"
+                        >
+                          <span className="text-muted group-hover:text-primary transition-colors">{item.icon}</span>
+                          <span className="uppercase tracking-tight font-bold">{item.label}</span>
+                          {item.external && <ExternalLink size={12} className="ml-auto opacity-30" />}
+                        </Link>
+                      ) : (
+                        <button
+                          key={item.label}
+                          onClick={() => {
+                            item.onClick?.();
+                            setIsNavDropdownOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full group"
+                        >
+                          <span className="text-muted group-hover:text-primary transition-colors">{item.icon}</span>
+                          <span className="uppercase tracking-tight font-bold">{item.label}</span>
+                        </button>
+                      )
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="h-4 w-px bg-border mx-1" />
             <button

@@ -37,8 +37,8 @@ import {
 } from "@/lib/widgets";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
-  FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, RotateCcw, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database
+  FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, Archive, 
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database, MoreVertical
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -119,13 +119,31 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [widgetSearch, setWidgetSearch] = useState("");
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle search modal with Cmd+K or Ctrl+K
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsSearchModalOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(event.target as Node)) {
         setIsWorkspaceOpen(false);
         setWorkspaceSearch("");
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setIsMoreMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -657,10 +675,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="sticky top-[56px] z-10 bg-background dark:bg-background flex flex-col sm:flex-row items-start sm:items-end justify-between border-b border-border pb-4 gap-4"
+          className="sticky top-[56px] z-10 bg-background dark:bg-background flex flex-col lg:flex-row items-start lg:items-end justify-between border-b border-border pb-4 gap-4"
         >
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3 relative" ref={workspaceDropdownRef}>
+          <div className="flex flex-col gap-2 w-full lg:w-auto">
+            <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 relative" ref={workspaceDropdownRef}>
               <button 
                 onClick={() => {
                   setIsWorkspaceOpen(!isWorkspaceOpen);
@@ -679,24 +697,38 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 <ChevronDown size={16} className={cn("text-muted transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
               </button>
 
-              {/* Widget Search Field */}
-              <div className="relative w-full sm:w-64 group/search ml-0 sm:ml-4">
-                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
-                 <input
-                   type="text"
-                   placeholder="Search widgets in this workspace..."
-                   value={widgetSearch}
-                   onChange={(e) => setWidgetSearch(e.target.value)}
-                   className="w-full bg-foreground/5 border border-border/50 rounded-[4px] pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all text-foreground font-medium"
-                 />
-                 {widgetSearch && (
-                   <button
-                     onClick={() => setWidgetSearch("")}
-                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground transition-all"
-                   >
-                     <CloseIcon size={12} />
-                   </button>
-                 )}
+              {/* Widget Search Field - Mac Spotlight Style */}
+              <div className="flex w-full sm:w-64 ml-0 sm:ml-4">
+                <button
+                  onClick={() => setIsSearchModalOpen(true)}
+                  className={cn(
+                    "flex-1 flex items-center justify-between border px-3 py-1.5 text-xs transition-all group",
+                    widgetSearch 
+                      ? "bg-primary/20 border-primary/40 text-primary font-semibold rounded-l-md" 
+                      : "bg-foreground/5 border-border/50 text-muted hover:bg-foreground/10 hover:text-foreground rounded-md"
+                  )}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Search size={14} className={cn(widgetSearch ? "text-primary" : "group-hover:text-primary transition-colors shrink-0")} />
+                    <span className="truncate">
+                      {widgetSearch ? `Filtered: ${widgetSearch}` : "Search widgets..."}
+                    </span>
+                  </div>
+                  {!widgetSearch && (
+                    <div className="flex items-center gap-1 font-mono text-[10px] font-bold bg-background/50 px-1.5 py-0.5 rounded border border-border/50 text-muted shrink-0 ml-2">
+                      <kbd className="font-sans">⌘</kbd>K
+                    </div>
+                  )}
+                </button>
+                {widgetSearch && (
+                  <button
+                    onClick={() => setWidgetSearch("")}
+                    className="flex items-center justify-center px-2 border border-l-0 border-primary/40 bg-primary/20 text-primary hover:bg-primary/30 hover:text-red-400 transition-colors rounded-r-md"
+                    title="Clear filter"
+                  >
+                    <CloseIcon size={14} />
+                  </button>
+                )}
               </div>
 
               <AnimatePresence>
@@ -827,7 +859,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               {allWidgets.length} Widgets Active
             </p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-2 w-full lg:w-auto flex-wrap shrink-0 overflow-visible mt-2 lg:mt-0">
 
             {tempWidgets.length > 0 && (
               <button
@@ -836,7 +868,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 title="Remove all widgets from workspace"
               >
                 <Trash2 size={14} />
-                Remove All Widgets
+                Remove All
               </button>
             )}
             
@@ -847,7 +879,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 title="View deleted widgets"
               >
                 <div className="relative">
-                  <RotateCcw size={14} className="group-hover:-rotate-45 transition-transform duration-300" />
+                  <Archive size={14} className="group-hover:-translate-y-0.5 transition-transform duration-300" />
                   <span className="absolute -top-2 -right-2 flex items-center justify-center bg-foreground text-background text-[8px] font-black h-3.5 w-3.5 rounded-full shadow-sm ring-2 ring-panel">
                     {historyWidgets.length}
                   </span>
@@ -867,30 +899,82 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               Add Widget
             </button>
 
-            <div className="h-6 w-px bg-border mx-1" />
-            
-            <button
-               onClick={handleExport}
-               className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px]"
-               title="Export workspace configuration"
-            >
-              <Download size={14} />
-              <span className="hidden lg:inline">Export</span>
-            </button>
+            <div className="h-6 w-px bg-border mx-1 hidden lg:block" />
 
-            <label 
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/10 cursor-pointer transition-all rounded-[4px]"
-              title="Import workspace configuration"
-            >
-              <Upload size={14} />
-              <span className="hidden lg:inline">Import</span>
-              <input 
-                type="file" 
-                accept=".json" 
-                onChange={handleImport} 
-                className="hidden" 
-              />
-            </label>
+            {/* Desktop Export/Import */}
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                 onClick={handleExport}
+                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px]"
+                 title="Export workspace configuration"
+              >
+                <Download size={14} />
+                <span>Export</span>
+              </button>
+
+              <label 
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/10 cursor-pointer transition-all rounded-[4px]"
+                title="Import workspace configuration"
+              >
+                <Upload size={14} />
+                <span>Import</span>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  onChange={handleImport} 
+                  className="hidden" 
+                />
+              </label>
+            </div>
+
+            {/* Mobile/Tablet More Menu */}
+            <div className="relative lg:hidden" ref={moreMenuRef}>
+              <button
+                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                className="p-2 text-muted hover:text-foreground transition-colors rounded-md hover:bg-muted/10"
+              >
+                <MoreVertical size={18} />
+              </button>
+
+              <AnimatePresence>
+                {isMoreMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 5, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
+                  >
+                    <button
+                       onClick={() => {
+                         handleExport();
+                         setIsMoreMenuOpen(false);
+                       }}
+                       className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full"
+                    >
+                      <Download size={14} />
+                      Export
+                    </button>
+
+                    <label 
+                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/10 cursor-pointer transition-all rounded-sm text-left w-full"
+                    >
+                      <Upload size={14} />
+                      Import
+                      <input 
+                        type="file" 
+                        accept=".json" 
+                        onChange={(e) => {
+                          handleImport(e);
+                          setIsMoreMenuOpen(false);
+                        }} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </motion.div>
       ) : (
@@ -1215,6 +1299,81 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
         )}
         initialSelectedWidgets={workspaceModal.initialSelectedWidgets}
       />
+
+      {/* Spotlight Search Modal */}
+      <AnimatePresence>
+        {isSearchModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSearchModalOpen(false)}
+              className="absolute inset-0 bg-background/30 backdrop-blur-[2px]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-2xl bg-panel border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center px-4 py-4 border-b border-border bg-background focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                <Search size={20} className="text-muted shrink-0 mr-3" />
+                <input
+                  type="text"
+                  placeholder="Search widgets by name or type..."
+                  value={widgetSearch}
+                  onChange={(e) => setWidgetSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setIsSearchModalOpen(false);
+                  }}
+                  className="flex-1 bg-transparent border-none text-base placeholder:text-muted/50 focus:outline-none focus:ring-0 text-foreground"
+                  autoFocus
+                />
+                {widgetSearch && (
+                  <button
+                    onClick={() => setWidgetSearch("")}
+                    className="p-1.5 text-muted hover:text-foreground transition-colors ml-2 bg-muted/10 hover:bg-muted/20 rounded-md"
+                  >
+                    <CloseIcon size={16} />
+                  </button>
+                )}
+                <div className="flex items-center gap-1 font-mono text-[10px] font-bold bg-muted/10 px-2 py-1 rounded border border-border/50 text-muted ml-3 hidden sm:flex">
+                   ESC
+                </div>
+              </div>
+
+              {widgetSearch && (
+                <div className="p-2 max-h-[40vh] overflow-y-auto custom-scrollbar bg-muted/5">
+                  {filteredWidgets.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {filteredWidgets.map((widget) => (
+                        <button
+                          key={widget.id}
+                          onClick={() => setIsSearchModalOpen(false)}
+                          className="flex items-center justify-between p-3 rounded-md hover:bg-foreground/5 transition-colors text-left group"
+                        >
+                           <div className="flex flex-col gap-1">
+                              <span className="text-sm font-semibold text-foreground">{widget.label || "Unnamed Widget"}</span>
+                              <span className="text-[10px] font-mono text-muted uppercase tracking-widest">{widget.type}</span>
+                           </div>
+                           <Check size={16} className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center flex flex-col items-center justify-center gap-3">
+                       <Search size={32} className="text-muted/30" />
+                       <p className="text-sm text-muted">No widgets found matching "<span className="text-foreground">{widgetSearch}</span>"</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
