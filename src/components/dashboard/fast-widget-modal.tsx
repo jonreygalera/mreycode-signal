@@ -10,6 +10,14 @@ import { TEMPLATES, WidgetTemplate } from "@/config/templates";
 import { FLAT_CONFIG_DOCS } from "@/config/docs";
 
 const CONFIG_DOCS = FLAT_CONFIG_DOCS;
+const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const TIMEZONES = (() => {
+  try {
+    return Intl.supportedValuesOf('timeZone');
+  } catch (e) {
+    return [BROWSER_TIMEZONE, "UTC"];
+  }
+})();
 
 function CollapsibleSection({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -282,7 +290,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                             animate={{ opacity: 1, y: 4, scale: 1 }}
                             exit={{ opacity: 0, y: 8, scale: 0.98 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
-                            className="absolute top-full left-0 right-0 z-50 bg-panel border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col mt-1"
+                            className="absolute top-full left-0 right-0 z-50 bg-background border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col mt-1"
                           >
                             <div className="p-2 border-b border-border bg-background focus-within:bg-muted/10 transition-colors">
                               <div className="relative">
@@ -297,7 +305,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                                 />
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-1.5 max-h-[260px] overflow-y-auto custom-scrollbar bg-background/50">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-1.5 max-h-[260px] overflow-y-auto custom-scrollbar bg-background">
                               {TEMPLATES
                                 .filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()) || t.config.type.toLowerCase().includes(searchTerm.toLowerCase()))
                                 .map((template, i) => (
@@ -983,13 +991,30 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Timezone</label>
-                            <input
-                              type="text"
-                              value={parsedConfig.config?.timezone || ""}
-                              onChange={(e) => updateNestedConfig({ timezone: e.target.value })}
-                              placeholder="UTC, Europe/London, etc."
-                              className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono"
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={parsedConfig.config?.timezone || ""}
+                                onChange={(e) => updateNestedConfig({ timezone: e.target.value })}
+                                placeholder={BROWSER_TIMEZONE}
+                                list="timezone-options"
+                                className="w-full bg-background border border-border rounded-[4px] px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono"
+                              />
+                              {(parsedConfig.config?.timezone) && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateNestedConfig({ timezone: "" })}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground transition-colors"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <datalist id="timezone-options">
+                              {TIMEZONES.map((tz) => (
+                                <option key={tz} value={tz} />
+                              ))}
+                            </datalist>
                           </div>
                         </div>
                       )}
