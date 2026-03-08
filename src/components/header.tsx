@@ -110,6 +110,8 @@ export function Header() {
 
   if (isIframe) return null;
 
+  const isBadgeActive = new Date() < new Date("2026-06-08T00:00:00Z");
+
   const navItems = [
     {
       label: "Clone",
@@ -130,7 +132,8 @@ export function Header() {
       icon: <Sparkles size={16} />,
       href: "/playground",
       external: false,
-      onClick: undefined
+      onClick: undefined,
+      isNew: isBadgeActive
     },
     {
       label: "About",
@@ -144,7 +147,8 @@ export function Header() {
       icon: <Settings size={16} />,
       href: undefined,
       external: false,
-      onClick: () => setShowSettings(true)
+      onClick: () => setShowSettings(true),
+      isNew: isBadgeActive
     }
   ];
 
@@ -205,6 +209,9 @@ export function Header() {
                   >
                     {item.icon}
                     <span className="hidden xl:inline">{item.label}</span>
+                    {item.isNew && (
+                      <span className="hidden xl:flex h-3.5 items-center rounded-sm bg-blue-500 px-1.5 text-[8px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                    )}
                   </Link>
                 ) : (
                   <button
@@ -214,6 +221,9 @@ export function Header() {
                   >
                     {item.icon}
                     <span className="hidden xl:inline">{item.label}</span>
+                    {item.isNew && (
+                      <span className="hidden xl:flex h-3.5 items-center rounded-sm bg-blue-500 px-1.5 text-[8px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                    )}
                   </button>
                 )
               ))}
@@ -249,6 +259,9 @@ export function Header() {
                         >
                           <span className="text-muted group-hover:text-primary transition-colors">{item.icon}</span>
                           <span className="uppercase tracking-tight font-bold">{item.label}</span>
+                          {item.isNew && (
+                            <span className="ml-1 flex h-3.5 items-center rounded-sm bg-blue-500 px-1.5 text-[8px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                          )}
                           {item.external && <ExternalLink size={12} className="ml-auto opacity-30" />}
                         </Link>
                       ) : (
@@ -262,6 +275,9 @@ export function Header() {
                         >
                           <span className="text-muted group-hover:text-primary transition-colors">{item.icon}</span>
                           <span className="uppercase tracking-tight font-bold">{item.label}</span>
+                          {item.isNew && (
+                            <span className="ml-1 flex h-3.5 items-center rounded-sm bg-blue-500 px-1.5 text-[8px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                          )}
                         </button>
                       )
                     ))}
@@ -360,6 +376,9 @@ export function Header() {
                     >
                       <span className="text-muted">{item.icon}</span>
                       <span className="text-sm font-semibold uppercase tracking-tight">{item.label}</span>
+                      {item.isNew && (
+                        <span className="flex h-4 items-center rounded-sm bg-blue-500 px-1.5 text-[9px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                      )}
                       <ExternalLink size={12} className="ml-auto opacity-20" />
                     </Link>
                   ) : (
@@ -373,6 +392,9 @@ export function Header() {
                     >
                       <span className="text-muted">{item.icon}</span>
                       <span className="text-sm font-semibold uppercase tracking-tight">{item.label}</span>
+                      {item.isNew && (
+                        <span className="flex h-4 items-center rounded-sm bg-blue-500 px-1.5 text-[9px] font-black uppercase text-white shadow-sm ring-1 ring-blue-500/50">New!</span>
+                      )}
                     </button>
                   )
                 ))}
