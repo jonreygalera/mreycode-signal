@@ -160,7 +160,7 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
           </motion.div>
 
           <span className={cn(
-            "text-[15vw] sm:text-[16vw] md:text-[14vw] lg:text-[18vw] xl:text-[22rem] font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] transition-all",
+            "text-[15vw] sm:text-[16vw] md:text-[14vw] lg:text-[18vw]  font-mono font-black tracking-tighter leading-none lining-nums drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] transition-all",
             settings.useBgInClock && settings.backgroundImage ? "text-white" : "text-foreground"
           )}>
             {timeString}
