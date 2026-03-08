@@ -110,7 +110,9 @@ export function WidgetCard({
   onCopy,
   isMaximized: isMaximizedProp,
   onMaximize,
-  allConfigs = []
+  allConfigs = [],
+  minimal = false,
+  readOnly = false
 }: { 
   config: WidgetConfig; 
   index: number;
@@ -120,6 +122,8 @@ export function WidgetCard({
   isMaximized?: boolean;
   onMaximize?: (maximized: boolean | string) => void;
   allConfigs?: WidgetConfig[];
+  minimal?: boolean;
+  readOnly?: boolean;
 }) {
   const [internalMaximized, setInternalMaximized] = useState(false);
   const isMaximized = isMaximizedProp !== undefined ? isMaximizedProp : internalMaximized;
@@ -375,214 +379,240 @@ export function WidgetCard({
 
   const renderContent = (isMaximizedView = false) => (
     <>
-      <div className={cn("flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-border/40", !isMaximizedView && "border-b")}>
-        <div className="flex flex-col relative">
-          <div className="flex items-center gap-2">
-            {!isMaximizedView ? (
-              <h3 className="font-semibold uppercase tracking-wider text-muted text-xs">
-                {config.label}
-              </h3>
-            ) : (
-              <div className="flex items-center gap-2 mr-2" ref={widgetDropdownRef}>
-                <button 
-                  onClick={() => {
-                    setIsWidgetDropdownOpen(!isWidgetDropdownOpen);
-                    if (isWidgetDropdownOpen) setWidgetSearch("");
-                  }}
-                  className="flex flex-col items-start px-3 py-1.5 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-border/30 relative z-10"
-                >
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/60 leading-none mb-1 group-hover/ws:text-primary transition-colors">Active Widget</span>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-black text-foreground uppercase tracking-tight leading-none text-left">
-                      {config.label}
-                    </h2>
-                    {allConfigs.length > 1 && <ChevronDown size={14} className={cn("text-muted/60 transition-transform duration-300", isWidgetDropdownOpen && "rotate-180")} />}
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {isWidgetDropdownOpen && allConfigs.length > 1 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 5, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border/50 bg-panel shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+      {minimal && (
+        <div className="absolute top-2.5 left-3.5 z-10 pointer-events-none opacity-70 group-hover:opacity-100 transition-opacity">
+          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/60" /> {config.label}
+          </span>
+        </div>
+      )}
+      {!minimal && (
+        <div className={cn("flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-border/40", !isMaximizedView && "border-b")}>
+          <div className="flex flex-col relative">
+            <div className="flex items-center gap-2">
+              {!isMaximizedView ? (
+                <h3 className="font-semibold uppercase tracking-wider text-muted text-xs">
+                  {config.label}
+                </h3>
+              ) : (
+                <div className="flex items-center gap-2 mr-2" ref={widgetDropdownRef}>
+                  {readOnly ? (
+                    <div className="flex flex-col items-start px-3 py-1.5 transition-all outline-none">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/60 leading-none mb-1">Active Widget</span>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-black text-foreground uppercase tracking-tight leading-none text-left">
+                          {config.label}
+                        </h2>
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        setIsWidgetDropdownOpen(!isWidgetDropdownOpen);
+                        if (isWidgetDropdownOpen) setWidgetSearch("");
+                      }}
+                      className="flex flex-col items-start px-3 py-1.5 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-border/30 relative z-10"
                     >
-                      <div className="p-3 border-b border-border/30 bg-muted/5">
-                        <div className="relative group/search">
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
-                          <input
-                            type="text"
-                            placeholder="Search widgets..."
-                            value={widgetSearch}
-                            onChange={(e) => setWidgetSearch(e.target.value)}
-                            className="w-full bg-background/50 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
-                            autoFocus
-                            onKeyDown={(e) => e.stopPropagation()}
-                          />
-                        </div>
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/60 leading-none mb-1 group-hover/ws:text-primary transition-colors">Active Widget</span>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-black text-foreground uppercase tracking-tight leading-none text-left">
+                          {config.label}
+                        </h2>
+                        {allConfigs.length > 1 && <ChevronDown size={14} className={cn("text-muted/60 transition-transform duration-300", isWidgetDropdownOpen && "rotate-180")} />}
                       </div>
-                      <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        {allConfigs.filter(w => w.label.toLowerCase().includes(widgetSearch.toLowerCase())).map(w => (
-                          <button
-                            key={w.id}
-                            onClick={() => {
-                              handleSetMaximized(w.id);
-                              setIsWidgetDropdownOpen(false);
-                              setWidgetSearch("");
-                            }}
-                            className={cn(
-                              "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
-                              config.id === w.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/10 border border-transparent"
-                            )}
-                          >
-                            <span className={cn("text-xs font-black uppercase tracking-wider", config.id === w.id ? "text-primary" : "text-muted group-hover/item:text-foreground")}>{w.label}</span>
-                            {config.id === w.id && <Check size={14} className="text-primary" />}
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
+                    </button>
                   )}
-                </AnimatePresence>
-              </div>
-            )}
-            {hasActiveSignal && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-[2px] shadow-[0_0_8px_rgba(239,68,68,0.2)]">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
-                </span>
-                <span className="text-[8px] font-mono leading-none font-bold text-red-500/90 tracking-tighter">SIGNAL TRIP</span>
-              </div>
-            )}
-          </div>
-          {config.description && (
-            <p className={cn("text-muted/70 mt-0.5", isMaximizedView ? "text-xs" : "text-[10px] truncate max-w-[90%]")}>
-              {config.description}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
-            <button 
-              onClick={() => onEdit?.(config.id)}
-              className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
-              title="Edit configuration"
-            >
-              <Zap size={14} className="text-yellow-500/80" />
-            </button>
-            <button 
-              onClick={() => onDelete?.(config.id)}
-              className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
-              title="Delete widget"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-          {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 mr-4">
-              <div className="relative flex items-center justify-center w-5 h-5">
-                <svg className="w-full h-full -rotate-90">
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="8"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    fill="transparent"
-                    className="text-foreground/5"
-                  />
-                  <motion.circle
-                    cx="10"
-                    cy="10"
-                    r="8"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    fill="transparent"
-                    strokeDasharray={50}
-                    initial={{ strokeDashoffset: 50 }}
-                    animate={{ 
-                      strokeDashoffset: 50 - (50 * (carouselTimeLeft / settings.maximizedCarouselInterval))
-                    }}
-                    transition={{ duration: 0.5, ease: "linear" }}
-                    className="text-primary"
-                  />
-                </svg>
-                <span className="absolute text-[8px] font-black text-foreground">
-                  {carouselTimeLeft}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Widget</span>
-                <span className="text-[9px] font-bold text-muted uppercase tracking-wider leading-none">Auto-Next ON</span>
-              </div>
-            </div>
-          )}
-          {isMaximizedView && allConfigs.length > 1 && (
-            <div className="flex items-center gap-2 mr-4 pr-4 border-r border-border/40">
-              <button
-                onClick={() => moveCarousel("prev")}
-                className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/prev flex items-center justify-center"
-                title="Previous Widget (Left Arrow)"
-              >
-                <ArrowLeft size={18} className="relative z-10 group-hover/prev:-translate-x-1 transition-transform" />
-              </button>
-              
-              <div className="flex flex-col items-center min-w-[60px] mx-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
-                  {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
-                </span>
-              </div>
 
-              <button
-                onClick={() => moveCarousel("next")}
-                className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/next flex items-center justify-center"
-                title="Next Widget (Right Arrow)"
-              >
-                <ArrowRight size={18} className="relative z-10 group-hover/next:translate-x-1 transition-transform" />
-              </button>
+                  <AnimatePresence>
+                    {isWidgetDropdownOpen && allConfigs.length > 1 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 5, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border/50 bg-panel shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                      >
+                        <div className="p-3 border-b border-border/30 bg-muted/5">
+                          <div className="relative group/search">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                            <input
+                              type="text"
+                              placeholder="Search widgets..."
+                              value={widgetSearch}
+                              onChange={(e) => setWidgetSearch(e.target.value)}
+                              className="w-full bg-background/50 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                              autoFocus
+                              onKeyDown={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                          {allConfigs.filter(w => w.label.toLowerCase().includes(widgetSearch.toLowerCase())).map(w => (
+                            <button
+                              key={w.id}
+                              onClick={() => {
+                                handleSetMaximized(w.id);
+                                setIsWidgetDropdownOpen(false);
+                                setWidgetSearch("");
+                              }}
+                              className={cn(
+                                "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
+                                config.id === w.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/10 border border-transparent"
+                              )}
+                            >
+                              <span className={cn("text-xs font-black uppercase tracking-wider", config.id === w.id ? "text-primary" : "text-muted group-hover/item:text-foreground")}>{w.label}</span>
+                              {config.id === w.id && <Check size={14} className="text-primary" />}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+              {hasActiveSignal && (
+                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-[2px] shadow-[0_0_8px_rgba(239,68,68,0.2)]">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
+                  </span>
+                  <span className="text-[8px] font-mono leading-none font-bold text-red-500/90 tracking-tighter">SIGNAL TRIP</span>
+                </div>
+              )}
             </div>
-          )}
-          {!isMaximizedView && (
-            <>
-              <button
-                onClick={handleCopyConfig}
-                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-                title="Copy widget config"
-              >
-                {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
-              </button>
-              <button 
-                onClick={() => handleSetMaximized(true)}
-                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-                title="Maximize"
-              >
-                <Maximize2 size={14} />
-              </button>
-            </>
-          )}
-          {isMaximizedView && (
-            <>
-              <div className="hidden sm:flex items-center scale-[0.85] origin-right mr-3 pr-3 border-r border-border/40 opacity-80">
-                <ClockIcon />
+            {config.description && (
+              <p className={cn("text-muted/70 mt-0.5", isMaximizedView ? "text-xs" : "text-[10px] truncate max-w-[90%]")}>
+                {config.description}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {!readOnly && (
+              <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
+                <button 
+                  onClick={() => onEdit?.(config.id)}
+                  className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
+                  title="Edit configuration"
+                >
+                  <Zap size={14} className="text-yellow-500/80" />
+                </button>
+                <button 
+                  onClick={() => onDelete?.(config.id)}
+                  className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
+                  title="Delete widget"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <button
-                onClick={handleCopyConfig}
-                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-                title="Copy widget config"
-              >
-                {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
-              </button>
-              <button 
-                onClick={() => handleSetMaximized(false)}
-                className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
-              >
-                <X size={20} />
-              </button>
-            </>
-          )}
+            )}
+            {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
+              <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 mr-4">
+                <div className="relative flex items-center justify-center w-5 h-5">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="transparent"
+                      className="text-foreground/5"
+                    />
+                    <motion.circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="transparent"
+                      strokeDasharray={50}
+                      initial={{ strokeDashoffset: 50 }}
+                      animate={{ 
+                        strokeDashoffset: 50 - (50 * (carouselTimeLeft / settings.maximizedCarouselInterval))
+                      }}
+                      transition={{ duration: 0.5, ease: "linear" }}
+                      className="text-primary"
+                    />
+                  </svg>
+                  <span className="absolute text-[8px] font-black text-foreground">
+                    {carouselTimeLeft}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Widget</span>
+                  <span className="text-[9px] font-bold text-muted uppercase tracking-wider leading-none">Auto-Next ON</span>
+                </div>
+              </div>
+            )}
+            {isMaximizedView && allConfigs.length > 1 && (
+              <div className="flex items-center gap-2 mr-4 pr-4 border-r border-border/40">
+                <button
+                  onClick={() => moveCarousel("prev")}
+                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/prev flex items-center justify-center"
+                  title="Previous Widget (Left Arrow)"
+                >
+                  <ArrowLeft size={18} className="relative z-10 group-hover/prev:-translate-x-1 transition-transform" />
+                </button>
+                
+                <div className="flex flex-col items-center min-w-[60px] mx-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
+                    {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => moveCarousel("next")}
+                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/next flex items-center justify-center"
+                  title="Next Widget (Right Arrow)"
+                >
+                  <ArrowRight size={18} className="relative z-10 group-hover/next:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+            {!isMaximizedView && !readOnly && (
+              <>
+                <button
+                  onClick={handleCopyConfig}
+                  className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                  title="Copy widget config"
+                >
+                  {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
+                </button>
+                <button 
+                  onClick={() => handleSetMaximized(true)}
+                  className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                  title="Maximize"
+                >
+                  <Maximize2 size={14} />
+                </button>
+              </>
+            )}
+            {isMaximizedView && (
+              <>
+                {!readOnly && (
+                  <>
+                    <div className="hidden sm:flex items-center scale-[0.85] origin-right mr-3 pr-3 border-r border-border/40 opacity-80">
+                      <ClockIcon />
+                    </div>
+                    <button
+                      onClick={handleCopyConfig}
+                      className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                      title="Copy widget config"
+                    >
+                      {isCopied ? <Check size={14} className="text-up" /> : <Copy size={14} />}
+                    </button>
+                    <button 
+                      onClick={() => handleSetMaximized(false)}
+                      className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
+                    >
+                      <X size={20} />
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={cn("flex flex-1 items-center justify-center w-full min-h-0 relative", isMaximizedView ? "mt-4" : "mt-2")}>
         {isLoading && (

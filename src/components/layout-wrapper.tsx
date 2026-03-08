@@ -10,6 +10,7 @@ import { useTVMode } from "@/context/tv-mode-context";
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isIframe = pathname?.includes('/iframe');
+  const isWidgetPreview = pathname?.startsWith('/widget/preview');
   const { isTVMode } = useTVMode();
 
   useEffect(() => {
@@ -21,22 +22,24 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const hideHeader = isTVMode || isWidgetPreview;
+
   return (
     <div className="relative flex min-h-screen flex-col">
-      {!isTVMode && (
+      {!hideHeader && (
         <Suspense fallback={<div className="h-14 border-b border-border bg-panel animate-pulse" />}>
           <Header />
         </Suspense>
       )}
       <main className={cn(
         "mx-auto w-full max-w-7xl flex-1 focus:outline-none",
-        isIframe || isTVMode ? "max-w-none px-0 pt-0" : "px-4 pt-[72px] sm:px-6 sm:pt-16 lg:px-8"
+        isIframe || isTVMode || isWidgetPreview ? "max-w-none px-0 pt-0" : "px-4 pt-[72px] sm:px-6 sm:pt-16 lg:px-8"
       )}>
         <Suspense fallback={<div className="w-full h-screen animate-pulse bg-muted/5" />}>
           {children}
         </Suspense>
       </main>
-      <BackToTop />
+      {!hideHeader && <BackToTop />}
     </div>
   );
 }

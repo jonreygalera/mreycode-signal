@@ -19,6 +19,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { ChatbotScript } from "@/components/chatbot-script";
+
 export const metadata: Metadata = {
   metadataBase: new URL(appConfig.url),
   title: {
@@ -115,6 +117,7 @@ export default function RootLayout({
                   <SecurityProvider>
                     <SignalProvider>
                       <GuestTracker />
+                      <ChatbotScript />
                       <LayoutWrapper>{children}</LayoutWrapper>
                     </SignalProvider>
                   </SecurityProvider>
@@ -123,10 +126,6 @@ export default function RootLayout({
             </SettingsProvider>
           </TVModeProvider>
         </ThemeProvider>
-        <Script 
-          src="https://mrey-ai.vercel.app/js/embed-mreyagent.js?agentName=mreycode-signal-kb" 
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );

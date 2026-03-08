@@ -126,6 +126,13 @@ export function Header() {
       onClick: undefined
     },
     {
+      label: "Playground",
+      icon: <Sparkles size={16} />,
+      href: "/playground",
+      external: false,
+      onClick: undefined
+    },
+    {
       label: "About",
       icon: <Info size={16} />,
       href: undefined,
