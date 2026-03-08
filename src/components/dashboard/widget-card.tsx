@@ -6,14 +6,16 @@ import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
 import { useSettings } from "@/context/settings-context";
+import { configToSearchParams } from "@/lib/widget-url";
 import { useConnectivity } from "@/context/connectivity-context";
 import { useSignals } from "@/context/signal-context";
+import { useAlert } from "@/context/alert-context";
 import { Clock as ClockIcon } from "../clock";
 
 // Helper for Analog Clock
@@ -141,16 +143,22 @@ export function WidgetCard({
   const { settings } = useSettings();
   const { isOnline } = useConnectivity();
   const { activeSignals, tripSignal, dismissSignal } = useSignals();
+  const { showAlert } = useAlert();
   const [carouselTimeLeft, setCarouselTimeLeft] = useState<number | null>(null);
   const [isWidgetDropdownOpen, setIsWidgetDropdownOpen] = useState(false);
   const [widgetSearch, setWidgetSearch] = useState("");
   const widgetDropdownRef = useRef<HTMLDivElement>(null);
+  const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (widgetDropdownRef.current && !widgetDropdownRef.current.contains(event.target as Node)) {
         setIsWidgetDropdownOpen(false);
         setWidgetSearch("");
+      }
+      if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target as Node)) {
+        setIsOptionsMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -204,6 +212,32 @@ export function WidgetCard({
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     }
+  };
+
+  const handleOpenPlayground = () => {
+    const { isTemp, ...rawConfig } = config as any;
+    const params = configToSearchParams(rawConfig);
+    window.open(`/playground?${params.toString()}`, '_blank');
+    setIsOptionsMenuOpen(false);
+  };
+
+  const handleCopyIframe = async () => {
+    const { isTemp, ...rawConfig } = config as any;
+    const params = configToSearchParams(rawConfig);
+    params.set("theme", "dark");
+    params.set("maximized", "true");
+    params.set("minimal", "true");
+    const iframeCode = `<iframe src="${window.location.origin}/widget/preview?${params.toString()}" width="100%" height="400" frameborder="0" style="border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;"></iframe>`;
+    navigator.clipboard.writeText(iframeCode);
+    setIsOptionsMenuOpen(false);
+    
+    await showAlert({
+      title: "Copied to Clipboard",
+      message: "The Iframe embed code has been copied. You can paste it into your Notion, website, or anywhere else that supports IFrames.",
+      type: "success",
+      confirmText: "Awesome",
+      showCancel: false
+    });
   };
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -495,13 +529,52 @@ export function WidgetCard({
                 >
                   <Zap size={14} className="text-yellow-500/80" />
                 </button>
-                <button 
-                  onClick={() => onDelete?.(config.id)}
-                  className="p-1 hover:bg-red-500/5 rounded transition-colors text-muted hover:text-red-500"
-                  title="Delete widget"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="relative" ref={optionsMenuRef}>
+                  <button 
+                    onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
+                    className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
+                    title="More options"
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                  <AnimatePresence>
+                    {isOptionsMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        className="absolute right-0 top-full mt-1 z-50 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
+                      >
+                        <button
+                          onClick={handleOpenPlayground}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full group"
+                        >
+                          <PlayCircle size={14} className="group-hover:text-primary transition-colors" />
+                          <span>Open in Playground</span>
+                        </button>
+                        <button
+                          onClick={handleCopyIframe}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full group"
+                        >
+                          <Code size={14} className="group-hover:text-primary transition-colors" />
+                          <span>Embed with Iframe</span>
+                        </button>
+                        <div className="h-px w-full bg-border/50 my-1" />
+                        <button
+                          onClick={() => {
+                            onDelete?.(config.id);
+                            setIsOptionsMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-500/80 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-sm text-left w-full group"
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete Widget</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             )}
             {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
