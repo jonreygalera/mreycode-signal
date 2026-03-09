@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown, Copy, Check, Search, Type, Layout, Code } from "lucide-react";
+import { X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, ChevronDown, Copy, Check, Search, Type, Layout, Code, Play, RefreshCw, AlertCircle } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { TEMPLATES, WidgetTemplate } from "@/config/templates";
 
 import { FLAT_CONFIG_DOCS } from "@/config/docs";
+import { parseCurl } from "@/lib/curl";
 
 const CONFIG_DOCS = FLAT_CONFIG_DOCS;
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -92,6 +93,12 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'json' | 'form'>(initialConfig ? 'form' : 'form'); // Default to form for better UX
   const [parsedConfig, setParsedConfig] = useState<any>(initialConfig ? initialConfig.config : {});
+  const [showCurlModal, setShowCurlModal] = useState(false);
+  const [curlInput, setCurlInput] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [testLogs, setTestLogs] = useState<{msg: string, type: 'info'|'success'|'error'|'warn'}[]>([]);
+  const [testResponse, setTestResponse] = useState<any>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
   const templateDropdownRef = useRef<HTMLDivElement>(null);
 
   // Attempt to sync parsedConfig when configText changes
@@ -177,6 +184,73 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
       setError("Invalid JSON format.");
     }
   };
+
+  const handleImportCurl = () => {
+    if (!curlInput.trim()) return;
+    const result = parseCurl(curlInput);
+    const updates: any = {};
+    if (result.url) updates.api = result.url;
+    if (result.method) updates.method = result.method;
+    if (Object.keys(result.headers).length > 0) updates.headers = result.headers;
+    if (result.body) updates.body = result.body;
+    
+    updateParsedConfig(updates);
+    setCurlInput("");
+    setShowCurlModal(false);
+  };
+
+  const handleTestApi = async () => {
+    if (!parsedConfig.api) return;
+    setIsTesting(true);
+    setTestResponse(null);
+    
+    let displayHostname = "remote host";
+    try {
+      displayHostname = new URL(parsedConfig.api).hostname;
+    } catch (e) {
+      // Fallback if URL is partially typed or invalid
+    }
+
+    setTestLogs([{ msg: `Initializing request to ${displayHostname}...`, type: 'info' }]);
+    
+    const startTime = Date.now();
+    
+    try {
+      await new Promise(r => setTimeout(r, 600)); // Aesthetic delay
+      setTestLogs(prev => [...prev, { msg: `${parsedConfig.method || 'GET'} ${parsedConfig.api}`, type: 'info' }]);
+      
+      const response = await fetch(parsedConfig.api, {
+        method: parsedConfig.method || 'GET',
+        headers: parsedConfig.headers || {},
+        body: parsedConfig.method === 'POST' ? JSON.stringify(parsedConfig.body) : undefined
+      });
+      
+      const duration = Date.now() - startTime;
+      
+      if (response.ok) {
+        setTestLogs(prev => [...prev, { msg: `Response received in ${duration}ms. Status: ${response.status} ${response.statusText}`, type: 'success' }]);
+        const data = await response.json();
+        setTestResponse(data);
+        setTestLogs(prev => [...prev, { msg: `Successfully parsed ${JSON.stringify(data).length} bytes of JSON data.`, type: 'success' }]);
+      } else {
+        setTestLogs(prev => [...prev, { msg: `Request failed with status ${response.status}: ${response.statusText}`, type: 'error' }]);
+        try {
+           const errorData = await response.json();
+           setTestResponse(errorData);
+        } catch(e) { /* ignore non-json errors */ }
+      }
+    } catch (err: any) {
+      setTestLogs(prev => [...prev, { msg: `Network error: ${err.message}`, type: 'error' }]);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [testLogs]);
 
   return (
     <AnimatePresence>
@@ -456,6 +530,25 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
 
                     <div className="space-y-4">
                       <CollapsibleSection title="Data Fetching" defaultOpen={!!parsedConfig.api}>
+                        <div className="flex justify-end items-center gap-2 mb-2">
+                          <button
+                            type="button"
+                            disabled={!parsedConfig.api || isTesting}
+                            onClick={handleTestApi}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded bg-green-500/10 hover:bg-green-500/20 text-green-500 text-[10px] font-black uppercase tracking-widest transition-all border border-green-500/10 shadow-sm disabled:opacity-50 disabled:pointer-events-none"
+                          >
+                            <Play size={10} fill="currentColor" />
+                            Test API
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowCurlModal(true)}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest transition-all border border-primary/10 shadow-sm"
+                          >
+                            <Terminal size={12} />
+                            Import cURL
+                          </button>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">API Endpoint (URL)</label>
@@ -582,6 +675,64 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                               placeholder='{ "key": "value" }'
                               className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono min-h-[80px]"
                             />
+                          </div>
+                        )}
+
+                        {/* Test API Terminal Logs */}
+                        {(testLogs.length > 0 || isTesting) && (
+                          <div className="mt-6 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center justify-between">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60 flex items-center gap-2">
+                                  <div className={cn("w-1.5 h-1.5 rounded-full", isTesting ? "bg-green-500 animate-pulse" : "bg-muted/40")} />
+                                  Diagnostic Logs
+                               </label>
+                               {(testLogs.length > 0 && !isTesting) && (
+                                 <button 
+                                   onClick={() => { setTestLogs([]); setTestResponse(null); }}
+                                   className="text-[9px] font-bold uppercase tracking-tighter text-muted hover:text-foreground transition-colors"
+                                 >
+                                    Clear
+                                 </button>
+                               )}
+                            </div>
+                            <div 
+                              ref={terminalRef}
+                              className="w-full bg-[#0a0a0b] border border-white/5 rounded-lg p-3 font-mono text-[11px] min-h-[120px] max-h-[200px] overflow-y-auto custom-scrollbar shadow-2xl relative"
+                            >
+                              <div className="space-y-1">
+                                {testLogs.map((log, i) => (
+                                  <div key={i} className={cn(
+                                    "flex gap-2 leading-relaxed break-all",
+                                    log.type === 'error' ? "text-red-400" : 
+                                    log.type === 'success' ? "text-green-400" : 
+                                    log.type === 'warn' ? "text-amber-400" : "text-zinc-400"
+                                  )}>
+                                    <span className="opacity-30 shrink-0">[{i+1}]</span>
+                                    <span>{log.msg}</span>
+                                  </div>
+                                ))}
+                                {isTesting && (
+                                  <div className="flex gap-2 text-primary animate-pulse">
+                                     <span className="opacity-30 shrink-0">[_]</span>
+                                     <span className="flex items-center gap-2">
+                                       Running request...
+                                       <RefreshCw size={10} className="animate-spin" />
+                                     </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {testResponse && !isTesting && (
+                               <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-500">
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">JSON Response Preview</label>
+                                  <div className="bg-[#0a0a0b]/40 border border-white/5 rounded-lg p-3 overflow-x-auto custom-scrollbar">
+                                     <pre className="text-[10px] font-mono text-zinc-300 leading-relaxed">
+                                        {JSON.stringify(testResponse, null, 2)}
+                                     </pre>
+                                  </div>
+                               </div>
+                            )}
                           </div>
                         )}
                       </CollapsibleSection>
@@ -1299,6 +1450,83 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
             </div>
           )}
         </motion.div>
+          {showCurlModal && (
+            <div className="absolute inset-0 z-100 flex items-center justify-center p-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-background/40 backdrop-blur-sm"
+                onClick={() => setShowCurlModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="relative w-full max-w-lg bg-panel border border-border rounded-xl shadow-2xl flex flex-col p-6 overflow-hidden z-10"
+              >
+                <div className="flex items-center justify-between mb-5 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-md text-primary">
+                      <Terminal size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold uppercase tracking-tight">Import cURL</h3>
+                      <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Bash & Libcurl C Snippets</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCurlModal(false)}
+                    className="p-1.5 hover:bg-foreground/5 rounded-full transition-colors text-muted hover:text-foreground"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-4 min-h-0">
+                  <div className="flex-1 flex flex-col space-y-2 min-h-0">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Paste command</label>
+                    <textarea
+                      autoFocus
+                      value={curlInput}
+                      onChange={(e) => setCurlInput(e.target.value)}
+                      placeholder="curl -X GET 'https://api.example.com'..."
+                      className="flex-1 w-full bg-background border border-border rounded-lg p-3 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all resize-none shadow-inner min-h-[140px]"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex items-start gap-2.5 shrink-0">
+                    <AlertCircle size={14} className="mt-0.5 text-amber-500 shrink-0" />
+                    <p className="text-[11px] text-amber-500/90 font-medium leading-tight">
+                      Existing API settings (URL, Method, Headers, Body) will be overwritten.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-end gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCurlModal(false);
+                      setCurlInput("");
+                    }}
+                    className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportCurl}
+                    disabled={!curlInput.trim()}
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-primary/10"
+                  >
+                    Apply Config
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       )}
     </AnimatePresence>
