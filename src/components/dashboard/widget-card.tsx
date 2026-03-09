@@ -906,7 +906,18 @@ export function WidgetCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="relative w-full h-full bg-panel border-0 p-6 shadow-2xl flex flex-col"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.05}
+              onDragEnd={(_, info) => {
+                const swipeThreshold = 50;
+                if (info.offset.x > swipeThreshold) {
+                  moveCarousel("prev");
+                } else if (info.offset.x < -swipeThreshold) {
+                  moveCarousel("next");
+                }
+              }}
+              className="relative w-full h-full bg-panel border-0 p-6 shadow-2xl flex flex-col touch-pan-y"
               onClick={(e) => e.stopPropagation()}
             >
               {renderContent(true)}

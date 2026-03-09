@@ -1159,10 +1159,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 px-3 py-1 bg-foreground/5 rounded-full border border-border/10">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Live</span>
-              </div>
               <div className="flex items-center gap-4">
                 <RefreshButton />
                 <ThemeToggle />
@@ -1225,8 +1221,19 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             initial={{ opacity: 0, x: direction * 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -100 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.05}
+            onDragEnd={(_, info) => {
+              const swipeThreshold = 50;
+              if (info.offset.x > swipeThreshold) {
+                moveCarousel("prev");
+              } else if (info.offset.x < -swipeThreshold) {
+                moveCarousel("next");
+              }
+            }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="flex-1"
+            className="flex-1 touch-pan-y"
           >
             <WidgetGrid 
               configs={filteredWidgets} 
