@@ -5,8 +5,11 @@ import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
+import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
+import * as Icons from "lucide-react";
+import { PulseWidget } from "./pulse-widget";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code, Play, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -148,6 +151,7 @@ export function WidgetCard({
   const [isWidgetDropdownOpen, setIsWidgetDropdownOpen] = useState(false);
   const [widgetSearch, setWidgetSearch] = useState("");
   const widgetDropdownRef = useRef<HTMLDivElement>(null);
+  const [isStopped, setIsStopped] = useState(false);
   const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
@@ -259,7 +263,7 @@ export function WidgetCard({
 
 
   const parsedData = useMemo(() => {
-    if (!data && config.type !== 'clock' && config.type !== 'iframe' && config.type !== 'status' && config.type !== 'progress') return null;
+    if (!data && !['clock', 'iframe', 'status', 'progress', 'label', 'pulse'].includes(config.type)) return null;
     
     let value = (data && config.responsePath) ? getNestedProperty(data, config.responsePath) : data;
     
@@ -346,21 +350,40 @@ export function WidgetCard({
     }
 
     const intervalSeconds = Math.max(20, settings.maximizedCarouselInterval);
-    setCarouselTimeLeft(intervalSeconds);
+    
+    // Initial time update if not already set
+    if (carouselTimeLeft === null) {
+      setCarouselTimeLeft(intervalSeconds);
+    }
 
     const timer = setInterval(() => {
-      setCarouselTimeLeft(prev => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          moveCarousel("next");
-          return intervalSeconds;
-        }
-        return prev - 1;
-      });
+      if (!isStopped) {
+        setCarouselTimeLeft(prev => {
+          if (prev === null) return intervalSeconds;
+          if (prev <= 1) {
+            moveCarousel("next");
+            return intervalSeconds;
+          }
+          return prev - 1;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isMaximized, settings.maximizedCarouselEnabled, settings.maximizedCarouselInterval, allConfigs.length, config.id]);
+  }, [isMaximized, settings.maximizedCarouselEnabled, settings.maximizedCarouselInterval, allConfigs.length, config.id, isStopped]);
+
+  // Handle Widget Reset when STOPPED
+  useEffect(() => {
+    if (isMaximized && isStopped && allConfigs.length > 0) {
+      const intervalSeconds = Math.max(20, settings.maximizedCarouselInterval);
+      setCarouselTimeLeft(intervalSeconds);
+
+      const firstWidgetId = allConfigs[0].id;
+      if (config.id !== firstWidgetId) {
+        handleSetMaximized(firstWidgetId);
+      }
+    }
+  }, [isMaximized, isStopped]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -400,7 +423,7 @@ export function WidgetCard({
     xl: "flex-grow basis-full min-w-[280px] min-h-[400px]",
   };
 
-  const isStat = config.type === "stat" || config.type === "status" || config.type === "clock";
+  const isStat = config.type === "stat" || config.type === "status" || config.type === "clock" || config.type === "pulse";
   const currentSizeClass = sizeClasses[config.size || "sm"];
   const finalSizeClass = isStat 
     ? cn(currentSizeClass, "min-h-0 h-auto min-w-0 sm:min-w-[240px]") 
@@ -463,7 +486,7 @@ export function WidgetCard({
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 5, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border/50 bg-panel shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                        className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border bg-[#ffffff] dark:bg-[#131722] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-none!"
                       >
                         <div className="p-3 border-b border-border/30 bg-muted/5">
                           <div className="relative group/search">
@@ -473,7 +496,7 @@ export function WidgetCard({
                               placeholder="Search widgets..."
                               value={widgetSearch}
                               onChange={(e) => setWidgetSearch(e.target.value)}
-                              className="w-full bg-background/50 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                                                             className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
                               autoFocus
                               onKeyDown={(e) => e.stopPropagation()}
                             />
@@ -544,7 +567,7 @@ export function WidgetCard({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="absolute right-0 top-full mt-1 z-50 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
+                        className="absolute right-0 top-full mt-1 z-50 w-48 overflow-hidden rounded-md border border-border bg-[#ffffff] dark:bg-[#131722] shadow-2xl flex flex-col p-1 backdrop-blur-none!"
                       >
                         <button
                           onClick={handleOpenPlayground}
@@ -579,6 +602,15 @@ export function WidgetCard({
             )}
             {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
               <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 mr-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsStopped(!isStopped)}
+                    className="p-1 hover:bg-foreground/10 rounded-full transition-colors text-primary active:scale-90"
+                    title={isStopped ? "Play Carousel" : "Stop Carousel"}
+                  >
+                    {isStopped ? <Play size={12} fill="currentColor" /> : <Square size={12} fill="currentColor" />}
+                  </button>
+                  <div className="h-3 w-px bg-border/20 mx-0.5" />
                 <div className="relative flex items-center justify-center w-5 h-5">
                   <svg className="w-full h-full -rotate-90">
                     <circle
@@ -610,35 +642,22 @@ export function WidgetCard({
                     {carouselTimeLeft}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Widget</span>
-                  <span className="text-[9px] font-bold text-muted uppercase tracking-wider leading-none">Auto-Next ON</span>
+              </div>
+              <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+                    {isStopped ? "Stopped" : "Active"}
+                  </span>
                 </div>
               </div>
             )}
             {isMaximizedView && allConfigs.length > 1 && (
               <div className="flex items-center gap-2 mr-4 pr-4 border-r border-border/40">
-                <button
-                  onClick={() => moveCarousel("prev")}
-                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/prev flex items-center justify-center"
-                  title="Previous Widget (Left Arrow)"
-                >
-                  <ArrowLeft size={18} className="relative z-10 group-hover/prev:-translate-x-1 transition-transform" />
-                </button>
-                
                 <div className="flex flex-col items-center min-w-[60px] mx-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
                     {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
                   </span>
                 </div>
-
-                <button
-                  onClick={() => moveCarousel("next")}
-                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/next flex items-center justify-center"
-                  title="Next Widget (Right Arrow)"
-                >
-                  <ArrowRight size={18} className="relative z-10 group-hover/next:translate-x-1 transition-transform" />
-                </button>
               </div>
             )}
             {!isMaximizedView && !readOnly && (
@@ -699,11 +718,29 @@ export function WidgetCard({
             Failed to load data.
           </div>
         )}
-        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress'].includes(config.type)) && (
+        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress', 'label', 'pulse'].includes(config.type)) && (
           <div className={cn(
             "flex w-full flex-col justify-center",
             isStat ? "h-full" : "absolute inset-0 pt-4" 
           )}>
+            {config.type === "pulse" && (
+              <PulseWidget
+                data={parsedData}
+                config={config.config}
+                accentColor={config.accentColor}
+                size={config.size}
+                color={config.color}
+                colorRules={config.colorRules}
+              />
+            )}
+            {config.type === "label" && (
+              <LabelWidget
+                label={config.label}
+                config={config.config}
+                data={parsedData as string}
+                size={config.size}
+              />
+            )}
             {config.type === "stat" && (
               <AnimatedStat
                 value={parsedData as number}
@@ -793,11 +830,19 @@ export function WidgetCard({
                   "w-16 h-16 rounded-full flex items-center justify-center shadow-lg animate-pulse-subtle border-4",
                   parsedData ? "bg-up/10 border-up/20 text-up" : "bg-down/10 border-down/20 text-down"
                 )}>
-                  <Zap size={32} fill="currentColor" className="opacity-80" />
+                  {(() => {
+                    const iconName = parsedData 
+                      ? (config.config as any)?.trueIcon || "Zap" 
+                      : (config.config as any)?.falseIcon || "Zap";
+                    const IconComponent = (Icons as any)[iconName] || Icons.Zap;
+                    return <IconComponent size={32} fill="currentColor" className="opacity-80" />;
+                  })()}
                 </div>
                 <div className="flex flex-col items-center gap-1">
                    <span className={cn("text-lg font-black uppercase tracking-tighter", parsedData ? "text-up" : "text-down")}>
-                     {parsedData ? "SYSTEM ONLINE" : "SYSTEM DOWN"}
+                     {parsedData 
+                       ? (config.config as any)?.trueLabel || "SYSTEM ONLINE" 
+                       : (config.config as any)?.falseLabel || "SYSTEM DOWN"}
                    </span>
                    <span className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] font-bold">
                      Last Checked: {new Date().toLocaleTimeString()}
@@ -877,10 +922,64 @@ export function WidgetCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="relative w-full h-full bg-panel border-0 p-6 shadow-2xl flex flex-col"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.05}
+              onDragEnd={(_, info) => {
+                const swipeThreshold = 50;
+                if (info.offset.x > swipeThreshold) {
+                  moveCarousel("prev");
+                } else if (info.offset.x < -swipeThreshold) {
+                  moveCarousel("next");
+                }
+              }}
+              className="relative w-full h-full bg-panel border-0 p-6 shadow-2xl flex flex-col touch-pan-y"
               onClick={(e) => e.stopPropagation()}
             >
               {renderContent(true)}
+
+              {/* Floating Navigation Arrows - Elegant Glassmorphism */}
+              {allConfigs.length > 1 && !readOnly && (
+                <>
+                  {/* Left Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveCarousel("prev");
+                    }}
+                    className="fixed left-6 top-1/2 -translate-y-1/2 z-60 group/nav-prev active:scale-95 transition-all"
+                    title="Previous (Left Arrow)"
+                  >
+                    <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-prev:text-primary group-hover/nav-prev:scale-110 group-hover/nav-prev:bg-background/10 transition-all shadow-2xl">
+                      <ArrowLeft size={32} strokeWidth={2.5} className="group-hover/nav-prev:-translate-x-1 transition-transform" />
+                    </div>
+                  </button>
+
+                  {/* Right Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveCarousel("next");
+                    }}
+                    className="fixed right-6 top-1/2 -translate-y-1/2 z-60 group/nav-next active:scale-95 transition-all"
+                    title="Next (Right Arrow)"
+                  >
+                    <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-next:text-primary group-hover/nav-next:scale-110 group-hover/nav-next:bg-background/10 transition-all shadow-2xl">
+                      <ArrowRight size={32} strokeWidth={2.5} className="group-hover/nav-next:translate-x-1 transition-transform" />
+                    </div>
+                  </button>
+
+                  {/* Mobile/Tablet Specific Bottom Navigation Indicator */}
+                  <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-60 flex md:hidden items-center gap-6 p-4 rounded-3xl bg-background/5 backdrop-blur-2xl border border-white/5 shadow-2xl pointer-events-none">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
+                        {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
             </motion.div>
           </motion.div>
         )}

@@ -20,6 +20,8 @@ interface SettingsContextType {
   resetSettings: () => void;
   triggerRefresh: () => void;
   timeLeft: number | null;
+  isStopped: boolean;
+  setIsStopped: (stopped: boolean) => void;
   moveCarousel: (direction: "next" | "prev") => void;
 }
 
@@ -34,6 +36,8 @@ function SettingsInner({
   resetSettings,
   triggerRefresh,
   timeLeft,
+  isStopped,
+  setIsStopped,
   onTimeUpdate,
 }: any) {
   const searchParams = useSearchParams();
@@ -92,6 +96,8 @@ function SettingsInner({
         resetSettings,
         triggerRefresh,
         timeLeft,
+        isStopped,
+        setIsStopped,
         moveCarousel,
       }}
     >
@@ -101,6 +107,7 @@ function SettingsInner({
             isTVMode={useTVMode().isTVMode}
             settings={settings}
             isInitialized={true}
+            isStopped={isStopped}
             onTimeUpdate={onTimeUpdate}
             onMove={moveCarousel}
           />
@@ -130,6 +137,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isStopped, setIsStopped] = useState(false);
   const { isTVMode } = useTVMode();
 
   const triggerRefresh = () => {
@@ -272,6 +280,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         resetSettings={resetSettings}
         triggerRefresh={triggerRefresh}
         timeLeft={timeLeft}
+        isStopped={isStopped}
+        setIsStopped={setIsStopped}
         onTimeUpdate={setTimeLeft} // Pass this down
       >
         {children}
@@ -284,12 +294,14 @@ function SettingsSync({
   isTVMode,
   settings,
   isInitialized,
+  isStopped,
   onTimeUpdate,
   onMove,
 }: {
   isTVMode: boolean;
   settings: AppSettings;
   isInitialized: boolean;
+  isStopped: boolean;
   onTimeUpdate: (time: number | null) => void;
   onMove: (direction: "next" | "prev") => void;
 }) {
@@ -326,17 +338,29 @@ function SettingsSync({
 
     window.addEventListener("keydown", handleKeyDown);
 
-    // Only start timer if enabled
-    let timer: any = null;
+    // Initial time update
     if (settings.tvCarouselEnabled) {
       onTimeUpdate(remaining);
+    }
+
+    // Timer logic
+    let timer: any = null;
+    if (settings.tvCarouselEnabled) {
       timer = setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-          onMove("next");
-          remaining = totalSeconds;
+        if (!isStopped) {
+          remaining -= 1;
+          if (remaining <= 0) {
+            onMove("next");
+            remaining = totalSeconds;
+          }
+          onTimeUpdate(remaining);
+        } else {
+          // Reset timer when paused (stopped)
+          if (remaining !== totalSeconds) {
+            remaining = totalSeconds;
+            onTimeUpdate(remaining);
+          }
         }
-        onTimeUpdate(remaining);
       }, 1000);
     } else {
       onTimeUpdate(null);
@@ -351,6 +375,7 @@ function SettingsSync({
     settings.tvCarouselEnabled,
     settings.tvCarouselInterval,
     isInitialized,
+    isStopped,
     onTimeUpdate,
     onMove,
   ]);

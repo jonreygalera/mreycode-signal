@@ -18,7 +18,7 @@ export const WIDGET_DOCS: DocSection[] = [
     fields: [
       { key: "id", type: "string", description: "Unique identifier for the widget instance.", required: true },
       { key: "label", type: "string", description: "Display title shown on the card.", required: true },
-      { key: "type", type: "'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status'", description: "Widget visualization engine.", required: true },
+      { key: "type", type: "'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status' | 'label' | 'pulse'", description: "Widget visualization engine.", required: true },
       { key: "size", type: "'sm' | 'md' | 'lg' | 'xl'", description: "Grid footprint (width/height span)." },
       { key: "description", type: "string", description: "Contextual sub-text shown under the label." },
     ],
@@ -47,6 +47,12 @@ export const WIDGET_DOCS: DocSection[] = [
       { key: "config.timezone", type: "string", description: "Timezone identifier for Clock widgets." },
       { key: "config.displayType", type: "'analog' | 'digital'", description: "Visual style for Clock widgets." },
       { key: "config.iframeUrl", type: "string", description: "External URL for Iframe widgets." },
+      { key: "config.trueLabel / falseLabel", type: "string", description: "Conditional text for Status widgets." },
+      { key: "config.trueIcon / falseIcon", type: "string", description: "Conditional Lucide icons for Status widgets." },
+      { key: "config.subtitle / align / variant", type: "string", description: "Layout and style for Label widgets." },
+      { key: "config.link", type: "string", description: "External shortcut URL for Label widgets." },
+      { key: "config.pulseSpeed", type: "'slow' | 'normal' | 'fast'", description: "Animation speed for Pulse widgets." },
+      { key: "config.valueLabel", type: "string", description: "The sub-text shown under the score (e.g. 'Score', 'Health')." },
     ],
   },
   {

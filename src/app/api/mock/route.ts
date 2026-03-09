@@ -29,6 +29,40 @@ export async function GET(request: Request) {
     });
   }
 
+  if (type === 'list-nodes') {
+    const statuses = ['online', 'offline', 'maintenance', 'degraded'];
+    const data = Array.from({ length: 8 }).map((_, i) => ({
+      name: `Node-0${i + 1}.cluster.local`,
+      value: statuses[Math.floor(Math.random() * statuses.length)],
+      uptime: `${getRandomInt(90, 99)}.${getRandomInt(0, 9)}%`,
+    }));
+    return NextResponse.json({
+      data: {
+        nodes: data,
+      },
+    });
+  }
+
+  if (type === 'progress-task') {
+    return NextResponse.json({
+      data: {
+        current: getRandomInt(65, 95),
+        target: 100,
+        taskName: 'System Deployment v2.5'
+      },
+    });
+  }
+
+  if (type === 'status-health') {
+    // Randomly return healthy (true) or down (false)
+    // 80% chance of being healthy
+    const isHealthy = Math.random() > 0.2;
+    return NextResponse.json({
+      status: isHealthy,
+      message: isHealthy ? "All systems operational" : "Subsystem failure detected"
+    });
+  }
+
   return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
 }
 
