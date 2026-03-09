@@ -38,7 +38,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, Archive, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database, MoreVertical
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database, MoreVertical, Play, Square
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -50,7 +50,7 @@ import { useSettings } from "@/context/settings-context";
 
 
 export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[] }) {
-  const { settings, timeLeft, moveCarousel } = useSettings();
+  const { settings, timeLeft, moveCarousel, isStopped, setIsStopped } = useSettings();
   const { isTVMode, toggleTVMode } = useTVMode();
 
   const { showAlert } = useAlert();
@@ -135,6 +135,16 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Handle Workspace Reset when STOPPED in TV mode
+  useEffect(() => {
+    if (isTVMode && isStopped && workspaces.length > 0) {
+      const firstWorkspaceId = workspaces[0].id;
+      if (workspaceId !== firstWorkspaceId) {
+        handleParamChange("workspace", firstWorkspaceId);
+      }
+    }
+  }, [isTVMode, isStopped, workspaces, workspaceId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -991,14 +1001,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               </button>
               <div className="h-4 w-px bg-border/30 mx-1" />
               <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => moveCarousel("prev")}
-                  className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/prev flex items-center justify-center"
-                  title="Previous Workspace (Left Arrow)"
-                >
-                  <ArrowLeft size={22} className="relative z-10 group-hover/prev:-translate-x-1.5 transition-transform duration-300 ease-out" />
-                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/prev:opacity-100 blur-xl transition-opacity" />
-                </button>
                 <div className="relative" ref={workspaceDropdownRef}>
                   <button 
                     onClick={() => {
@@ -1106,14 +1108,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                     )}
                   </AnimatePresence>
                 </div>
-                <button 
-                  onClick={() => moveCarousel("next")}
-                  className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/next flex items-center justify-center"
-                  title="Next Workspace (Right Arrow)"
-                >
-                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/next:opacity-100 blur-xl transition-opacity" />
-                  <ArrowRight size={22} className="relative z-10 group-hover/next:translate-x-1.5 transition-transform duration-300 ease-out" />
-                </button>
               </div>
             </div>
 
@@ -1121,41 +1115,53 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               <ConnectivityStatus />
               <div className="h-4 w-px bg-border/30" />
               {timeLeft !== null && settings.tvCarouselEnabled && (
-                <div className="flex items-center gap-3 px-4 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
-                  <div className="relative flex items-center justify-center w-5 h-5">
-                    <svg className="w-full h-full -rotate-90">
-                      <circle
-                        cx="10"
-                        cy="10"
-                        r="8"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="transparent"
-                        className="text-foreground/5"
-                      />
-                      <motion.circle
-                        cx="10"
-                        cy="10"
-                        r="8"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="transparent"
-                        strokeDasharray={50}
-                        initial={{ strokeDashoffset: 50 }}
-                        animate={{ 
-                          strokeDashoffset: 50 - (50 * (timeLeft / settings.tvCarouselInterval))
-                        }}
-                        transition={{ duration: 0.5, ease: "linear" }}
-                        className="text-primary"
-                      />
-                    </svg>
-                    <span className="absolute text-[8px] font-black text-foreground">
-                      {timeLeft}
-                    </span>
+                <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsStopped(!isStopped)}
+                      className="p-1 hover:bg-foreground/10 rounded-full transition-colors text-primary active:scale-90"
+                      title={isStopped ? "Play Carousel" : "Stop Carousel"}
+                    >
+                      {isStopped ? <Play size={12} fill="currentColor" /> : <Square size={12} fill="currentColor" />}
+                    </button>
+                    <div className="h-3 w-px bg-border/20 mx-0.5" />
+                    <div className="relative flex items-center justify-center w-5 h-5">
+                      <svg className="w-full h-full -rotate-90">
+                        <circle
+                          cx="10"
+                          cy="10"
+                          r="8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="transparent"
+                          className="text-foreground/5"
+                        />
+                        <motion.circle
+                          cx="10"
+                          cy="10"
+                          r="8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="transparent"
+                          strokeDasharray={50}
+                          initial={{ strokeDashoffset: 50 }}
+                          animate={{ 
+                            strokeDashoffset: 50 - (50 * (timeLeft / settings.tvCarouselInterval))
+                          }}
+                          transition={{ duration: 0.5, ease: "linear" }}
+                          className="text-primary"
+                        />
+                      </svg>
+                      <span className="absolute text-[8px] font-black text-foreground">
+                        {timeLeft}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">Carousel Active</span>
+                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+                      {isStopped ? "Carousel Stopped" : "Carousel Active"}
+                    </span>
                   </div>
                 </div>
               )}

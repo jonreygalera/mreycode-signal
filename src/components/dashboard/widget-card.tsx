@@ -9,7 +9,7 @@ import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import * as Icons from "lucide-react";
 import { PulseWidget } from "./pulse-widget";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code, Play, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -151,6 +151,7 @@ export function WidgetCard({
   const [isWidgetDropdownOpen, setIsWidgetDropdownOpen] = useState(false);
   const [widgetSearch, setWidgetSearch] = useState("");
   const widgetDropdownRef = useRef<HTMLDivElement>(null);
+  const [isStopped, setIsStopped] = useState(false);
   const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
@@ -349,21 +350,40 @@ export function WidgetCard({
     }
 
     const intervalSeconds = Math.max(20, settings.maximizedCarouselInterval);
-    setCarouselTimeLeft(intervalSeconds);
+    
+    // Initial time update if not already set
+    if (carouselTimeLeft === null) {
+      setCarouselTimeLeft(intervalSeconds);
+    }
 
     const timer = setInterval(() => {
-      setCarouselTimeLeft(prev => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          moveCarousel("next");
-          return intervalSeconds;
-        }
-        return prev - 1;
-      });
+      if (!isStopped) {
+        setCarouselTimeLeft(prev => {
+          if (prev === null) return intervalSeconds;
+          if (prev <= 1) {
+            moveCarousel("next");
+            return intervalSeconds;
+          }
+          return prev - 1;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isMaximized, settings.maximizedCarouselEnabled, settings.maximizedCarouselInterval, allConfigs.length, config.id]);
+  }, [isMaximized, settings.maximizedCarouselEnabled, settings.maximizedCarouselInterval, allConfigs.length, config.id, isStopped]);
+
+  // Handle Widget Reset when STOPPED
+  useEffect(() => {
+    if (isMaximized && isStopped && allConfigs.length > 0) {
+      const intervalSeconds = Math.max(20, settings.maximizedCarouselInterval);
+      setCarouselTimeLeft(intervalSeconds);
+
+      const firstWidgetId = allConfigs[0].id;
+      if (config.id !== firstWidgetId) {
+        handleSetMaximized(firstWidgetId);
+      }
+    }
+  }, [isMaximized, isStopped]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -582,6 +602,15 @@ export function WidgetCard({
             )}
             {isMaximizedView && carouselTimeLeft !== null && settings.maximizedCarouselEnabled && allConfigs.length > 1 && (
               <div className="flex items-center gap-3 px-3 py-1.5 bg-foreground/5 rounded-full border border-border/10 mr-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsStopped(!isStopped)}
+                    className="p-1 hover:bg-foreground/10 rounded-full transition-colors text-primary active:scale-90"
+                    title={isStopped ? "Play Carousel" : "Stop Carousel"}
+                  >
+                    {isStopped ? <Play size={12} fill="currentColor" /> : <Square size={12} fill="currentColor" />}
+                  </button>
+                  <div className="h-3 w-px bg-border/20 mx-0.5" />
                 <div className="relative flex items-center justify-center w-5 h-5">
                   <svg className="w-full h-full -rotate-90">
                     <circle
@@ -613,35 +642,22 @@ export function WidgetCard({
                     {carouselTimeLeft}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Widget</span>
-                  <span className="text-[9px] font-bold text-muted uppercase tracking-wider leading-none">Auto-Next ON</span>
+              </div>
+              <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+                    {isStopped ? "Stopped" : "Active"}
+                  </span>
                 </div>
               </div>
             )}
             {isMaximizedView && allConfigs.length > 1 && (
               <div className="flex items-center gap-2 mr-4 pr-4 border-r border-border/40">
-                <button
-                  onClick={() => moveCarousel("prev")}
-                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/prev flex items-center justify-center"
-                  title="Previous Widget (Left Arrow)"
-                >
-                  <ArrowLeft size={18} className="relative z-10 group-hover/prev:-translate-x-1 transition-transform" />
-                </button>
-                
                 <div className="flex flex-col items-center min-w-[60px] mx-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
                     {allConfigs.findIndex(c => c.id === config.id) + 1} / {allConfigs.length}
                   </span>
                 </div>
-
-                <button
-                  onClick={() => moveCarousel("next")}
-                  className="relative overflow-hidden p-2.5 hover:bg-primary/10 rounded-xl transition-all text-muted hover:text-primary active:scale-90 border border-transparent hover:border-primary/20 group/next flex items-center justify-center"
-                  title="Next Widget (Right Arrow)"
-                >
-                  <ArrowRight size={18} className="relative z-10 group-hover/next:translate-x-1 transition-transform" />
-                </button>
               </div>
             )}
             {!isMaximizedView && !readOnly && (
