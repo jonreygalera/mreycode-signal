@@ -978,197 +978,242 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           </div>
         </motion.div>
       ) : (
-        <div className="sticky top-0 z-20 bg-background/40 dark:bg-background/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 py-3 mb-6 transition-all duration-500 hover:bg-background/60 group">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTVMode}
-              className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all border border-border/20 rounded-md bg-panel/30 hover:bg-panel/50 backdrop-blur-sm"
-              title="Exit TV Mode (Esc)"
-            >
-              <MonitorOff size={14} />
-              Exit Mode
-            </button>
-            <div className="h-4 w-px bg-border/30 mx-1" />
+        <div className="contents">
+          <div className="sticky top-0 z-20 bg-background/40 dark:bg-background/40 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 py-3 mb-6 transition-all duration-500 hover:bg-background/60 group">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => moveCarousel("prev")}
-                className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/prev flex items-center justify-center"
-                title="Previous Workspace (Left Arrow)"
+              <button
+                onClick={toggleTVMode}
+                className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-all border border-border/20 rounded-md bg-panel/30 hover:bg-panel/50 backdrop-blur-sm"
+                title="Exit TV Mode (Esc)"
               >
-                <ArrowLeft size={22} className="relative z-10 group-hover/prev:-translate-x-1.5 transition-transform duration-300 ease-out" />
-                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/prev:opacity-100 blur-xl transition-opacity" />
+                <MonitorOff size={14} />
+                Exit Mode
               </button>
-              <div className="relative" ref={workspaceDropdownRef}>
+              <div className="h-4 w-px bg-border/30 mx-1" />
+              <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => {
-                    setIsWorkspaceOpen(!isWorkspaceOpen);
-                    if (isWorkspaceOpen) setWorkspaceSearch("");
-                  }}
-                  className="flex flex-col items-center px-4 py-2 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-white/5"
+                  onClick={() => moveCarousel("prev")}
+                  className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/prev flex items-center justify-center"
+                  title="Previous Workspace (Left Arrow)"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted/40 leading-none mb-1.5 group-hover/ws:text-primary transition-colors">Active View</span>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-black text-foreground uppercase tracking-tighter leading-none text-center min-w-[120px]">
-                      {currentWorkspaceName}
-                    </h2>
-                    <ChevronDown size={14} className={cn("text-muted/40 transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
-                  </div>
+                  <ArrowLeft size={22} className="relative z-10 group-hover/prev:-translate-x-1.5 transition-transform duration-300 ease-out" />
+                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/prev:opacity-100 blur-xl transition-opacity" />
                 </button>
+                <div className="relative" ref={workspaceDropdownRef}>
+                  <button 
+                    onClick={() => {
+                      setIsWorkspaceOpen(!isWorkspaceOpen);
+                      if (isWorkspaceOpen) setWorkspaceSearch("");
+                    }}
+                    className="flex flex-col items-center px-4 py-2 group/ws transition-all hover:bg-foreground/5 rounded-xl border border-transparent hover:border-white/5"
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted/40 leading-none mb-1.5 group-hover/ws:text-primary transition-colors">Active View</span>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-black text-foreground uppercase tracking-tighter leading-none text-center min-w-[120px]">
+                        {currentWorkspaceName}
+                      </h2>
+                      <ChevronDown size={14} className={cn("text-muted/40 transition-transform duration-300", isWorkspaceOpen && "rotate-180")} />
+                    </div>
+                  </button>
 
-                <AnimatePresence>
-                  {isWorkspaceOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 10, scale: 1 }}
-                      exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-background/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                    >
-                      <div className="p-4 border-b border-white/5 bg-white/5">
-                        <div className="relative group/search">
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
-                          <input
-                            type="text"
-                            placeholder="Search Workspace..."
-                            value={workspaceSearch}
-                            onChange={(e) => setWorkspaceSearch(e.target.value)}
-                            className="w-full bg-background/40 border-none rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
-                            autoFocus
-                            onKeyDown={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar bg-black/20">
-                        {workspaces
-                          .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
-                          .map((ws) => (
-                            <button
-                              key={ws.id}
-                              onClick={() => {
-                                const params = new URLSearchParams(searchParams.toString());
-                                params.set("workspace", ws.id);
-                                if (isTVMode) params.set("tv-mode", "yes");
-                                router.push(`/?${params.toString()}`);
-                                setIsWorkspaceOpen(false);
-                                setWorkspaceSearch("");
-                              }}
-                              className={cn(
-                                "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
-                                workspaceId === ws.id
-                                  ? "bg-primary/20 border border-primary/20 shadow-lg shadow-primary/5" 
-                                  : "hover:bg-white/5 border border-transparent"
-                              )}
-                            >
-                              <div className="flex flex-col">
-                                <span className={cn(
-                                  "text-xs font-black uppercase tracking-wider transition-colors",
-                                  workspaceId === ws.id ? "text-primary" : "text-muted group-hover/item:text-foreground"
-                                )}>
-                                  {ws.name}
-                                </span>
-                                <span className="text-[9px] font-bold opacity-30 mt-0.5 uppercase tracking-widest">
-                                  {new Date(ws.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                              </div>
-                              {workspaceId === ws.id ? (
-                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                                  <Check size={12} className="text-primary" strokeWidth={3} />
-                                </div>
-                              ) : (
-                                <ChevronRight size={14} className="text-muted/20 group-hover/item:text-muted transition-all group-hover/item:translate-x-0.5" />
-                              )}
-                            </button>
-                          ))}
-                        
-                        {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && (
-                          <div className="py-12 flex flex-col items-center justify-center opacity-40">
-                            <Search size={24} className="mb-2" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">No Matches</span>
+                  <AnimatePresence>
+                    {isWorkspaceOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 10, scale: 1 }}
+                        exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-background/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="p-4 border-b border-white/5 bg-white/5">
+                          <div className="relative group/search">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within/search:text-primary transition-colors" />
+                            <input
+                              type="text"
+                              placeholder="Search Workspace..."
+                              value={workspaceSearch}
+                              onChange={(e) => setWorkspaceSearch(e.target.value)}
+                              className="w-full bg-background/40 border-none rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                              autoFocus
+                              onKeyDown={(e) => e.stopPropagation()}
+                            />
                           </div>
-                        )}
-                      </div>
+                        </div>
 
-                      <div className="p-3 border-t border-white/5 bg-white/5">
-                        <button
-                          onClick={() => {
-                            handleAddWorkspace();
-                            setIsWorkspaceOpen(false);
-                            setWorkspaceSearch("");
-                          }}
-                          className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-muted hover:text-foreground hover:bg-white/5 transition-all"
-                        >
-                          <Plus size={14} />
-                          New Workspace
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar bg-black/20">
+                          {workspaces
+                            .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
+                            .map((ws) => (
+                              <button
+                                key={ws.id}
+                                onClick={() => {
+                                  const params = new URLSearchParams(searchParams.toString());
+                                  params.set("workspace", ws.id);
+                                  if (isTVMode) params.set("tv-mode", "yes");
+                                  router.push(`/?${params.toString()}`);
+                                  setIsWorkspaceOpen(false);
+                                  setWorkspaceSearch("");
+                                }}
+                                className={cn(
+                                  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-all mb-1 group/item",
+                                  workspaceId === ws.id
+                                    ? "bg-primary/20 border border-primary/20 shadow-lg shadow-primary/5" 
+                                    : "hover:bg-white/5 border border-transparent"
+                                )}
+                              >
+                                <div className="flex flex-col">
+                                  <span className={cn(
+                                    "text-xs font-black uppercase tracking-wider transition-colors",
+                                    workspaceId === ws.id ? "text-primary" : "text-muted group-hover/item:text-foreground"
+                                  )}>
+                                    {ws.name}
+                                  </span>
+                                  <span className="text-[9px] font-bold opacity-30 mt-0.5 uppercase tracking-widest">
+                                    {new Date(ws.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
+                                {workspaceId === ws.id ? (
+                                  <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+                                    <Check size={12} className="text-primary" strokeWidth={3} />
+                                  </div>
+                                ) : (
+                                  <ChevronRight size={14} className="text-muted/20 group-hover/item:text-muted transition-all group-hover/item:translate-x-0.5" />
+                                )}
+                              </button>
+                            ))}
+                          
+                          {workspaces.filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && (
+                            <div className="py-12 flex flex-col items-center justify-center opacity-40">
+                              <Search size={24} className="mb-2" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">No Matches</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-3 border-t border-white/5 bg-white/5">
+                          <button
+                            onClick={() => {
+                              handleAddWorkspace();
+                              setIsWorkspaceOpen(false);
+                              setWorkspaceSearch("");
+                            }}
+                            className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-muted hover:text-foreground hover:bg-white/5 transition-all"
+                          >
+                            <Plus size={14} />
+                            New Workspace
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <button 
+                  onClick={() => moveCarousel("next")}
+                  className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/next flex items-center justify-center"
+                  title="Next Workspace (Right Arrow)"
+                >
+                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/next:opacity-100 blur-xl transition-opacity" />
+                  <ArrowRight size={22} className="relative z-10 group-hover/next:translate-x-1.5 transition-transform duration-300 ease-out" />
+                </button>
               </div>
-              <button 
-                onClick={() => moveCarousel("next")}
-                className="relative overflow-hidden p-3.5 hover:bg-primary/10 rounded-2xl transition-all text-muted hover:text-primary active:scale-90 bg-white/5 border border-white/5 hover:border-primary/30 group/next flex items-center justify-center"
-                title="Next Workspace (Right Arrow)"
-              >
-                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover/next:opacity-100 blur-xl transition-opacity" />
-                <ArrowRight size={22} className="relative z-10 group-hover/next:translate-x-1.5 transition-transform duration-300 ease-out" />
-              </button>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <ConnectivityStatus />
+              <div className="h-4 w-px bg-border/30" />
+              {timeLeft !== null && settings.tvCarouselEnabled && (
+                <div className="flex items-center gap-3 px-4 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
+                  <div className="relative flex items-center justify-center w-5 h-5">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle
+                        cx="10"
+                        cy="10"
+                        r="8"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        fill="transparent"
+                        className="text-foreground/5"
+                      />
+                      <motion.circle
+                        cx="10"
+                        cy="10"
+                        r="8"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        fill="transparent"
+                        strokeDasharray={50}
+                        initial={{ strokeDashoffset: 50 }}
+                        animate={{ 
+                          strokeDashoffset: 50 - (50 * (timeLeft / settings.tvCarouselInterval))
+                        }}
+                        transition={{ duration: 0.5, ease: "linear" }}
+                        className="text-primary"
+                      />
+                    </svg>
+                    <span className="absolute text-[8px] font-black text-foreground">
+                      {timeLeft}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
+                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">Carousel Active</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-2 px-3 py-1 bg-foreground/5 rounded-full border border-border/10">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Live</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <RefreshButton />
+                <ThemeToggle />
+                <div className="h-6 w-px bg-border/20 mx-1" />
+                <Clock />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <ConnectivityStatus />
-            <div className="h-4 w-px bg-border/30" />
-            {timeLeft !== null && settings.tvCarouselEnabled && (
-              <div className="flex items-center gap-3 px-4 py-1.5 bg-foreground/5 rounded-full border border-border/10 backdrop-blur-md">
-                <div className="relative flex items-center justify-center w-5 h-5">
-                  <svg className="w-full h-full -rotate-90">
-                    <circle
-                      cx="10"
-                      cy="10"
-                      r="8"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="transparent"
-                      className="text-foreground/5"
-                    />
-                    <motion.circle
-                      cx="10"
-                      cy="10"
-                      r="8"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="transparent"
-                      strokeDasharray={50}
-                      initial={{ strokeDashoffset: 50 }}
-                      animate={{ 
-                        strokeDashoffset: 50 - (50 * (timeLeft / settings.tvCarouselInterval))
-                      }}
-                      transition={{ duration: 0.5, ease: "linear" }}
-                      className="text-primary"
-                    />
-                  </svg>
-                  <span className="absolute text-[8px] font-black text-foreground">
-                    {timeLeft}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted/50 leading-none mb-0.5">Next Switch</span>
-                  <span className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">Carousel Active</span>
-                </div>
+          {/* Full-Height Navigation Touch Zones for TV Mode - Optimized for Tablet/Remote */}
+        {/* Floating Navigation Arrows for TV Mode - Elegant Glassmorphism */}
+        {workspaces.length > 0 && (
+          <>
+            {/* Left Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                moveCarousel("prev");
+              }}
+              className="fixed left-8 top-1/2 -translate-y-1/2 z-50 group/nav-prev active:scale-95 transition-all"
+              title="Previous Workspace (Left Arrow)"
+            >
+              <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-prev:text-primary group-hover/nav-prev:scale-110 group-hover/nav-prev:bg-background/10 transition-all shadow-2xl">
+                <ArrowLeft size={32} strokeWidth={2.5} className="group-hover/nav-prev:-translate-x-1 transition-transform" />
               </div>
-            )}
-            <div className="flex items-center gap-2 px-3 py-1 bg-foreground/5 rounded-full border border-border/10">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted">Live</span>
+            </button>
+
+            {/* Right Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                moveCarousel("next");
+              }}
+              className="fixed right-8 top-1/2 -translate-y-1/2 z-50 group/nav-next active:scale-95 transition-all"
+              title="Next Workspace (Right Arrow)"
+            >
+              <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-next:text-primary group-hover/nav-next:scale-110 group-hover/nav-next:bg-background/10 transition-all shadow-2xl">
+                <ArrowRight size={32} strokeWidth={2.5} className="group-hover/nav-next:translate-x-1 transition-transform" />
+              </div>
+            </button>
+
+            {/* Mobile/Tablet Specific Bottom Navigation Indicator for TV Mode */}
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex md:hidden items-center gap-6 p-4 rounded-3xl bg-background/5 backdrop-blur-2xl border border-white/5 shadow-2xl">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted/40 whitespace-nowrap">
+                  WS {workspaces.findIndex(w => w.id === workspaceId) + 1} / {workspaces.length}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <RefreshButton />
-              <ThemeToggle />
-              <div className="h-6 w-px bg-border/20 mx-1" />
-              <Clock />
-            </div>
-          </div>
+          </>
+        )}
         </div>
       )}
       
@@ -1303,7 +1348,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
       {/* Spotlight Search Modal */}
       <AnimatePresence>
         {isSearchModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+          <div className="fixed inset-0 z-100 flex items-start justify-center pt-[15vh] px-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1339,7 +1384,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                     <CloseIcon size={16} />
                   </button>
                 )}
-                <div className="flex items-center gap-1 font-mono text-[10px] font-bold bg-muted/10 px-2 py-1 rounded border border-border/50 text-muted ml-3 hidden sm:flex">
+                <div className="hidden sm:flex items-center gap-1 font-mono text-[10px] font-bold bg-muted/10 px-2 py-1 rounded border border-border/50 text-muted ml-3">
                    ESC
                 </div>
               </div>
