@@ -1,5 +1,5 @@
 import { SignalConfig } from './signal';
-export type WidgetType = 'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status' | 'label';
+export type WidgetType = 'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status' | 'label' | 'pulse';
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
 export type ChartType = 'line' | 'bar' | 'area';
 
@@ -112,6 +112,14 @@ export interface LabelConfig extends BaseWidgetConfig {
   };
 }
 
+export interface PulseConfig extends BaseWidgetConfig {
+  type: 'pulse';
+  config?: {
+    pulseSpeed?: 'slow' | 'normal' | 'fast';
+    valueLabel?: string;
+  };
+}
+
 export type WidgetConfig = 
   | StatConfig 
   | ChartConfig 
@@ -120,4 +128,5 @@ export type WidgetConfig =
   | ListConfig 
   | ProgressConfig 
   | StatusConfig
-  | LabelConfig;
+  | LabelConfig
+  | PulseConfig;

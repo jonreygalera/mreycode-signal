@@ -8,6 +8,7 @@ import { AnimatedStat } from "./stat";
 import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import * as Icons from "lucide-react";
+import { PulseWidget } from "./pulse-widget";
 import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -261,7 +262,7 @@ export function WidgetCard({
 
 
   const parsedData = useMemo(() => {
-    if (!data && config.type !== 'clock' && config.type !== 'iframe' && config.type !== 'status' && config.type !== 'progress' && config.type !== 'label') return null;
+    if (!data && !['clock', 'iframe', 'status', 'progress', 'label', 'pulse'].includes(config.type)) return null;
     
     let value = (data && config.responsePath) ? getNestedProperty(data, config.responsePath) : data;
     
@@ -402,7 +403,7 @@ export function WidgetCard({
     xl: "flex-grow basis-full min-w-[280px] min-h-[400px]",
   };
 
-  const isStat = config.type === "stat" || config.type === "status" || config.type === "clock";
+  const isStat = config.type === "stat" || config.type === "status" || config.type === "clock" || config.type === "pulse";
   const currentSizeClass = sizeClasses[config.size || "sm"];
   const finalSizeClass = isStat 
     ? cn(currentSizeClass, "min-h-0 h-auto min-w-0 sm:min-w-[240px]") 
@@ -701,11 +702,21 @@ export function WidgetCard({
             Failed to load data.
           </div>
         )}
-        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress', 'label'].includes(config.type)) && (
+        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress', 'label', 'pulse'].includes(config.type)) && (
           <div className={cn(
             "flex w-full flex-col justify-center",
             isStat ? "h-full" : "absolute inset-0 pt-4" 
           )}>
+            {config.type === "pulse" && (
+              <PulseWidget
+                data={parsedData}
+                config={config.config}
+                accentColor={config.accentColor}
+                size={config.size}
+                color={config.color}
+                colorRules={config.colorRules}
+              />
+            )}
             {config.type === "label" && (
               <LabelWidget
                 label={config.label}

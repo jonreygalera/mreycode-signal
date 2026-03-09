@@ -901,6 +901,34 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                     {/* Specific Config based on type */}
                     <div className="pt-2 border-t border-border/30">
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3">Widget Configuration</h3>
+                      {parsedConfig.type === 'pulse' && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Pulse Speed</label>
+                              <select
+                                value={parsedConfig.config?.pulseSpeed || "normal"}
+                                onChange={(e) => updateNestedConfig({ pulseSpeed: e.target.value })}
+                                className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer font-sans"
+                              >
+                                <option value="slow">Slow</option>
+                                <option value="normal">Normal</option>
+                                <option value="fast">Fast</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Value Label</label>
+                              <input
+                                type="text"
+                                value={parsedConfig.config?.valueLabel || ""}
+                                onChange={(e) => updateNestedConfig({ valueLabel: e.target.value })}
+                                placeholder="Score"
+                                className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-sans"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {parsedConfig.type === 'stat' && (
                         <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-left-2 duration-300">
                           <div className="space-y-1.5">

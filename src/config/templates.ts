@@ -731,4 +731,21 @@ export const TEMPLATES: WidgetTemplate[] = [
       config: {},
     },
   },
+  {
+    label: 'Intelligence: System Pulse (Premium)',
+    config: {
+      id: 'tpl-pulse-intel',
+      type: 'pulse',
+      label: 'System Intelligence',
+      api: '/api/mock/pulse',
+      method: 'GET',
+      responsePath: '',
+      size: 'md',
+      description: 'Real-time workspace health and AI-driven insights',
+      refreshInterval: 5000,
+      config: {
+        pulseSpeed: 'normal',
+      },
+    },
+  },
 ];
