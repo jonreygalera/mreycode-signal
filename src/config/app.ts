@@ -1,6 +1,6 @@
 export const appConfig = {
   name: "mreycode-signal",
-  version: "2.5.1",
+  version: "2.6.0",
   description: "A single-page, elegant, bento-style metrics dashboard supporting iframe integration per widget.",
   url: "https://mreycode-signal.vercel.app",
   github: "https://github.com/jonreygalera/mreycode-signal",
