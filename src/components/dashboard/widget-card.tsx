@@ -486,7 +486,7 @@ export function WidgetCard({
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 5, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border/50 bg-panel shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                        className="absolute top-14 left-2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border bg-[#ffffff] dark:bg-[#131722] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-none!"
                       >
                         <div className="p-3 border-b border-border/30 bg-muted/5">
                           <div className="relative group/search">
@@ -496,7 +496,7 @@ export function WidgetCard({
                               placeholder="Search widgets..."
                               value={widgetSearch}
                               onChange={(e) => setWidgetSearch(e.target.value)}
-                              className="w-full bg-background/50 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                                                             className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
                               autoFocus
                               onKeyDown={(e) => e.stopPropagation()}
                             />
@@ -567,7 +567,7 @@ export function WidgetCard({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="absolute right-0 top-full mt-1 z-50 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
+                        className="absolute right-0 top-full mt-1 z-50 w-48 overflow-hidden rounded-md border border-border bg-[#ffffff] dark:bg-[#131722] shadow-2xl flex flex-col p-1 backdrop-blur-none!"
                       >
                         <button
                           onClick={handleOpenPlayground}

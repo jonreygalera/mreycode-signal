@@ -1024,7 +1024,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                         initial={{ opacity: 0, y: 15, scale: 0.95 }}
                         animate={{ opacity: 1, y: 10, scale: 1 }}
                         exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-background/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                        className="absolute top-full left-1/2 -translate-x-1/2 z-50 w-72 mt-2 overflow-hidden rounded-2xl border border-border bg-[#ffffff] dark:bg-[#131722] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-none!"
                       >
                         <div className="p-4 border-b border-white/5 bg-white/5">
                           <div className="relative group/search">
@@ -1034,14 +1034,14 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                               placeholder="Search Workspace..."
                               value={workspaceSearch}
                               onChange={(e) => setWorkspaceSearch(e.target.value)}
-                              className="w-full bg-background/40 border-none rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
+                                                            className="w-full bg-background border border-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all font-bold uppercase tracking-wider"
                               autoFocus
                               onKeyDown={(e) => e.stopPropagation()}
                             />
                           </div>
                         </div>
 
-                        <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar bg-black/20">
+                        <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar bg-muted/5">
                           {workspaces
                             .filter(ws => ws.name.toLowerCase().includes(workspaceSearch.toLowerCase()))
                             .map((ws) => (
