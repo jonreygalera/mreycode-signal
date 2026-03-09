@@ -1136,6 +1136,55 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                            </div>
                          </div>
                        )}
+
+                       {parsedConfig.type === 'status' && (
+                         <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">True Label</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.trueLabel || ""}
+                                 onChange={(e) => updateNestedConfig({ trueLabel: e.target.value })}
+                                 placeholder="SYSTEM ONLINE"
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+                               />
+                             </div>
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">False Label</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.falseLabel || ""}
+                                 onChange={(e) => updateNestedConfig({ falseLabel: e.target.value })}
+                                 placeholder="SYSTEM DOWN"
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-sans"
+                               />
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">True Icon</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.trueIcon || ""}
+                                 onChange={(e) => updateNestedConfig({ trueIcon: e.target.value })}
+                                 placeholder="Zap"
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono"
+                               />
+                             </div>
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">False Icon</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.falseIcon || ""}
+                                 onChange={(e) => updateNestedConfig({ falseIcon: e.target.value })}
+                                 placeholder="Zap"
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono"
+                               />
+                             </div>
+                           </div>
+                         </div>
+                       )}
                      </div>
                   </div>
                 ) : (

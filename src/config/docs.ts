@@ -47,6 +47,10 @@ export const WIDGET_DOCS: DocSection[] = [
       { key: "config.timezone", type: "string", description: "Timezone identifier for Clock widgets." },
       { key: "config.displayType", type: "'analog' | 'digital'", description: "Visual style for Clock widgets." },
       { key: "config.iframeUrl", type: "string", description: "External URL for Iframe widgets." },
+      { key: "config.trueLabel / falseLabel", type: "string", description: "Conditional text for Status widgets." },
+      { key: "config.trueIcon / falseIcon", type: "string", description: "Conditional Lucide icons for Status widgets." },
+      { key: "config.subtitle / align / variant", type: "string", description: "Layout and style for Label widgets." },
+      { key: "config.link", type: "string", description: "External shortcut URL for Label widgets." },
     ],
   },
   {

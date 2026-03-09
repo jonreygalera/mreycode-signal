@@ -94,7 +94,10 @@ export interface ProgressConfig extends BaseWidgetConfig {
 export interface StatusConfig extends BaseWidgetConfig {
   type: 'status';
   config?: {
-    // Status specific settings
+    trueLabel?: string;
+    falseLabel?: string;
+    trueIcon?: string;
+    falseIcon?: string;
   };
 }
 

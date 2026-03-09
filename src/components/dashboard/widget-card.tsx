@@ -7,6 +7,7 @@ import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
 import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
+import * as Icons from "lucide-react";
 import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -802,11 +803,19 @@ export function WidgetCard({
                   "w-16 h-16 rounded-full flex items-center justify-center shadow-lg animate-pulse-subtle border-4",
                   parsedData ? "bg-up/10 border-up/20 text-up" : "bg-down/10 border-down/20 text-down"
                 )}>
-                  <Zap size={32} fill="currentColor" className="opacity-80" />
+                  {(() => {
+                    const iconName = parsedData 
+                      ? (config.config as any)?.trueIcon || "Zap" 
+                      : (config.config as any)?.falseIcon || "Zap";
+                    const IconComponent = (Icons as any)[iconName] || Icons.Zap;
+                    return <IconComponent size={32} fill="currentColor" className="opacity-80" />;
+                  })()}
                 </div>
                 <div className="flex flex-col items-center gap-1">
                    <span className={cn("text-lg font-black uppercase tracking-tighter", parsedData ? "text-up" : "text-down")}>
-                     {parsedData ? "SYSTEM ONLINE" : "SYSTEM DOWN"}
+                     {parsedData 
+                       ? (config.config as any)?.trueLabel || "SYSTEM ONLINE" 
+                       : (config.config as any)?.falseLabel || "SYSTEM DOWN"}
                    </span>
                    <span className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] font-bold">
                      Last Checked: {new Date().toLocaleTimeString()}
