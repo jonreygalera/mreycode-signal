@@ -584,24 +584,24 @@ export function Header() {
                     </a>
                   </div>
                   <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
-                    <span className="text-muted">Developer</span>
-                    <a 
-                      href={appConfig.developer.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
-                    >
-                      {appConfig.developer.website.replace("https://", "")}
-                      <ExternalLink size={10} />
-                    </a>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
                     <span className="text-muted">Contact</span>
                     <a 
                       href={`mailto:${(appConfig.developer as any).email}`}
                       className="text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
                     >
                       {(appConfig.developer as any).email}
+                      <ExternalLink size={10} />
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
+                    <span className="text-muted">Support</span>
+                    <a 
+                      href={`https://www.paypal.com/paypalme/${(appConfig.developer as any).paypal.split('@')[0]}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary font-bold hover:opacity-80 transition-opacity flex items-center gap-1.5"
+                    >
+                      PayPal Me
                       <ExternalLink size={10} />
                     </a>
                   </div>

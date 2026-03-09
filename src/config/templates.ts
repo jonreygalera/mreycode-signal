@@ -593,4 +593,92 @@ export const TEMPLATES: WidgetTemplate[] = [
       config: { chart: 'area', xKey: 'day', yKey: 'revenue', prefix: '$' },
     },
   },
+  // ── Labels & Headers ────────────────────────────────────────────────
+  {
+    label: 'Label: Section Header (Hero)',
+    config: {
+      id: 'tpl-label-header',
+      type: 'label',
+      label: 'Main Dashboard',
+      size: 'md',
+      description: 'Bold section title for organization',
+      config: {
+        variant: 'hero',
+        align: 'left',
+        subtitle: 'Real-time system overview and metrics',
+      },
+    },
+  },
+  {
+    label: 'Label: Navigation Link (Pill)',
+    config: {
+      id: 'tpl-label-link',
+      type: 'label',
+      label: 'Documentation',
+      size: 'sm',
+      description: 'Interactive shortcut to external resources',
+      config: {
+        variant: 'pill',
+        icon: 'ExternalLink',
+        align: 'center',
+        link: 'https://github.com/jonreygalera/mreycode-signal',
+      },
+    },
+  },
+  {
+    label: 'Label: Metric Label (Simple)',
+    config: {
+      id: 'tpl-label-simple',
+      type: 'label',
+      label: 'API Status',
+      size: 'sm',
+      description: 'Simple text label with an icon',
+      config: {
+        variant: 'simple',
+        icon: 'Activity',
+        align: 'left',
+        subtitle: 'Operational',
+      },
+    },
+  },
+  {
+    label: 'Network: Public IP Address',
+    config: {
+      id: 'tpl-label-ip',
+      type: 'label',
+      label: 'Public IP',
+      api: 'https://ipapi.co/json',
+      method: 'GET',
+      responsePath: 'ip',
+      size: 'sm',
+      description: 'Your current public IP address',
+      refreshInterval: 3600000,
+      config: {
+        variant: 'pill',
+        icon: 'Globe',
+        align: 'center',
+      },
+    },
+  },
+  {
+    label: 'Network: Connection Location',
+    config: {
+      id: 'tpl-label-location',
+      type: 'label',
+      label: 'Connection Location',
+      api: 'https://ipapi.co/json',
+      method: 'GET',
+      responsePath: '',
+      transformer: '(val) => `${val.city}, ${val.country_name}`',
+      size: 'sm',
+      description: 'Geographic location of your IP',
+      refreshInterval: 3600000,
+      config: {
+        variant: 'simple',
+        icon: 'MapPin',
+        align: 'left',
+        subtitle: 'Detected Region',
+      },
+    },
+  },
 ];

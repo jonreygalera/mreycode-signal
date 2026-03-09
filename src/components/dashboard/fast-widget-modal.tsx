@@ -436,6 +436,7 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                           <option value="iframe">Iframe (External Site)</option>
                           <option value="list">List (Data Table)</option>
                           <option value="progress">Progress (Target tracking)</option>
+                          <option value="label">Label (Text/Header)</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -1069,10 +1070,73 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                               <option value="vertical">Vertical</option>
                               <option value="horizontal">Horizontal</option>
                             </select>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                           </div>
+                         </div>
+                       )}
+
+                       {parsedConfig.type === 'label' && (
+                         <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Subtitle</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.subtitle || ""}
+                                 onChange={(e) => updateNestedConfig({ subtitle: e.target.value })}
+                                 placeholder="Optional subtitle text"
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm"
+                               />
+                             </div>
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Icon (Lucide Name)</label>
+                               <input
+                                 type="text"
+                                 value={parsedConfig.config?.icon || ""}
+                                 onChange={(e) => updateNestedConfig({ icon: e.target.value })}
+                                 placeholder="Zap, Activity, etc."
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm font-mono"
+                               />
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Alignment</label>
+                               <select
+                                 value={parsedConfig.config?.align || "left"}
+                                 onChange={(e) => updateNestedConfig({ align: e.target.value })}
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm"
+                               >
+                                 <option value="left">Left</option>
+                                 <option value="center">Center</option>
+                                 <option value="right">Right</option>
+                               </select>
+                             </div>
+                             <div className="space-y-1.5">
+                               <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Variant</label>
+                               <select
+                                 value={parsedConfig.config?.variant || "simple"}
+                                 onChange={(e) => updateNestedConfig({ variant: e.target.value })}
+                                 className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm"
+                               >
+                                 <option value="simple">Simple</option>
+                                 <option value="pill">Pill (Badge)</option>
+                                 <option value="hero">Hero (Large)</option>
+                               </select>
+                             </div>
+                           </div>
+                           <div className="space-y-1.5">
+                             <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">External Link</label>
+                             <input
+                               type="text"
+                               value={parsedConfig.config?.link || ""}
+                               onChange={(e) => updateNestedConfig({ link: e.target.value })}
+                               placeholder="https://google.com"
+                               className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-sm font-mono"
+                             />
+                           </div>
+                         </div>
+                       )}
+                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4 animate-in fade-in duration-300 h-full flex flex-col">

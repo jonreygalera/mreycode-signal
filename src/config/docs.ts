@@ -18,7 +18,7 @@ export const WIDGET_DOCS: DocSection[] = [
     fields: [
       { key: "id", type: "string", description: "Unique identifier for the widget instance.", required: true },
       { key: "label", type: "string", description: "Display title shown on the card.", required: true },
-      { key: "type", type: "'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status'", description: "Widget visualization engine.", required: true },
+      { key: "type", type: "'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status' | 'label'", description: "Widget visualization engine.", required: true },
       { key: "size", type: "'sm' | 'md' | 'lg' | 'xl'", description: "Grid footprint (width/height span)." },
       { key: "description", type: "string", description: "Contextual sub-text shown under the label." },
     ],

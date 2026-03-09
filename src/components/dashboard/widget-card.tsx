@@ -5,6 +5,7 @@ import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
 import { AnimatedStat } from "./stat";
+import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -259,7 +260,7 @@ export function WidgetCard({
 
 
   const parsedData = useMemo(() => {
-    if (!data && config.type !== 'clock' && config.type !== 'iframe' && config.type !== 'status' && config.type !== 'progress') return null;
+    if (!data && config.type !== 'clock' && config.type !== 'iframe' && config.type !== 'status' && config.type !== 'progress' && config.type !== 'label') return null;
     
     let value = (data && config.responsePath) ? getNestedProperty(data, config.responsePath) : data;
     
@@ -699,11 +700,19 @@ export function WidgetCard({
             Failed to load data.
           </div>
         )}
-        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress'].includes(config.type)) && (
+        {!isLoading && !error && (parsedData !== null || ['iframe', 'clock', 'status', 'progress', 'label'].includes(config.type)) && (
           <div className={cn(
             "flex w-full flex-col justify-center",
             isStat ? "h-full" : "absolute inset-0 pt-4" 
           )}>
+            {config.type === "label" && (
+              <LabelWidget
+                label={config.label}
+                config={config.config}
+                data={parsedData as string}
+                size={config.size}
+              />
+            )}
             {config.type === "stat" && (
               <AnimatedStat
                 value={parsedData as number}
