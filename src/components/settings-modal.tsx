@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive, Info } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive, Info, Wifi } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
 import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
@@ -33,6 +33,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localLocalStorageThreshold, setLocalLocalStorageThreshold] = useState(settings.localStorageThreshold);
   const [localMaxWorkspaces, setLocalMaxWorkspaces] = useState(settings.maxWorkspaces);
   const [localMaxWidgetsPerWorkspace, setLocalMaxWidgetsPerWorkspace] = useState(settings.maxWidgetsPerWorkspace);
+  const [localConnectivityUrl, setLocalConnectivityUrl] = useState(settings.connectivityUrl);
+  const [localConnectivityEvery, setLocalConnectivityEvery] = useState(settings.connectivityEvery);
+  const [localConnectivityMode, setLocalConnectivityMode] = useState(settings.connectivityMode);
+  const [localConnectivityThresholdExcellent, setLocalConnectivityThresholdExcellent] = useState(settings.connectivityThresholdExcellent);
+  const [localConnectivityThresholdGood, setLocalConnectivityThresholdGood] = useState(settings.connectivityThresholdGood);
+  const [localConnectivityThresholdAverage, setLocalConnectivityThresholdAverage] = useState(settings.connectivityThresholdAverage);
+  const [localConnectivityThresholdSlow, setLocalConnectivityThresholdSlow] = useState(settings.connectivityThresholdSlow);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const [storageStatus, setStorageStatus] = useState(getStorageUsage());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +82,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalMaximizedCarouselInterval(settings.maximizedCarouselInterval);
     setLocalSnackbarPosition(settings.snackbarPosition);
     setLocalLocalStorageThreshold(settings.localStorageThreshold);
-    setLocalMaxWorkspaces(settings.maxWorkspaces);
     setLocalMaxWidgetsPerWorkspace(settings.maxWidgetsPerWorkspace);
+    setLocalConnectivityUrl(settings.connectivityUrl);
+    setLocalConnectivityEvery(settings.connectivityEvery);
+    setLocalConnectivityMode(settings.connectivityMode);
+    setLocalConnectivityThresholdExcellent(settings.connectivityThresholdExcellent);
+    setLocalConnectivityThresholdGood(settings.connectivityThresholdGood);
+    setLocalConnectivityThresholdAverage(settings.connectivityThresholdAverage);
+    setLocalConnectivityThresholdSlow(settings.connectivityThresholdSlow);
     setPreviewImage(settings.backgroundImage);
     setStorageStatus(getStorageUsage());
   }, [settings, isOpen]);
@@ -126,6 +139,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       localStorageThreshold: localLocalStorageThreshold,
       maxWorkspaces: localMaxWorkspaces,
       maxWidgetsPerWorkspace: localMaxWidgetsPerWorkspace,
+      connectivityUrl: localConnectivityUrl,
+      connectivityEvery: Math.max(5, localConnectivityEvery),
+      connectivityMode: localConnectivityMode,
+      connectivityThresholdExcellent: localConnectivityThresholdExcellent,
+      connectivityThresholdGood: localConnectivityThresholdGood,
+      connectivityThresholdAverage: localConnectivityThresholdAverage,
+      connectivityThresholdSlow: localConnectivityThresholdSlow,
     });
     onClose();
   };
@@ -153,6 +173,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalLocalStorageThreshold(DEFAULT_SETTINGS.localStorageThreshold);
       setLocalMaxWorkspaces(DEFAULT_SETTINGS.maxWorkspaces);
       setLocalMaxWidgetsPerWorkspace(DEFAULT_SETTINGS.maxWidgetsPerWorkspace);
+      setLocalConnectivityUrl(DEFAULT_SETTINGS.connectivityUrl);
+      setLocalConnectivityEvery(DEFAULT_SETTINGS.connectivityEvery);
+      setLocalConnectivityMode(DEFAULT_SETTINGS.connectivityMode);
+      setLocalConnectivityThresholdExcellent(DEFAULT_SETTINGS.connectivityThresholdExcellent);
+      setLocalConnectivityThresholdGood(DEFAULT_SETTINGS.connectivityThresholdGood);
+      setLocalConnectivityThresholdAverage(DEFAULT_SETTINGS.connectivityThresholdAverage);
+      setLocalConnectivityThresholdSlow(DEFAULT_SETTINGS.connectivityThresholdSlow);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -608,6 +635,108 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
+
+                {/* Internet Status Section */}
+                <div className="pt-6 border-t border-border/50 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Wifi className="text-primary w-4 h-4" />
+                        <label className="text-sm font-semibold text-foreground/80">Internet Status Display</label>
+                      </div>
+                      <p className="text-xs text-muted leading-relaxed">
+                        Configure how your connection quality is monitored and displayed in the header.
+                      </p>
+                    </div>
+                    <div className="flex bg-muted/20 p-1 rounded-lg border border-border/50">
+                      <button
+                        type="button"
+                        onClick={() => setLocalConnectivityMode('icon')}
+                        className={cn(
+                          "px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all",
+                          localConnectivityMode === 'icon' ? "bg-foreground text-background shadow-sm" : "text-muted hover:text-foreground"
+                        )}
+                      >
+                        Icon
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLocalConnectivityMode('numeric')}
+                        className={cn(
+                          "px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all",
+                          localConnectivityMode === 'numeric' ? "bg-foreground text-background shadow-sm" : "text-muted hover:text-foreground"
+                        )}
+                      >
+                        Latency
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Ping Endpoint</label>
+                      <input
+                        type="text"
+                        value={localConnectivityUrl}
+                        onChange={(e) => setLocalConnectivityUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted">Interval (Seconds)</label>
+                      <input
+                        type="number"
+                        min="5"
+                        value={localConnectivityEvery}
+                        onChange={(e) => setLocalConnectivityEvery(Number(e.target.value))}
+                        className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted">Latency Thresholds (ms)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Excellent</span>
+                        <input
+                          type="number"
+                          value={localConnectivityThresholdExcellent}
+                          onChange={(e) => setLocalConnectivityThresholdExcellent(Number(e.target.value))}
+                          className="w-full bg-background border border-emerald-500/20 rounded-lg px-3 py-2 text-[11px] font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-bold text-green-500 uppercase tracking-tighter">Very Good</span>
+                        <input
+                          type="number"
+                          value={localConnectivityThresholdGood}
+                          onChange={(e) => setLocalConnectivityThresholdGood(Number(e.target.value))}
+                          className="w-full bg-background border border-green-500/20 rounded-lg px-3 py-2 text-[11px] font-mono focus:outline-none focus:ring-2 focus:ring-green-500/20"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-bold text-yellow-500 uppercase tracking-tighter">Average</span>
+                        <input
+                          type="number"
+                          value={localConnectivityThresholdAverage}
+                          onChange={(e) => setLocalConnectivityThresholdAverage(Number(e.target.value))}
+                          className="w-full bg-background border border-yellow-500/20 rounded-lg px-3 py-2 text-[11px] font-mono focus:outline-none focus:ring-2 focus:ring-yellow-500/20"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-bold text-orange-500 uppercase tracking-tighter">Slow</span>
+                        <input
+                          type="number"
+                          value={localConnectivityThresholdSlow}
+                          onChange={(e) => setLocalConnectivityThresholdSlow(Number(e.target.value))}
+                          className="w-full bg-background border border-orange-500/20 rounded-lg px-3 py-2 text-[11px] font-mono focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-6 border-t border-border/50 space-y-6">

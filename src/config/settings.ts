@@ -17,6 +17,13 @@ export interface AppSettings {
   supabaseRealtimeEnabled: boolean;
   maxWorkspaces: number;
   maxWidgetsPerWorkspace: number;
+  connectivityUrl: string;
+  connectivityEvery: number;
+  connectivityMode: 'icon' | 'numeric';
+  connectivityThresholdExcellent: number;
+  connectivityThresholdGood: number;
+  connectivityThresholdAverage: number;
+  connectivityThresholdSlow: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -38,5 +45,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   supabaseRealtimeEnabled: false,
   maxWorkspaces: 3,
   maxWidgetsPerWorkspace: 5,
+  connectivityUrl: 'https://dns.google/resolve?name=google.com',
+  connectivityEvery: 30,
+  connectivityMode: 'icon',
+  connectivityThresholdExcellent: 20,
+  connectivityThresholdGood: 50,
+  connectivityThresholdAverage: 100,
+  connectivityThresholdSlow: 150,
 };
 
