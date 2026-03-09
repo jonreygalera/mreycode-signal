@@ -240,8 +240,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     setBackupProgress(100);
     setTimeout(() => {
-      // Refresh to apply everything
-      window.location.reload();
+      window.location.href = window.location.origin;
     }, 1000);
   };
 
@@ -430,7 +429,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                              });
                              if (confirmed) {
                                updateSettings({ storageType: 'local' });
-                               window.location.reload();
+                                window.location.href = window.location.origin;
                              }
                           }}
                           className="flex items-center gap-2 text-red-500/60 hover:text-red-500 transition-colors text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md hover:bg-red-500/5"

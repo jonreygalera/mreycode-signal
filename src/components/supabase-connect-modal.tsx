@@ -143,8 +143,7 @@ commit;`;
 
     setStorageAdapter(supabaseAdapter);
     onClose();
-    // Force reload to ensure all contexts pick up the new adapter properly
-    window.location.reload();
+    window.location.href = window.location.origin;
   };
 
   return (
