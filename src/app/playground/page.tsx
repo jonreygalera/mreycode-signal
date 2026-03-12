@@ -986,6 +986,109 @@ function PlaygroundContent() {
                           />
                         </div>
                       </div>
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-[8px] font-black uppercase text-muted/60">Actions</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['pulse', 'notify', 'sound', 'notify-in-app', 'webhook'].map((action) => (
+                            <button
+                              key={action}
+                              type="button"
+                              onClick={() => {
+                                const actions = signal.action || [];
+                                const newActions = actions.includes(action)
+                                  ? actions.filter((a: string) => a !== action)
+                                  : [...actions, action];
+                                const signals = [...config.signals];
+                                signals[idx] = { ...signal, action: newActions };
+                                updateConfig({ signals });
+                              }}
+                              className={cn(
+                                "px-2 py-1 rounded text-[9px] font-bold uppercase tracking-tight transition-all",
+                                (signal.action || []).includes(action)
+                                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                                  : "bg-muted/10 text-muted hover:bg-muted/20"
+                              )}
+                            >
+                              {action.replace(/-/g, ' ')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {(signal.action || []).includes('webhook') && (
+                        <div className="space-y-3 p-3 bg-primary/5 rounded border border-primary/10 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-primary/60">Webhook URL</label>
+                              <input
+                                type="text"
+                                value={signal.webhook?.url || ""}
+                                onChange={(e) => {
+                                  const signals = [...config.signals];
+                                  signals[idx] = { ...signal, webhook: { ...(signal.webhook || { method: 'POST' }), url: e.target.value } };
+                                  updateConfig({ signals });
+                                }}
+                                placeholder="https://..."
+                                className="w-full bg-background border border-primary/20 rounded-[4px] px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-primary/60">Method</label>
+                              <select
+                                value={signal.webhook?.method || "POST"}
+                                onChange={(e) => {
+                                  const signals = [...config.signals];
+                                  signals[idx] = { ...signal, webhook: { ...(signal.webhook || { url: '' }), method: e.target.value } };
+                                  updateConfig({ signals });
+                                }}
+                                className="w-full bg-background border border-primary/20 rounded-[4px] px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer"
+                              >
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="DELETE">DELETE</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="flex items-center justify-between text-[8px] font-black uppercase text-primary/60">
+                              Headers (JSON)
+                            </label>
+                            <textarea
+                              value={typeof signal.webhook?.headers === 'string' ? signal.webhook.headers : (signal.webhook?.headers ? JSON.stringify(signal.webhook.headers, null, 2) : "")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                let updatedHeaders: any = val;
+                                try {
+                                  updatedHeaders = val ? JSON.parse(val) : undefined;
+                                } catch { /* keep as string */ }
+                                const signals = [...config.signals];
+                                signals[idx] = { ...signal, webhook: { ...(signal.webhook || { url: '', method: 'POST' }), headers: updatedHeaders } };
+                                updateConfig({ signals });
+                              }}
+                              placeholder='{ "Authorization": "BearerToken" }'
+                              className="w-full bg-background border border-primary/20 rounded-[4px] px-2 py-1 text-[9px] focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono min-h-[50px]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="flex items-center justify-between text-[8px] font-black uppercase text-primary/60">
+                              Body (JSON)
+                            </label>
+                            <textarea
+                              value={signal.webhook?.body || ""}
+                              onChange={(e) => {
+                                const signals = [...config.signals];
+                                signals[idx] = { ...signal, webhook: { ...(signal.webhook || { url: '', method: 'POST' }), body: e.target.value } };
+                                updateConfig({ signals });
+                              }}
+                              placeholder='{ "value": "{{value}}", "msg": "{{label}} triggered" }'
+                              className="w-full bg-background border border-primary/20 rounded-[4px] px-2 py-1 text-[9px] focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all font-mono min-h-[50px]"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <button
@@ -1117,10 +1220,25 @@ function PlaygroundContent() {
               </div>
 
               <div className="flex-1 w-full max-w-6xl mx-auto max-h-[500px] lg:max-h-[700px] bg-neutral-900 rounded-xl border border-border/60 overflow-hidden shadow-2xl relative group mt-4">
+                {/* Background Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] text-foreground transition-opacity duration-700 group-hover:opacity-[0.05]">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-[150%] h-[150%] sm:w-[120%] sm:h-[120%] -rotate-12"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                </div>
                 <iframe 
                   key={iframeUrl}
                   src={iframeUrl}
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 relative z-10"
                 />
               </div>
             </div>

@@ -9,7 +9,7 @@ interface LabelWidgetProps {
   label: string;
   config?: LabelConfig['config'];
   data?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 }
 
 export function LabelWidget({ label, config, data, size = "sm" }: LabelWidgetProps) {

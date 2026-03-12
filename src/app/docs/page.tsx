@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Book, Code, Terminal, Layers, Palette, RefreshCw, Globe, ArrowLeft, ArrowUpRight, CheckCircle2, Github } from "lucide-react";
+import { Book, Code, Terminal, Layers, Palette, RefreshCw, Globe, ArrowLeft, ArrowUpRight, CheckCircle2, Github, Webhook } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { appConfig } from "@/config/app";
@@ -14,6 +14,7 @@ const SECTIONS = WIDGET_DOCS.map(section => ({
         section.title === "Data Fetching" ? <RefreshCw className="w-5 h-5" /> :
         section.title === "Widget Config (Nested)" ? <Layers className="w-5 h-5" /> :
         section.title === "Logic & Aesthetics" ? <Palette className="w-5 h-5" /> :
+        section.title === "Active Alerts: Signals" ? <Webhook className="w-5 h-5" /> :
         <Code className="w-5 h-5" />
 }));
 
@@ -27,6 +28,11 @@ const GUIDES = [
     title: "The Fast Widget Flow",
     icon: <Terminal className="w-5 h-5" />,
     content: "Need a metric quickly? Use the 'Fast Widget' button. Paste your JSON, deploy instantly to local storage, and see it go live. Once you're happy with the vibe, you can permanently add it to `src/config/dashboard.ts`."
+  },
+  {
+    title: "Webhook & Alerts",
+    icon: <Webhook className="w-5 h-5" />,
+    content: "Beyond visual cues, Signal can trigger outbound Webhooks. Connect your widgets to Slack, Discord, or automated scripts to turn your dashboard into a fully autonomous monitoring engine."
   }
 ];
 
@@ -53,7 +59,7 @@ export default function DocsPage() {
           </div>
           <p className="text-lg text-muted/80 max-w-2xl leading-relaxed">
             The Signal Engine is powered by a flexible, JSON-driven configuration system. 
-            Learn how to build, customize, and deploy real-time analytics widgets.
+            Learn how to build, customize, and automate real-time analytics with signals and webhooks.
           </p>
         </div>
       </div>
@@ -69,13 +75,24 @@ export default function DocsPage() {
               </a>
               
               <h3 className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mt-8 mb-4">Widget Schema</h3>
-              {SECTIONS.map((section) => (
+              {SECTIONS.filter(s => !s.title.includes("Signals")).map((section) => (
                 <a
                   key={section.title}
                   href={`#${section.title.toLowerCase().replace(/\s+/g, "-")}`}
                   className="block px-3 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-muted/5 rounded-md transition-all"
                 >
                   {section.title}
+                </a>
+              ))}
+
+              <h3 className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] mt-8 mb-4">Automation</h3>
+              {SECTIONS.filter(s => s.title.includes("Signals")).map((section) => (
+                <a
+                  key={section.title}
+                  href={`#${section.title.toLowerCase().replace(/\s+/g, "-")}`}
+                  className="block px-3 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-muted/5 rounded-md transition-all"
+                >
+                  Signals & Webhooks
                 </a>
               ))}
             </nav>
@@ -129,7 +146,7 @@ export default function DocsPage() {
                   {section.fields.map((field: any) => (
                     <div 
                       key={field.key}
-                      className="group p-5 rounded-lg border border-border bg-panel/50 hover:border-muted/50 transition-all shadow-sm"
+                      className="group p-5 rounded-lg border border-border bg-panel/30 backdrop-blur-md hover:bg-panel/50 hover:border-muted/50 transition-all shadow-sm"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
@@ -189,6 +206,67 @@ export default function DocsPage() {
               </div>
             </motion.section>
 
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-xl border border-border bg-foreground text-panel shadow-2xl overflow-hidden relative group"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 transition-transform group-hover:rotate-0">
+                <Code size={120} />
+              </div>
+              <div className="relative">
+                <h3 className="text-xl font-bold uppercase tracking-tight mb-2">Example: Webhook Signal</h3>
+                <p className="text-panel/60 text-sm mb-6">Automate actions when a threshold is met.</p>
+                <pre className="text-xs font-mono leading-relaxed bg-black/20 p-6 rounded-lg backdrop-blur-sm overflow-x-auto text-panel/90 scrollbar-hide">
+{`{
+  "id": "error-rate",
+  "label": "API Error Rate",
+  "type": "stat",
+  "signals": [
+    {
+      "id": "critical-errors",
+      "label": "Critical Error Spike",
+      "condition": "above",
+      "threshold": 5,
+      "action": ["notify", "webhook"],
+      "enabled": true,
+      "webhook": {
+        "url": "https://hooks.slack.com/services/...",
+        "method": "POST",
+        "body": "{\\"text\\": \\"Critical error spike detected!\\"}"
+      }
+    }
+  ]
+}`}
+                </pre>
+              </div>
+            </motion.section>
+
+            {/* Troubleshooting / Tips */}
+            <motion.section
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              <h2 className="text-xl font-bold text-foreground uppercase tracking-tight flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                Tips & Troubleshooting
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { title: "CORS Awareness", content: "Ensure your Webhook endpoints allow cross-origin requests or use a proxy if testing locally." },
+                  { title: "Rate Limiting", content: "Webhooks follow the widget's refresh interval. Use 'cooldown' to prevent spamming notifications." },
+                  { title: "JSON Schema", content: "Always validate your JSON in the Playground before deploying to avoid engine crashes." }
+                ].map((tip) => (
+                  <div key={tip.title} className="p-4 rounded-lg bg-muted/5 border border-dashed border-border">
+                    <h4 className="text-xs font-bold text-foreground mb-1 uppercase tracking-wider">{tip.title}</h4>
+                    <p className="text-xs text-muted/70 leading-relaxed">{tip.content}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.section>
             {/* Quick Links / Footer */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12">
               <a 

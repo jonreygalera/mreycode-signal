@@ -14,7 +14,7 @@ interface PulseWidgetProps {
     valueLabel?: string;
   };
   accentColor?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   color?: WidgetConfig['color'];
   colorRules?: WidgetConfig['colorRules'];
 }
