@@ -1117,10 +1117,25 @@ function PlaygroundContent() {
               </div>
 
               <div className="flex-1 w-full max-w-6xl mx-auto max-h-[500px] lg:max-h-[700px] bg-neutral-900 rounded-xl border border-border/60 overflow-hidden shadow-2xl relative group mt-4">
+                {/* Background Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] text-foreground transition-opacity duration-700 group-hover:opacity-[0.05]">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-[150%] h-[150%] sm:w-[120%] sm:h-[120%] -rotate-12"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                </div>
                 <iframe 
                   key={iframeUrl}
                   src={iframeUrl}
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 relative z-10"
                 />
               </div>
             </div>

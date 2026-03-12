@@ -54,6 +54,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const { isTVMode, toggleTVMode } = useTVMode();
 
   const { showAlert } = useAlert();
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -901,11 +902,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             {tempWidgets.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px] whitespace-nowrap"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20 rounded-[4px] whitespace-nowrap"
                 title="Remove all widgets from workspace"
               >
                 <Trash2 size={14} />
-                Remove All
+                <span className="hidden sm:inline">Remove All</span>
               </button>
             )}
             
@@ -926,27 +927,42 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             )}
 
             <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 sm:px-4 sm:py-2 rounded-[4px] text-xs font-semibold border transition-all active:scale-95 whitespace-nowrap",
+                isEditMode 
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                  : "bg-foreground/5 hover:bg-foreground/10 text-foreground border-border"
+              )}
+              title={isEditMode ? "Done Editing" : "Edit Layout"}
+            >
+              {isEditMode ? <Check size={14} /> : <Edit2 size={14} />}
+              <span className="hidden sm:inline">{isEditMode ? "Done Editing" : "Edit Layout"}</span>
+            </button>
+
+            <button
               onClick={() => {
                 setWidgetToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center gap-2 bg-foreground/5 hover:bg-foreground/10 text-foreground px-4 py-2 sm:px-4 sm:py-2 rounded-[4px] text-xs font-semibold border border-border transition-all active:scale-95 whitespace-nowrap"
+              title="Add Widget"
             >
               <Plus size={14} />
-              Add Widget
+              <span className="hidden sm:inline">Add Widget</span>
             </button>
 
-            <div className="h-6 w-px bg-border mx-1 hidden lg:block" />
+            <div className="h-4 w-px bg-border mx-1 hidden lg:block" />
 
-            {/* Desktop Export/Import */}
-            <div className="hidden lg:flex items-center gap-2">
+            {/* Export/Import - Now visible on mobile */}
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                  onClick={handleExport}
                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-[4px]"
                  title="Export workspace configuration"
               >
                 <Download size={14} />
-                <span>Export</span>
+                <span className="text-[10px] sm:text-xs">Export</span>
               </button>
 
               <label 
@@ -954,7 +970,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 title="Import workspace configuration"
               >
                 <Upload size={14} />
-                <span>Import</span>
+                <span className="text-[10px] sm:text-xs">Import</span>
                 <input 
                   type="file" 
                   accept=".json" 
@@ -964,54 +980,6 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               </label>
             </div>
 
-            {/* Mobile/Tablet More Menu */}
-            <div className="relative lg:hidden" ref={moreMenuRef}>
-              <button
-                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                className="p-2 text-muted hover:text-foreground transition-colors rounded-md hover:bg-muted/10"
-              >
-                <MoreVertical size={18} />
-              </button>
-
-              <AnimatePresence>
-                {isMoreMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 5, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-md border border-border bg-panel shadow-2xl backdrop-blur-md flex flex-col p-1"
-                  >
-                    <button
-                       onClick={() => {
-                         handleExport();
-                         setIsMoreMenuOpen(false);
-                       }}
-                       className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground transition-all hover:bg-muted/10 rounded-sm text-left w-full"
-                    >
-                      <Download size={14} />
-                      Export
-                    </button>
-
-                    <label 
-                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-muted hover:text-foreground hover:bg-muted/10 cursor-pointer transition-all rounded-sm text-left w-full"
-                    >
-                      <Upload size={14} />
-                      Import
-                      <input 
-                        type="file" 
-                        accept=".json" 
-                        onChange={(e) => {
-                          handleImport(e);
-                          setIsMoreMenuOpen(false);
-                        }} 
-                        className="hidden" 
-                      />
-                    </label>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
         </motion.div>
       ) : (
@@ -1260,10 +1228,11 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
             initial={{ opacity: 0, x: direction * 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -100 }}
-            drag="x"
+            drag={isEditMode ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.05}
             onDragEnd={(_, info) => {
+              if (isEditMode) return;
               const swipeThreshold = 50;
               if (info.offset.x > swipeThreshold) {
                 moveCarousel("prev");
@@ -1281,6 +1250,7 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               onCopy={handleCopyWidget}
               maximizedWidgetId={maximizedWidgetId}
               onMaximizeChange={(id) => handleParamChange("widget", id)}
+              isEditMode={isEditMode}
             />
           </motion.div>
         ) : (

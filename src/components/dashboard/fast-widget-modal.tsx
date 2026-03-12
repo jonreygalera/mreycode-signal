@@ -524,6 +524,8 @@ export function FastWidgetModal({ isOpen, onClose, onSave, existingWidgets, init
                           <option value="md">Medium (2x1)</option>
                           <option value="lg">Large (2x2)</option>
                           <option value="xl">Extra Large (3x2)</option>
+                          <option value="2xl">2X Large (Taller)</option>
+                          <option value="3xl">3X Large (Extra Taller)</option>
                         </select>
                       </div>
                     </div>

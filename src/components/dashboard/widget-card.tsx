@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef, memo } from "react";
 import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ import * as Icons from "lucide-react";
 import { PulseWidget } from "./pulse-widget";
 import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code, Play, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTVMode } from "@/context/tv-mode-context";
@@ -107,7 +109,7 @@ const fetcher = async ({ url, method, headers, body }: any) => {
   return res.json();
 };
 
-export function WidgetCard({ 
+export const WidgetCard = memo(function WidgetCard({ 
   config, 
   index,
   onEdit,
@@ -117,7 +119,10 @@ export function WidgetCard({
   onMaximize,
   allConfigs = [],
   minimal = false,
-  readOnly = false
+  readOnly = false,
+  isEditMode = false,
+  isSelected = false,
+  onSelect
 }: { 
   config: WidgetConfig; 
   index: number;
@@ -129,7 +134,27 @@ export function WidgetCard({
   allConfigs?: WidgetConfig[];
   minimal?: boolean;
   readOnly?: boolean;
+  isEditMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: config.id,
+    disabled: !isEditMode || isMaximizedProp
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   const [internalMaximized, setInternalMaximized] = useState(false);
   const isMaximized = isMaximizedProp !== undefined ? isMaximizedProp : internalMaximized;
   
@@ -443,11 +468,13 @@ export function WidgetCard({
     }
   }, [config.api, config.source]);
 
-  const sizeClasses = {
+  const sizeClasses: Record<string, string> = {
     sm: "flex-grow basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.33%-0.75rem)] min-w-[280px] sm:min-w-[300px] min-h-[200px]",
     md: "flex-grow basis-full md:basis-[calc(50%-0.5rem)] min-w-[280px] md:min-w-[400px] min-h-[250px]",
     lg: "flex-grow basis-full lg:basis-[calc(66.66%-1rem)] min-w-[280px] min-h-[300px]",
     xl: "flex-grow basis-full min-w-[280px] min-h-[400px]",
+    "2xl": "flex-grow basis-full min-w-[280px] min-h-[600px]",
+    "3xl": "flex-grow basis-full min-w-[280px] min-h-[800px]",
   };
 
   const isStat = config.type === "stat" || config.type === "status" || config.type === "clock" || config.type === "pulse";
@@ -472,7 +499,7 @@ export function WidgetCard({
       )}
       {!minimal && (
         <div className={cn("flex flex-row items-start justify-between gap-2 mb-2 pb-2 border-border/40", !isMaximizedView && "border-b")}>
-          <div className="flex flex-col relative">
+          <div className="flex flex-col relative flex-1">
             <div className="flex items-center gap-2">
               {!isMaximizedView ? (
                 <h3 className="font-semibold uppercase tracking-wider text-muted text-xs">
@@ -571,7 +598,10 @@ export function WidgetCard({
           </div>
           <div className="flex items-center gap-1">
             {!readOnly && (
-              <div className="flex items-center gap-1 mr-1 pr-1 border-r border-border/40">
+              <div className={cn(
+                "flex items-center gap-1 mr-1 pr-1 border-r border-border/40 transition-opacity",
+                isEditMode && "opacity-30 pointer-events-none"
+              )}>
                 <button 
                   onClick={() => onEdit?.(config.id)}
                   className="p-1 hover:bg-foreground/5 rounded transition-colors text-muted hover:text-foreground"
@@ -687,8 +717,11 @@ export function WidgetCard({
                 </div>
               </div>
             )}
-            {!isMaximizedView && !readOnly && (
-              <>
+            {!readOnly && (
+              <div className={cn(
+                "flex items-center gap-1 transition-opacity",
+                isEditMode && "opacity-30 pointer-events-none"
+              )}>
                 <button
                   onClick={handleCopyConfig}
                   className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
@@ -703,7 +736,7 @@ export function WidgetCard({
                 >
                   <Maximize2 size={14} />
                 </button>
-              </>
+              </div>
             )}
             {isMaximizedView && (
               <>
@@ -825,7 +858,10 @@ export function WidgetCard({
               <div className="flex-1 w-full h-full min-h-[200px] overflow-hidden rounded-lg bg-black/5">
                 <iframe 
                   src={config.config?.iframeUrl || config.api} 
-                  className="w-full h-full border-none pointer-events-auto"
+                  className={cn(
+                    "w-full h-full border-none",
+                    isEditMode ? "pointer-events-none" : "pointer-events-auto"
+                  )}
                   title={config.label}
                 />
               </div>
@@ -918,22 +954,64 @@ export function WidgetCard({
   return (
     <>
       <motion.div
+        ref={setNodeRef}
+        layout
+        layoutId={config.id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
-        style={accentStyle}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ 
+          duration: 0.3, 
+          delay: index * 0.03, 
+          ease: [0.23, 1, 0.32, 1],
+          layout: { 
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+            mass: 1
+          }
+        }}
+        {...(isEditMode ? { ...attributes, ...listeners } : {})}
+        onClick={(e) => {
+          if (isEditMode) {
+            e.stopPropagation();
+            onSelect?.();
+          }
+        }}
+        style={{ ...accentStyle, ...style }}
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel/70 backdrop-blur-2xl p-4 transition-all duration-500 hover:shadow-xl hover:shadow-foreground/5 hover:-translate-y-0.5 group",
+          "relative flex flex-col overflow-hidden rounded-[4px] border border-border bg-panel/70 backdrop-blur-2xl p-4 transition-all duration-500 hover:shadow-xl hover:shadow-foreground/5 group",
           finalSizeClass,
-          !isStat && "@container"
+          !isStat && "@container",
+          !isEditMode && "hover:-translate-y-0.5",
+          isEditMode && "cursor-grab active:cursor-grabbing",
+          (isEditMode && isSelected) && "ring-2 ring-primary border-primary shadow-2xl shadow-primary/20",
+          isDragging && "z-50 scale-[1.02] opacity-50"
         )}
       >
         {config.accentColor && (
           <div 
-            className="absolute top-0 right-0 w-24 h-24 blur-[60px] opacity-10 pointer-events-none rounded-full"
+            className="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none blur-3xl rounded-full"
             style={{ backgroundColor: config.accentColor }}
           />
         )}
+
+        {/* Background Watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] text-foreground transition-opacity duration-700 group-hover:opacity-[0.05]">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-[150%] h-[150%] sm:w-[120%] sm:h-[120%] -rotate-12"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </div>
+
         {renderContent()}
       </motion.div>
 
@@ -1019,4 +1097,4 @@ export function WidgetCard({
       </AnimatePresence>
     </>
   );
-}
+});

@@ -1,6 +1,6 @@
 import { SignalConfig } from './signal';
 export type WidgetType = 'stat' | 'chart' | 'iframe' | 'list' | 'clock' | 'progress' | 'status' | 'label' | 'pulse';
-export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
+export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 export type ChartType = 'line' | 'bar' | 'area';
 
 export interface BaseWidgetConfig {
