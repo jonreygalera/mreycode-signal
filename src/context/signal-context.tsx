@@ -79,6 +79,45 @@ export function SignalProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
+    // Webhook Logic
+    if (signal.action.includes("webhook") && signal.webhook) {
+      const { url, method, headers, body } = signal.webhook;
+      
+      const processedBody = body 
+        ? body.replace(/{{value}}/g, value.toString())
+              .replace(/{{label}}/g, signal.label)
+              .replace(/{{widget}}/g, widget.label)
+        : JSON.stringify({
+            signal: signal.label,
+            widget: widget.label,
+            value: value,
+            timestamp: now
+          });
+
+      let finalHeaders = {};
+      try {
+        finalHeaders = typeof headers === 'string' ? JSON.parse(headers) : (headers || {});
+      } catch (e) {
+        console.warn('Failed to parse webhook headers:', e);
+      }
+
+      fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...finalHeaders
+        },
+        body: method !== 'GET' ? processedBody : undefined
+      }).catch(err => {
+        console.error('Webhook failed:', err);
+        addSnackbar({
+          title: "Webhook Error",
+          message: `Failed to trigger webhook for ${signal.label}`,
+          duration: 5
+        });
+      });
+    }
+
     // 4. Update the visual state
     setActiveSignals((prev) => {
       if (prev.some((as) => as.widgetId === widget.id && as.signalId === signal.id)) {
