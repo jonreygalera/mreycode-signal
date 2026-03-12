@@ -4,13 +4,15 @@ import { useState, useEffect, useMemo, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   X, Plus, Save, Hash, Terminal, BookOpen, ChevronRight, 
-  ChevronDown, Copy, Check, Search, Type, Layout, Code, Eye, ExternalLink, RefreshCcw
+  ChevronDown, Copy, Check, Search, Type, Layout, Code, Eye, ExternalLink, RefreshCcw, Play
 } from "lucide-react";
 import { WidgetConfig, WidgetType, WidgetSize } from "@/types/widget";
 import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/config/templates";
 import { configToSearchParams, searchParamsToConfig } from "@/lib/widget-url";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { parseCurl } from "@/lib/curl";
 
 function CollapsibleSection({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -24,13 +26,43 @@ function CollapsibleSection({ title, children, defaultOpen = false }: { title: s
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{title}</span>
         <ChevronDown size={14} className={cn("text-muted transition-transform duration-300", isOpen && "rotate-180")} />
       </button>
-      {isOpen && (
-        <div className="p-4 pt-0 space-y-4 border-t border-border/20 animate-in fade-in slide-in-from-top-2 duration-200">
-          {children}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className="p-4 pt-0 space-y-4 border-t border-border/20">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
+}
+
+function cleanWidgetConfig(obj: any, isHeaderValue = false): any {
+  if (Array.isArray(obj)) {
+    const cleaned = obj.map(v => cleanWidgetConfig(v)).filter(v => 
+      v !== null && v !== undefined && v !== "" && (typeof v !== 'object' || Object.keys(v).length > 0)
+    );
+    return cleaned.length > 0 ? cleaned : undefined;
+  } else if (typeof obj === 'object' && obj !== null) {
+    const cleaned: any = {};
+    Object.keys(obj).forEach(key => {
+      if (key === 'isTemp') return;
+      const value = cleanWidgetConfig(obj[key], key === 'headers');
+      const allowEmpty = isHeaderValue;
+      if (value !== null && value !== undefined && (allowEmpty || value !== "") && (typeof value !== 'object' || Object.keys(value).length > 0)) {
+        cleaned[key] = value;
+      }
+    });
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  }
+  return obj;
 }
 
 function PlaygroundContent() {
@@ -58,7 +90,16 @@ function PlaygroundContent() {
   const [showMinimal, setShowMinimal] = useState(() => searchParams.get("minimal") === "true");
   const [templateSearch, setTemplateSearch] = useState("");
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'form' | 'json'>('form');
+  const [configText, setConfigText] = useState(() => JSON.stringify(config, null, 2));
+  const [showCurlModal, setShowCurlModal] = useState(false);
+  const [curlInput, setCurlInput] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [testLogs, setTestLogs] = useState<{msg: string, type: 'info'|'success'|'error'|'warn'}[]>([]);
+  const [testResponse, setTestResponse] = useState<any>(null);
+  
   const templateSearchRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,13 +148,99 @@ function PlaygroundContent() {
   }, [config, showForm, showMinimal]);
 
   const updateConfig = (updates: any) => {
-    setConfig((prev: any) => ({ ...prev, ...updates }));
+    setConfig((prev: any) => {
+      const newConfig = cleanWidgetConfig({ ...prev, ...updates });
+      const finalConfig = newConfig || {};
+      // Update configText if not in JSON tab to keep them in sync
+      if (activeTab !== 'json') {
+        setConfigText(JSON.stringify(finalConfig, null, 2));
+      }
+      return finalConfig;
+    });
   };
 
   const updateNestedConfig = (updates: any) => {
     const currentNested = config.config || {};
     updateConfig({ config: { ...currentNested, ...updates } });
   };
+
+  // Sync configText -> config when in JSON tab
+  useEffect(() => {
+    if (activeTab === 'json') {
+      try {
+        const parsed = JSON.parse(configText);
+        if (typeof parsed === 'object' && parsed !== null) {
+          setConfig(parsed);
+        }
+      } catch (e) {
+        // Ignore invalid JSON while typing
+      }
+    }
+  }, [configText, activeTab]);
+
+  const handleImportCurl = () => {
+    if (!curlInput.trim()) return;
+    const result = parseCurl(curlInput);
+    const updates: any = {};
+    if (result.url) updates.api = result.url;
+    if (result.method) updates.method = result.method;
+    if (Object.keys(result.headers || {}).length > 0) updates.headers = result.headers;
+    if (result.body) updates.body = result.body;
+    
+    updateConfig(updates);
+    setCurlInput("");
+    setShowCurlModal(false);
+  };
+
+  const handleTestApi = async () => {
+    if (!config.api) return;
+    setIsTesting(true);
+    setTestResponse(null);
+    
+    let displayHostname = "remote host";
+    try {
+      displayHostname = new URL(config.api).hostname;
+    } catch (e) {}
+
+    setTestLogs([{ msg: `Initializing request to ${displayHostname}...`, type: 'info' }]);
+    const startTime = Date.now();
+    
+    try {
+      await new Promise(r => setTimeout(r, 600)); // Aesthetic delay
+      setTestLogs(prev => [...prev, { msg: `${config.method || 'GET'} ${config.api}`, type: 'info' }]);
+      
+      const response = await fetch(config.api, {
+        method: config.method || 'GET',
+        headers: config.headers || {},
+        body: config.method === 'POST' ? (typeof config.body === 'object' ? JSON.stringify(config.body) : config.body) : undefined
+      });
+      
+      const duration = Date.now() - startTime;
+      
+      if (response.ok) {
+        setTestLogs(prev => [...prev, { msg: `Response received in ${duration}ms. Status: ${response.status} ${response.statusText}`, type: 'success' }]);
+        const data = await response.json();
+        setTestResponse(data);
+        setTestLogs(prev => [...prev, { msg: `Successfully parsed ${JSON.stringify(data).length} bytes of JSON data.`, type: 'success' }]);
+      } else {
+        setTestLogs(prev => [...prev, { msg: `Request failed with status ${response.status}: ${response.statusText}`, type: 'error' }]);
+        try {
+           const errorData = await response.json();
+           setTestResponse(errorData);
+        } catch(e) {}
+      }
+    } catch (err: any) {
+      setTestLogs(prev => [...prev, { msg: `Network error: ${err.message}`, type: 'error' }]);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [testLogs]);
 
   const iframeUrl = useMemo(() => {
     const params = configToSearchParams(config);
@@ -211,7 +338,51 @@ function PlaygroundContent() {
         {/* Left Pane - Form */}
         {showForm && (
           <aside className="w-full md:w-[400px] lg:w-[450px] border-r border-border/40 flex flex-col shrink-0 bg-panel/30 overflow-hidden animate-in slide-in-from-left duration-300">
+            <div className="p-4 border-b border-border/20 bg-panel/50 backdrop-blur-sm z-10">
+              <div className="flex items-center gap-1 p-1 bg-foreground/5 rounded-lg border border-border/50">
+                {(['form', 'json'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest rounded-md transition-all",
+                      activeTab === tab 
+                        ? "bg-background text-primary shadow-sm border border-border/50" 
+                        : "text-muted hover:text-foreground hover:bg-foreground/5"
+                    )}
+                  >
+                    {tab === 'form' ? <Layout size={12} /> : <Code size={12} />}
+                    {tab === 'form' ? 'Form' : 'JSON'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                {activeTab === 'json' ? (
+                  <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">JSON Editor</label>
+                      <button 
+                        onClick={() => {
+                          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                          const fullUrl = `${origin}${iframeUrl}`;
+                          navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+                        }}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors flex items-center gap-2"
+                      >
+                        <Copy size={12} /> Copy
+                      </button>
+                    </div>
+                    <textarea
+                      value={configText}
+                      onChange={(e) => setConfigText(e.target.value)}
+                      className="w-full h-[calc(100vh-250px)] bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none custom-scrollbar"
+                      placeholder='{ "id": "my-widget", ... }'
+                    />
+                  </div>
+                ) : (
+                  <>
                 {/* Template Selector Autocomplete */}
                 <div className="space-y-1.5 relative border border-border/40 bg-foreground/[0.02] p-4 rounded-lg" ref={templateSearchRef}>
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2 mb-3">
@@ -468,6 +639,24 @@ function PlaygroundContent() {
 
               <CollapsibleSection title="Data Fetching" defaultOpen={!!config.api}>
                 <div className="space-y-4">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleTestApi}
+                      disabled={!config.api || isTesting}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded bg-green-500/10 hover:bg-green-500/20 text-green-500 text-[10px] font-black uppercase tracking-widest transition-all border border-green-500/10 shadow-sm disabled:opacity-50"
+                    >
+                      <Play size={10} fill="currentColor" />
+                      Test API
+                    </button>
+                    <button
+                      onClick={() => setShowCurlModal(true)}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest transition-all border border-primary/10 shadow-sm"
+                    >
+                      <Terminal size={12} />
+                      Import cURL
+                    </button>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">API Endpoint</label>
                     <input
@@ -500,15 +689,105 @@ function PlaygroundContent() {
                       />
                     </div>
                   </div>
+
+                  {config.method === 'POST' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Request Body (JSON)</label>
+                      <textarea
+                        value={typeof config.body === 'object' ? JSON.stringify(config.body, null, 2) : config.body || ""}
+                        onChange={(e) => {
+                          try {
+                            const val = JSON.parse(e.target.value);
+                            updateConfig({ body: val });
+                          } catch {
+                            updateConfig({ body: e.target.value });
+                          }
+                        }}
+                        placeholder='{ "key": "value" }'
+                        className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-[10px] font-mono min-h-[80px] focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Response Path</label>
                     <input
                       type="text"
                       value={config.responsePath || ""}
                       onChange={(e) => updateConfig({ responsePath: e.target.value })}
+                      placeholder="data.count"
                       className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-xs font-mono"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Transformer (JS)</label>
+                    <input
+                      type="text"
+                      value={config.transformer || ""}
+                      onChange={(e) => updateConfig({ transformer: e.target.value })}
+                      placeholder="(v) => v * 10"
+                      className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Test API Terminal Logs */}
+                  {(testLogs.length > 0 || isTesting) && (
+                    <div className="pt-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-muted/60 flex items-center gap-2">
+                            <div className={cn("w-1.5 h-1.5 rounded-full", isTesting ? "bg-green-500 animate-pulse" : "bg-muted/40")} />
+                            Diagnostic Logs
+                         </label>
+                         {(testLogs.length > 0 && !isTesting) && (
+                           <button 
+                             onClick={() => { setTestLogs([]); setTestResponse(null); }}
+                             className="text-[9px] font-bold uppercase tracking-tighter text-muted hover:text-foreground transition-colors"
+                           >
+                              Clear
+                           </button>
+                         )}
+                      </div>
+                      <div 
+                        ref={terminalRef}
+                        className="w-full bg-[#0a0a0b] border border-white/5 rounded-lg p-3 font-mono text-[10px] min-h-[100px] max-h-[180px] overflow-y-auto custom-scrollbar shadow-2xl relative"
+                      >
+                        <div className="space-y-1">
+                          {testLogs.map((log, i) => (
+                            <div key={i} className={cn(
+                              "flex gap-2 leading-relaxed break-all",
+                              log.type === 'error' ? "text-red-400" : 
+                              log.type === 'success' ? "text-green-400" : 
+                              log.type === 'warn' ? "text-amber-400" : "text-zinc-400"
+                            )}>
+                              <span className="opacity-30 shrink-0">[{i+1}]</span>
+                              <span>{log.msg}</span>
+                            </div>
+                          ))}
+                          {isTesting && (
+                            <div className="flex gap-2 text-primary animate-pulse">
+                               <span className="opacity-30 shrink-0">[_]</span>
+                               <span className="flex items-center gap-2">
+                                 Running...
+                                 <RefreshCcw size={10} className="animate-spin" />
+                               </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {testResponse && !isTesting && (
+                         <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-500">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Response Preview</label>
+                            <div className="bg-[#0a0a0b]/40 border border-white/5 rounded-lg p-3 overflow-x-auto custom-scrollbar">
+                               <pre className="text-[9px] font-mono text-zinc-300 leading-relaxed">
+                                  {JSON.stringify(testResponse, null, 2)}
+                               </pre>
+                            </div>
+                         </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CollapsibleSection>
 
@@ -765,6 +1044,28 @@ function PlaygroundContent() {
                       </select>
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Source Name</label>
+                      <input
+                        type="text"
+                        value={config.source || ""}
+                        onChange={(e) => updateConfig({ source: e.target.value })}
+                        placeholder="GitHub, AWS, etc."
+                        className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Source URL</label>
+                      <input
+                        type="text"
+                        value={config.sourceUrl || ""}
+                        onChange={(e) => updateConfig({ sourceUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full bg-background border border-border rounded-[4px] px-3 py-2 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted/60">Description</label>
                     <textarea
@@ -785,6 +1086,8 @@ function PlaygroundContent() {
                   Your changes are automatically synced to the URL. You can share this URL or bookmark it to save your widget design. No data is stored on our servers.
                 </p>
               </div>
+                  </>
+                )}
             </div>
           </aside>
         )}
@@ -845,6 +1148,58 @@ function PlaygroundContent() {
           </div>
         </section>
       </main>
+
+      {/* Curl Modal */}
+      <AnimatePresence>
+        {showCurlModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+              onClick={() => setShowCurlModal(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative bg-panel border border-border rounded-xl shadow-2xl max-w-lg w-full overflow-hidden"
+            >
+              <div className="p-6 border-b border-border/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                    <Terminal size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest">Import cURL</h3>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-wider">Paste command to extract config</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowCurlModal(false)} className="text-muted hover:text-foreground transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <textarea
+                  autoFocus
+                  value={curlInput}
+                  onChange={(e) => setCurlInput(e.target.value)}
+                  placeholder="curl 'https://api.example.com/data' ..."
+                  className="w-full h-40 bg-background border border-border rounded-lg p-4 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none custom-scrollbar"
+                />
+                <button
+                  onClick={handleImportCurl}
+                  disabled={!curlInput.trim()}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-lg text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  Import Configuration
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

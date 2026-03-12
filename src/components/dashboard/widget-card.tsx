@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 import type { WidgetConfig } from "@/types/widget";
 import { getNestedProperty, cn } from "@/lib/utils";
@@ -154,6 +154,33 @@ export function WidgetCard({
   const [isStopped, setIsStopped] = useState(false);
   const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
+  const [showControls, setShowControls] = useState(true);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetIdleTimer = useCallback(() => {
+    setShowControls(true);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 10000);
+  }, []);
+
+  useEffect(() => {
+    if (!isMaximized) {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      setShowControls(true);
+      return;
+    }
+
+    resetIdleTimer();
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
+    events.forEach(event => document.addEventListener(event, resetIdleTimer));
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      events.forEach(event => document.removeEventListener(event, resetIdleTimer));
+    };
+  }, [isMaximized, resetIdleTimer]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -947,7 +974,10 @@ export function WidgetCard({
                       e.stopPropagation();
                       moveCarousel("prev");
                     }}
-                    className="fixed left-6 top-1/2 -translate-y-1/2 z-60 group/nav-prev active:scale-95 transition-all"
+                    className={cn(
+                      "fixed left-6 top-1/2 -translate-y-1/2 z-60 group/nav-prev active:scale-95 transition-all duration-700",
+                      !showControls && "opacity-5"
+                    )}
                     title="Previous (Left Arrow)"
                   >
                     <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-prev:text-primary group-hover/nav-prev:scale-110 group-hover/nav-prev:bg-background/10 transition-all shadow-2xl">
@@ -961,7 +991,10 @@ export function WidgetCard({
                       e.stopPropagation();
                       moveCarousel("next");
                     }}
-                    className="fixed right-6 top-1/2 -translate-y-1/2 z-60 group/nav-next active:scale-95 transition-all"
+                    className={cn(
+                      "fixed right-6 top-1/2 -translate-y-1/2 z-60 group/nav-next active:scale-95 transition-all duration-700",
+                      !showControls && "opacity-5"
+                    )}
                     title="Next (Right Arrow)"
                   >
                     <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-next:text-primary group-hover/nav-next:scale-110 group-hover/nav-next:bg-background/10 transition-all shadow-2xl">
