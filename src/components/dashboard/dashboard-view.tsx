@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -121,7 +121,34 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const [widgetSearch, setWidgetSearch] = useState("");
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  const resetIdleTimer = useCallback(() => {
+    setShowControls(true);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 10000);
+  }, []);
+
+  useEffect(() => {
+    if (!isTVMode) {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      setShowControls(true);
+      return;
+    }
+
+    resetIdleTimer();
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
+    events.forEach(event => document.addEventListener(event, resetIdleTimer));
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      events.forEach(event => document.removeEventListener(event, resetIdleTimer));
+    };
+  }, [isTVMode, resetIdleTimer]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1184,7 +1211,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 e.stopPropagation();
                 moveCarousel("prev");
               }}
-              className="fixed left-8 top-1/2 -translate-y-1/2 z-50 group/nav-prev active:scale-95 transition-all"
+              className={cn(
+                "fixed left-8 top-1/2 -translate-y-1/2 z-50 group/nav-prev active:scale-95 transition-all duration-700",
+                !showControls && "opacity-5"
+              )}
               title="Previous Workspace (Left Arrow)"
             >
               <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-prev:text-primary group-hover/nav-prev:scale-110 group-hover/nav-prev:bg-background/10 transition-all shadow-2xl">
@@ -1198,7 +1228,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
                 e.stopPropagation();
                 moveCarousel("next");
               }}
-              className="fixed right-8 top-1/2 -translate-y-1/2 z-50 group/nav-next active:scale-95 transition-all"
+              className={cn(
+                "fixed right-8 top-1/2 -translate-y-1/2 z-50 group/nav-next active:scale-95 transition-all duration-700",
+                !showControls && "opacity-5"
+              )}
               title="Next Workspace (Right Arrow)"
             >
               <div className="p-4 rounded-full bg-background/5 backdrop-blur-md border border-white/5 text-muted/20 group-hover/nav-next:text-primary group-hover/nav-next:scale-110 group-hover/nav-next:bg-background/10 transition-all shadow-2xl">

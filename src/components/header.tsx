@@ -399,18 +399,7 @@ export function Header() {
                   )
                 ))}
 
-                <button
-                  onClick={() => {
-                    toggleTVMode();
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex items-center gap-4 px-4 py-4 rounded-lg text-foreground hover:bg-muted/10 text-left transition-colors"
-                >
-                  <span className="text-muted">{isTVMode ? <MonitorOff size={18} /> : <Monitor size={18} />}</span>
-                  <span className="text-sm font-semibold uppercase tracking-tight">
-                    {isTVMode ? "Exit TV Mode" : "Enter TV Mode"}
-                  </span>
-                </button>
+
 
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between px-4 py-2">
                    <span className="text-xs font-bold text-muted uppercase tracking-widest">Theme Mode</span>

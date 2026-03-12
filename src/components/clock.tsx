@@ -60,6 +60,12 @@ export function Clock({ timezone: propTimezone, isWidget }: { timezone?: string;
 
   useEffect(() => {
     fetchTime(timezone);
+
+    const interval = setInterval(() => {
+      fetchTime(timezone);
+    }, CLOCK_REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
   }, [timezone, fetchTime]);
 
 

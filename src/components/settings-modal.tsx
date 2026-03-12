@@ -576,7 +576,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </section>
 
               {/* TV Carousel Section */}
-              <section className="space-y-4 pt-1 border-t border-border/50">
+              <section className="space-y-4 pt-1 border-t border-border/50 hidden md:block">
                 <div className="flex items-center gap-2 mb-2">
                   <RotateCcw className="text-primary w-4 h-4" />
                   <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Dashboard Automation</h3>
