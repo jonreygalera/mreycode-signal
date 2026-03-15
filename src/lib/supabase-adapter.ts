@@ -137,7 +137,13 @@ export class SupabaseAdapter implements StorageAdapter {
         history,
         updated_at: new Date().toISOString()
       });
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23503') {
+        console.warn(`Widget ${widgetId} not natively found in Supabase yet. History synced to local storage only.`);
+        return;
+      }
+      throw error;
+    }
     this.markLocalWrite();
   }
 
