@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive, Info, Wifi } from "lucide-react";
+import { X, Globe, Image as ImageIcon, RotateCcw, Save, Trash2, Check, Upload, Search, Type, ChevronDown, Download, LayoutDashboard, Database, Settings as SettingsIcon, AlertCircle, RefreshCcw, HardDrive, Info, Wifi, Bot } from "lucide-react";
 import { useSettings } from "@/context/settings-context";
 import { useAlert } from "@/context/alert-context";
 import { exportFullBackup, importFullBackup, BackupData } from "@/lib/backup-utils";
@@ -11,6 +11,8 @@ import { appConfig } from "@/config/app";
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { cn } from "@/lib/utils";
 import { getStorageUsage } from "@/lib/storage-utils";
+import { ThemeToggle } from "./theme-toggle";
+import { AI_PROVIDERS, AI_MODELS, getDefaultModel, AiProviderId } from "@/config/ai";
 import { SupabaseConnectModal } from "./supabase-connect-modal";
 
 interface SettingsModalProps {
@@ -40,6 +42,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [localConnectivityThresholdGood, setLocalConnectivityThresholdGood] = useState(settings.connectivityThresholdGood);
   const [localConnectivityThresholdAverage, setLocalConnectivityThresholdAverage] = useState(settings.connectivityThresholdAverage);
   const [localConnectivityThresholdSlow, setLocalConnectivityThresholdSlow] = useState(settings.connectivityThresholdSlow);
+  const [localAiProvider, setLocalAiProvider] = useState(settings.aiProvider);
+  const [localAiModel, setLocalAiModel] = useState(settings.aiModel);
+  const [localAiApiKey, setLocalAiApiKey] = useState(settings.aiApiKey);
+  const [localAiCustomUrl, setLocalAiCustomUrl] = useState(settings.aiCustomUrl);
+  const [localAiCustomHeaders, setLocalAiCustomHeaders] = useState(settings.aiCustomHeaders);
+  const [localAiCustomBody, setLocalAiCustomBody] = useState(settings.aiCustomBody);
   const [previewImage, setPreviewImage] = useState<string | null>(settings.backgroundImage);
   const [storageStatus, setStorageStatus] = useState(getStorageUsage());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +98,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalConnectivityThresholdGood(settings.connectivityThresholdGood);
     setLocalConnectivityThresholdAverage(settings.connectivityThresholdAverage);
     setLocalConnectivityThresholdSlow(settings.connectivityThresholdSlow);
+    setLocalAiProvider(settings.aiProvider);
+    setLocalAiModel(settings.aiModel);
+    setLocalAiApiKey(settings.aiApiKey);
+    setLocalAiCustomUrl(settings.aiCustomUrl);
+    setLocalAiCustomHeaders(settings.aiCustomHeaders);
+    setLocalAiCustomBody(settings.aiCustomBody);
     setPreviewImage(settings.backgroundImage);
     setStorageStatus(getStorageUsage());
   }, [settings, isOpen]);
@@ -146,6 +160,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       connectivityThresholdGood: localConnectivityThresholdGood,
       connectivityThresholdAverage: localConnectivityThresholdAverage,
       connectivityThresholdSlow: localConnectivityThresholdSlow,
+      aiProvider: localAiProvider,
+      aiModel: localAiModel,
+      aiApiKey: localAiApiKey,
+      aiCustomUrl: localAiCustomUrl,
+      aiCustomHeaders: localAiCustomHeaders,
+      aiCustomBody: localAiCustomBody,
     });
     onClose();
   };
@@ -180,6 +200,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setLocalConnectivityThresholdGood(DEFAULT_SETTINGS.connectivityThresholdGood);
       setLocalConnectivityThresholdAverage(DEFAULT_SETTINGS.connectivityThresholdAverage);
       setLocalConnectivityThresholdSlow(DEFAULT_SETTINGS.connectivityThresholdSlow);
+      setLocalAiProvider(DEFAULT_SETTINGS.aiProvider);
+      setLocalAiModel(DEFAULT_SETTINGS.aiModel);
+      setLocalAiApiKey(DEFAULT_SETTINGS.aiApiKey);
+      setLocalAiCustomUrl(DEFAULT_SETTINGS.aiCustomUrl);
+      setLocalAiCustomHeaders(DEFAULT_SETTINGS.aiCustomHeaders);
+      setLocalAiCustomBody(DEFAULT_SETTINGS.aiCustomBody);
       setPreviewImage(DEFAULT_SETTINGS.backgroundImage);
     }
   };
@@ -1013,6 +1039,107 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <p className="text-[10px] text-muted mt-1 ml-7">
                           When checked, the atmospheric background will be visible during full-screen clock mode.
                         </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* AI Integration Section */}
+              <section className="space-y-4 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Bot className="text-primary w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted">AI Integration</h3>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-foreground/80 block mb-1">AI Analyzer Configuration</label>
+                  <p className="text-xs text-muted leading-relaxed mb-4">
+                    Select your preferred AI provider and model to perform workspace analysis.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5 flex flex-col h-full">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted">Provider</label>
+                        <select
+                          value={localAiProvider}
+                          onChange={(e) => {
+                            const newProvider = e.target.value as AiProviderId;
+                            setLocalAiProvider(newProvider);
+                            setLocalAiModel(getDefaultModel(newProvider));
+                          }}
+                          className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold uppercase tracking-wider"
+                        >
+                          {AI_PROVIDERS.map(provider => (
+                            <option key={provider.id} value={provider.id}>{provider.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5 flex flex-col h-full">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted">Model</label>
+                         <select
+                          value={localAiModel}
+                          onChange={(e) => setLocalAiModel(e.target.value)}
+                          className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                          disabled={localAiProvider === 'custom'}
+                        >
+                          {AI_MODELS[localAiProvider as AiProviderId]?.map((model: { id: string, name: string }) => (
+                            <option key={model.id} value={model.id}>{model.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {localAiProvider !== 'custom' ? (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted">API Key</label>
+                        <input
+                          type="password"
+                          value={localAiApiKey}
+                          onChange={(e) => setLocalAiApiKey(e.target.value)}
+                          placeholder={localAiProvider === 'gemini' ? "AIza..." : "sk-..."}
+                          className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-4 pt-2 border-t border-border/40">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted">Custom Endpoint URL</label>
+                          <input
+                            type="url"
+                            value={localAiCustomUrl}
+                            onChange={(e) => setLocalAiCustomUrl(e.target.value)}
+                            placeholder="https://api.my-custom-ai.com/v1/chat/completions"
+                            className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5 flex flex-col h-full">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted">Headers (JSON)</label>
+                            <textarea
+                              value={localAiCustomHeaders}
+                              onChange={(e) => setLocalAiCustomHeaders(e.target.value)}
+                              placeholder='{"Authorization": "Bearer KEY", "Content-Type": "application/json"}'
+                              className="w-full flex-1 min-h-[120px] bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                            />
+                          </div>
+                          <div className="space-y-1.5 flex flex-col h-full">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted">Body Template (JSON)</label>
+                             <textarea
+                              value={localAiCustomBody}
+                              onChange={(e) => setLocalAiCustomBody(e.target.value)}
+                              placeholder='{"messages": [{"role": "system", "content": "__SYSTEM_PROMPT__"}, {"role": "user", "content": "__CONTENT__"}]}'
+                              className="w-full flex-1 min-h-[120px] bg-background border border-border rounded-lg px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex bg-blue-500/5 text-blue-500/80 border border-blue-500/10 rounded-md p-3 items-start gap-3 mt-2">
+                           <Info size={14} className="shrink-0 mt-0.5" />
+                           <div className="text-[10px] leading-relaxed">
+                             <strong className="block mb-1 text-blue-500 font-bold uppercase tracking-wider">Variables</strong>
+                             Use <code>__SYSTEM_PROMPT__</code> and <code>__CONTENT__</code> in your template body for dynamic injection.
+                           </div>
+                        </div>
                       </div>
                     )}
                   </div>

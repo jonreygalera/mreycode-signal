@@ -14,6 +14,10 @@ export interface StorageAdapter {
   saveWidget(config: WidgetConfig, afterId: string | null, workspaceId: string | null): Promise<void>;
   deleteWidget(id: string, workspaceId: string | null): Promise<void>;
 
+  // History
+  getWidgetHistory(widgetId: string): Promise<{date: string, value: any}[]>;
+  saveWidgetHistory(widgetId: string, history: {date: string, value: any}[]): Promise<void>;
+
   // Settings
   getSettings(): Promise<Partial<AppSettings>>;
   saveSettings(settings: Partial<AppSettings>): Promise<void>;
@@ -73,6 +77,17 @@ export class LocalStorageAdapter implements StorageAdapter {
     const current = await this.getWidgets(workspaceId);
     const updated = current.filter(w => w.config.id !== id);
     localStorage.setItem(this.getStorageKey(workspaceId), JSON.stringify(updated));
+  }
+
+  async getWidgetHistory(widgetId: string): Promise<{date: string, value: any}[]> {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem(`signal-widget-history-${widgetId}`);
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  async saveWidgetHistory(widgetId: string, history: {date: string, value: any}[]): Promise<void> {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(`signal-widget-history-${widgetId}`, JSON.stringify(history));
   }
 
   async getSettings(): Promise<Partial<AppSettings>> {

@@ -24,6 +24,12 @@ export interface AppSettings {
   connectivityThresholdGood: number;
   connectivityThresholdAverage: number;
   connectivityThresholdSlow: number;
+  aiProvider: 'openai' | 'gemini' | 'custom';
+  aiModel: string;
+  aiApiKey: string;
+  aiCustomUrl: string;
+  aiCustomHeaders: string;
+  aiCustomBody: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -52,5 +58,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   connectivityThresholdGood: 50,
   connectivityThresholdAverage: 100,
   connectivityThresholdSlow: 150,
+  aiProvider: 'openai',
+  aiModel: 'gpt-4o',
+  aiApiKey: '',
+  aiCustomUrl: 'https://any-url.com/api/v1/generate',
+  aiCustomHeaders: '{\n  "Authorization": "Bearer YOUR_CUSTOM_KEY",\n  "Content-Type": "application/json"\n}',
+  aiCustomBody: '{\n  "messages": [\n    {"role": "system", "content": "__SYSTEM_PROMPT__"},\n    {"role": "user", "content": "__CONTENT__"}\n  ]\n}',
 };
 
