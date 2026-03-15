@@ -100,7 +100,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setLocalConnectivityThresholdSlow(settings.connectivityThresholdSlow);
     setLocalAiProvider(settings.aiProvider);
     setLocalAiModel(settings.aiModel);
-    setLocalAiApiKey(settings.aiApiKey);
+    try {
+      setLocalAiApiKey(settings.aiApiKey ? atob(settings.aiApiKey) : '');
+    } catch {
+      setLocalAiApiKey(settings.aiApiKey);
+    }
     setLocalAiCustomUrl(settings.aiCustomUrl);
     setLocalAiCustomHeaders(settings.aiCustomHeaders);
     setLocalAiCustomBody(settings.aiCustomBody);
@@ -162,7 +166,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       connectivityThresholdSlow: localConnectivityThresholdSlow,
       aiProvider: localAiProvider,
       aiModel: localAiModel,
-      aiApiKey: localAiApiKey,
+      aiApiKey: localAiApiKey ? btoa(localAiApiKey) : '',
       aiCustomUrl: localAiCustomUrl,
       aiCustomHeaders: localAiCustomHeaders,
       aiCustomBody: localAiCustomBody,
