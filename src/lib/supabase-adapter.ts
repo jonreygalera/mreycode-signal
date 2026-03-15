@@ -119,26 +119,54 @@ export class SupabaseAdapter implements StorageAdapter {
   }
 
   async getWidgetHistory(widgetId: string): Promise<{date: string, value: any}[]> {
-    const { data, error } = await this.client
-      .from('widget_data_history')
-      .select('history')
-      .eq('widget_id', widgetId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') throw error;
-    return data?.history || [];
+    try {
+      const { data, error } = await this.client
+        .from('widget_data_history')
+        .select('history')
+        .eq('widget_id', widgetId)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') return []; // Not found
+        if (error.code === '42P01') {
+          console.warn(`Supabase: table 'widget_data_history' not found. Falling back to local history.`);
+          return [];
+        }
+        throw error;
+      }
+      return data?.history || [];
+    } catch (e: any) {
+      if (e.code === '42P01') return [];
+      console.error("Failed to fetch widget history", e);
+      return [];
+    }
   }
 
   async saveWidgetHistory(widgetId: string, history: {date: string, value: any}[]): Promise<void> {
-    const { error } = await this.client
-      .from('widget_data_history')
-      .upsert({
-        widget_id: widgetId,
-        history,
-        updated_at: new Date().toISOString()
-      });
-    if (error) throw error;
-    this.markLocalWrite();
+    try {
+      const { error } = await this.client
+        .from('widget_data_history')
+        .upsert({
+          widget_id: widgetId,
+          history,
+          updated_at: new Date().toISOString()
+        });
+      if (error) {
+        if (error.code === '23503') {
+          console.warn(`Widget ${widgetId} not natively found in Supabase yet. History synced to local storage only.`);
+          return;
+        }
+        if (error.code === '42P01') {
+          console.warn(`Supabase: table 'widget_data_history' not found. History synced to local storage only.`);
+          return;
+        }
+        throw error;
+      }
+      this.markLocalWrite();
+    } catch (e: any) {
+      if (e.code === '42P01') return;
+      console.error("Failed to save widget history", e);
+    }
   }
 
   async getSettings(): Promise<Partial<AppSettings>> {

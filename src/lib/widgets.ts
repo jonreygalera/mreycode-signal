@@ -149,7 +149,11 @@ export const deleteTempWidget = async (id: string, workspaceId?: string | null, 
     const history = getHistoryWidgets(workspaceId);
     if (!history.find(w => w.config.id === id)) {
       const updatedHistory = [widgetToDelete, ...history];
-      localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+      try {
+        localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+      } catch (e) {
+        console.warn("Could not save to history (quota exceeded)", e);
+      }
     }
   }
 };
@@ -162,7 +166,11 @@ export const restoreWidgetFromHistory = async (id: string, workspaceId?: string 
 
   // Remove from history (LocalStorage)
   const updatedHistory = history.filter(w => w.config.id !== id);
-  localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+  try {
+    localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+  } catch (e) {
+    console.warn("Could not update history (quota exceeded)", e);
+  }
 
   // Add back to active storage (Supabase/Local)
   await saveTempWidget(widgetToRestore.config, widgetToRestore.afterId, workspaceId);
@@ -171,7 +179,11 @@ export const restoreWidgetFromHistory = async (id: string, workspaceId?: string 
 export const permadeleteFromHistory = (id: string, workspaceId?: string | null) => {
   const history = getHistoryWidgets(workspaceId);
   const updatedHistory = history.filter(w => w.config.id !== id);
-  localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+  try {
+    localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(updatedHistory));
+  } catch (e) {
+    console.warn("Could not update history (quota exceeded)", e);
+  }
 };
 
 export const restoreAllHistory = async (workspaceId?: string | null) => {

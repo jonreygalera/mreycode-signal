@@ -136,8 +136,16 @@ export function AiAnalyzerModal({ isOpen, onClose, workspaceId, widgets }: AiAna
       let headersConfig: Record<string, string> = { "Content-Type": "application/json" };
       let bodyConfig: Record<string, unknown> = {};
 
+      const resolveApiKey = () => {
+        try {
+          return settings.aiApiKey ? atob(settings.aiApiKey) : '';
+        } catch {
+          return settings.aiApiKey;
+        }
+      };
+
       if (settings.aiProvider === 'openai') {
-        headersConfig["Authorization"] = `Bearer ${settings.aiApiKey}`;
+        headersConfig["Authorization"] = `Bearer ${resolveApiKey()}`;
         bodyConfig = {
           model: settings.aiModel,
           messages: [
@@ -146,7 +154,7 @@ export function AiAnalyzerModal({ isOpen, onClose, workspaceId, widgets }: AiAna
           ]
         };
       } else if (settings.aiProvider === 'gemini') {
-        apiUrl = `${apiUrl}/${settings.aiModel}:generateContent?key=${settings.aiApiKey}`;
+        apiUrl = `${apiUrl}/${settings.aiModel}:generateContent?key=${resolveApiKey()}`;
         bodyConfig = {
           systemInstruction: {
             parts: [{ text: systemPrompt }]

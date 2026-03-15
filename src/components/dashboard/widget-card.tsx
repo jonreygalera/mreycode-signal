@@ -368,7 +368,11 @@ export const WidgetCard = memo(function WidgetCard({
       if (remoteHistory && remoteHistory.length > 0 && mounted) {
         setHistoryLogs(remoteHistory);
         // Sync back local cache
-        localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(remoteHistory));
+        try {
+          localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(remoteHistory));
+        } catch (e) {
+          console.warn("Could not save history to local storage (quota exceeded)", e);
+        }
       }
     };
 
@@ -380,35 +384,36 @@ export const WidgetCard = memo(function WidgetCard({
   useEffect(() => {
     if (parsedData === null || ['iframe', 'clock'].includes(config.type)) return;
     
-    setHistoryLogs(prev => {
-      const mostRecent = prev.length > 0 ? prev[0] : null;
+    const mostRecent = historyLogs.length > 0 ? historyLogs[0] : null;
+    
+    let isDifferent = false;
+    if (mostRecent === null) {
+      isDifferent = true;
+    } else if (typeof parsedData === 'object' && parsedData !== null) {
+      isDifferent = JSON.stringify(mostRecent.value) !== JSON.stringify(parsedData);
+    } else {
+      isDifferent = String(mostRecent.value) !== String(parsedData);
+    }
+    
+    if (isDifferent) {
+      const newLog = { date: new Date().toISOString(), value: parsedData };
+      const newHistory = [newLog, ...historyLogs].slice(0, 5); // Keep max 5 items
       
-      let isDifferent = false;
-      if (mostRecent === null) {
-        isDifferent = true;
-      } else if (typeof parsedData === 'object' && parsedData !== null) {
-        isDifferent = JSON.stringify(mostRecent.value) !== JSON.stringify(parsedData);
-      } else {
-        isDifferent = String(mostRecent.value) !== String(parsedData);
-      }
+      setHistoryLogs(newHistory);
       
-      if (isDifferent) {
-        const newLog = { date: new Date().toISOString(), value: parsedData };
-        const newHistory = [newLog, ...prev].slice(0, 5); // Keep max 5 items
-        
-        // Save to fast local cache
-        if (typeof window !== 'undefined') {
+      // Save to fast local cache
+      if (typeof window !== 'undefined') {
+        try {
           localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(newHistory));
+        } catch (e) {
+          console.warn("Could not save history to local storage (quota exceeded)", e);
         }
-        
-        // Save to remote/adapter asynchronously
-        saveWidgetHistoryLogs(config.id, newHistory).catch(console.error);
-
-        return newHistory;
       }
-      return prev;
-    });
-  }, [parsedData, config.id, config.type]);
+      
+      // Save to remote/adapter asynchronously
+      saveWidgetHistoryLogs(config.id, newHistory).catch(console.error);
+    }
+  }, [parsedData, config.id, config.type, historyLogs]);
 
   // Signal Triggering Logic
   const prevDataValue = useMemo(() => {
