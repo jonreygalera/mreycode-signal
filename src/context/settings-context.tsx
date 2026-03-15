@@ -245,6 +245,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           supabaseRealtimeEnabled: settings.supabaseRealtimeEnabled,
           maxWorkspaces: settings.maxWorkspaces,
           maxWidgetsPerWorkspace: settings.maxWidgetsPerWorkspace,
+          aiProvider: settings.aiProvider,
+          aiModel: settings.aiModel,
+          aiApiKey: settings.aiApiKey,
+          aiCustomUrl: settings.aiCustomUrl,
+          aiCustomHeaders: settings.aiCustomHeaders,
+          aiCustomBody: settings.aiCustomBody,
         };
 
         // Non-blocking save

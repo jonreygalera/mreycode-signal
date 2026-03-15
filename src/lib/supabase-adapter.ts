@@ -118,6 +118,29 @@ export class SupabaseAdapter implements StorageAdapter {
     this.markLocalWrite();
   }
 
+  async getWidgetHistory(widgetId: string): Promise<{date: string, value: any}[]> {
+    const { data, error } = await this.client
+      .from('widget_data_history')
+      .select('history')
+      .eq('widget_id', widgetId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.history || [];
+  }
+
+  async saveWidgetHistory(widgetId: string, history: {date: string, value: any}[]): Promise<void> {
+    const { error } = await this.client
+      .from('widget_data_history')
+      .upsert({
+        widget_id: widgetId,
+        history,
+        updated_at: new Date().toISOString()
+      });
+    if (error) throw error;
+    this.markLocalWrite();
+  }
+
   async getSettings(): Promise<Partial<AppSettings>> {
     const { data, error } = await this.client
       .from('app_settings')
@@ -178,6 +201,15 @@ export class SupabaseAdapter implements StorageAdapter {
         (payload: any) => {
           if (this.isLocalWrite()) return;
           console.log("Supabase: Settings change detected", payload);
+          callback();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'widget_data_history' },
+        (payload: any) => {
+          if (this.isLocalWrite()) return;
+          console.log("Supabase: History change detected", payload);
           callback();
         }
       )

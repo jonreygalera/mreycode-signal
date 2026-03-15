@@ -14,6 +14,7 @@ import { appConfig } from "@/config/app";
 import { TEMPLATES } from "@/config/templates";
 import { HistoryModal } from "./history-modal";
 import { WorkspaceModal } from "./workspace-modal";
+import { AiAnalyzerModal } from "./ai-analyzer-modal";
 import { 
   getTempWidgets, 
   getTempWidgetsAsync,
@@ -38,7 +39,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   FolderPlus, Copy, Edit2, Trash2, Plus, MonitorOff, Archive, 
-  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database, MoreVertical, Play, Square
+  ExternalLink, X as CloseIcon, Download, Upload, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Check, LayoutDashboard, Search, Database, MoreVertical, Play, Square, Bot, Wand2
 } from "lucide-react";
 import { Clock } from "../clock";
 import { ThemeToggle } from "../theme-toggle";
@@ -122,6 +123,8 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
   const [widgetSearch, setWidgetSearch] = useState("");
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isAiAnalyzerOpen, setIsAiAnalyzerOpen] = useState(false);
+  const [aiTargetWidget, setAiTargetWidget] = useState<WidgetConfig | null>(null);
   const [showControls, setShowControls] = useState(true);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
@@ -736,7 +739,23 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               </button>
 
               {/* Widget Search Field - Mac Spotlight Style */}
-              <div className="flex w-full sm:w-64 ml-0 sm:ml-4">
+              <div className="flex w-full sm:w-64 ml-0 sm:ml-4 gap-2">
+                  <button
+                    onClick={() => {
+                      setAiTargetWidget(null);
+                      setIsAiAnalyzerOpen(true);
+                    }}
+                    className="flex items-center justify-center p-2 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all shadow-lg hover:shadow-primary/20 relative group"
+                    title="AI Workspace Analyzer"
+                  >
+                    <Bot size={16} className="group-hover:scale-110 transition-transform" />
+                    {new Date() < new Date('2026-05-10') && (
+                      <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-blue-500 text-white text-[7px] font-black uppercase rounded-[2px] leading-none shadow-[0_2px_4px_rgba(59,130,246,0.4)] animate-pulse pointer-events-none">
+                        New
+                      </span>
+                    )}
+                    <div className="absolute inset-0 rounded-md border border-primary/0 group-hover:border-primary/50 group-active:scale-95 transition-all" />
+                  </button>
                 <button
                   onClick={() => setIsSearchModalOpen(true)}
                   className={cn(
@@ -1248,6 +1267,10 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
               onEdit={handleEditWidget}
               onDelete={handleDeleteWidget}
               onCopy={handleCopyWidget}
+              onAnalyze={(widget) => {
+                setAiTargetWidget(widget);
+                setIsAiAnalyzerOpen(true);
+              }}
               maximizedWidgetId={maximizedWidgetId}
               onMaximizeChange={(id) => handleParamChange("widget", id)}
               isEditMode={isEditMode}
@@ -1435,6 +1458,17 @@ export function DashboardView({ configs: baseConfigs }: { configs: WidgetConfig[
           </div>
         )}
       </AnimatePresence>
+
+      <AiAnalyzerModal
+        isOpen={isAiAnalyzerOpen}
+        onClose={() => {
+          setIsAiAnalyzerOpen(false);
+          // Small delay to allow fade out before resetting
+          setTimeout(() => setAiTargetWidget(null), 300);
+        }}
+        workspaceId={workspaceId}
+        widgets={aiTargetWidget ? [aiTargetWidget] : filteredWidgets}
+      />
     </div>
   );
 }

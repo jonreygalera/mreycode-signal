@@ -50,6 +50,13 @@ CREATE TABLE IF NOT EXISTS app_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Widget History
+CREATE TABLE IF NOT EXISTS widget_data_history (
+  widget_id TEXT PRIMARY KEY REFERENCES widgets(id) ON DELETE CASCADE,
+  history JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_widgets_workspace_id ON widgets(workspace_id);
 
@@ -57,11 +64,10 @@ CREATE INDEX IF NOT EXISTS idx_widgets_workspace_id ON widgets(workspace_id);
 -- Run this to allow the "Realtime Pulse" feature to sync changes instantly!
 begin;
   -- remove tables from publication if they exist
-  alter publication supabase_realtime drop table if exists workspaces, widgets, app_settings;
+  alter publication supabase_realtime drop table if exists workspaces, widgets, app_settings, widget_data_history;
   -- add tables to publication
-  alter publication supabase_realtime add table workspaces, widgets, app_settings;
+  alter publication supabase_realtime add table workspaces, widgets, app_settings, widget_data_history;
 commit;`;
-
   const copySql = () => {
     navigator.clipboard.writeText(sqlQuery);
     setCopied(true);

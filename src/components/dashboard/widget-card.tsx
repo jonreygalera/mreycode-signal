@@ -9,7 +9,7 @@ import { LabelWidget } from "./label-widget";
 import { WidgetAreaChart, WidgetBarChart, WidgetLineChart } from "./charts";
 import * as Icons from "lucide-react";
 import { PulseWidget } from "./pulse-widget";
-import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code, Play, Square } from "lucide-react";
+import { Loader2, Maximize2, ExternalLink, X, Zap, Trash2, Copy, Check, ArrowLeft, ArrowRight, ChevronDown, Search, MoreVertical, PlayCircle, Code, Play, Square, Bot, History } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -21,6 +21,7 @@ import { configToSearchParams } from "@/lib/widget-url";
 import { useConnectivity } from "@/context/connectivity-context";
 import { useSignals } from "@/context/signal-context";
 import { useAlert } from "@/context/alert-context";
+import { getWidgetHistoryLogs, saveWidgetHistoryLogs } from "@/lib/widgets";
 import { Clock as ClockIcon } from "../clock";
 
 // Helper for Analog Clock
@@ -115,6 +116,7 @@ export const WidgetCard = memo(function WidgetCard({
   onEdit,
   onDelete,
   onCopy,
+  onAnalyze,
   isMaximized: isMaximizedProp,
   onMaximize,
   allConfigs = [],
@@ -129,6 +131,7 @@ export const WidgetCard = memo(function WidgetCard({
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onCopy?: (config: WidgetConfig) => void;
+  onAnalyze?: (config: WidgetConfig) => void;
   isMaximized?: boolean;
   onMaximize?: (maximized: boolean | string) => void;
   allConfigs?: WidgetConfig[];
@@ -181,6 +184,9 @@ export const WidgetCard = memo(function WidgetCard({
   const optionsMenuRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<{ date: string; value: any }[]>([]);
 
   const resetIdleTimer = useCallback(() => {
     setShowControls(true);
@@ -339,6 +345,70 @@ export const WidgetCard = memo(function WidgetCard({
 
     return value;
   }, [data, config.responsePath, config.type, config.transformer]);
+
+  // History Tracking Logic
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadHistory = async () => {
+      // 1. Fast load from local storage cache
+      if (typeof window !== 'undefined') {
+        const savedHistory = localStorage.getItem(`signal-widget-history-${config.id}`);
+        if (savedHistory) {
+          try {
+            if (mounted) setHistoryLogs(JSON.parse(savedHistory));
+          } catch (e) {
+            console.error("Failed to parse widget history", e);
+          }
+        }
+      }
+
+      // 2. Async fetch from Supabase/Adapter to ensure sync across devices
+      const remoteHistory = await getWidgetHistoryLogs(config.id);
+      if (remoteHistory && remoteHistory.length > 0 && mounted) {
+        setHistoryLogs(remoteHistory);
+        // Sync back local cache
+        localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(remoteHistory));
+      }
+    };
+
+    loadHistory();
+    
+    return () => { mounted = false; };
+  }, [config.id]);
+
+  useEffect(() => {
+    if (parsedData === null || ['iframe', 'clock'].includes(config.type)) return;
+    
+    setHistoryLogs(prev => {
+      const mostRecent = prev.length > 0 ? prev[0] : null;
+      
+      let isDifferent = false;
+      if (mostRecent === null) {
+        isDifferent = true;
+      } else if (typeof parsedData === 'object' && parsedData !== null) {
+        isDifferent = JSON.stringify(mostRecent.value) !== JSON.stringify(parsedData);
+      } else {
+        isDifferent = String(mostRecent.value) !== String(parsedData);
+      }
+      
+      if (isDifferent) {
+        const newLog = { date: new Date().toISOString(), value: parsedData };
+        const newHistory = [newLog, ...prev].slice(0, 5); // Keep max 5 items
+        
+        // Save to fast local cache
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(newHistory));
+        }
+        
+        // Save to remote/adapter asynchronously
+        saveWidgetHistoryLogs(config.id, newHistory).catch(console.error);
+
+        return newHistory;
+      }
+      return prev;
+    });
+  }, [parsedData, config.id, config.type]);
 
   // Signal Triggering Logic
   const prevDataValue = useMemo(() => {
@@ -643,6 +713,17 @@ export const WidgetCard = memo(function WidgetCard({
                         <div className="h-px w-full bg-border/50 my-1" />
                         <button
                           onClick={() => {
+                            setShowHistory(!showHistory);
+                            setIsOptionsMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted hover:text-primary transition-all hover:bg-muted/10 rounded-sm text-left w-full group"
+                        >
+                          <History size={14} className="group-hover:text-primary transition-colors" />
+                          <span>{showHistory ? "Hide History" : "View History"}</span>
+                        </button>
+                        <div className="h-px w-full bg-border/50 my-1" />
+                        <button
+                          onClick={() => {
                             onDelete?.(config.id);
                             setIsOptionsMenuOpen(false);
                           }}
@@ -723,6 +804,18 @@ export const WidgetCard = memo(function WidgetCard({
                 isEditMode && "opacity-30 pointer-events-none"
               )}>
                 <button
+                  onClick={() => onAnalyze?.(config)}
+                  className="p-1 hover:bg-muted/20 hover:text-primary rounded transition-colors text-muted relative group/ai"
+                  title="Run AI Analysis"
+                >
+                  <Bot size={14} />
+                  {new Date() < new Date('2026-05-10') && (
+                    <span className="absolute -top-1 -right-1 px-0.5 py-0.25 bg-blue-500 text-white text-[5px] font-black uppercase rounded-[1px] leading-none shadow-[0_1px_2px_rgba(59,130,246,0.4)] animate-pulse pointer-events-none group-hover/ai:scale-110 transition-transform">
+                      New
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={handleCopyConfig}
                   className="p-1 hover:bg-muted/20 rounded transition-colors text-muted hover:text-foreground"
                   title="Copy widget config"
@@ -767,6 +860,38 @@ export const WidgetCard = memo(function WidgetCard({
       )}
 
       <div className={cn("flex flex-1 items-center justify-center w-full min-h-0 relative", isMaximizedView ? "mt-4" : "mt-2")}>
+        {showHistory && (
+          <div className="absolute inset-0 z-20 flex flex-col bg-panel/95 backdrop-blur-xl rounded-lg border border-border/50 p-3 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-3 border-b border-border/30 pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <History size={12} className="text-primary" /> History Logs
+              </span>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="p-1 hover:bg-foreground/10 rounded-md transition-colors"
+                title="Close History"
+              >
+                <X size={14} className="text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {historyLogs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-xs text-muted/50 font-medium pb-4">No history available</div>
+              ) : (
+                historyLogs.map((log, i) => (
+                  <div key={i} className="flex flex-col gap-1 p-2 rounded-md bg-muted/5 border border-border/20">
+                    <span className="text-[9px] font-mono font-bold text-muted/70 uppercase tracking-widest">
+                      {new Date(log.date).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium' })}
+                    </span>
+                    <div className="text-xs font-semibold text-foreground truncate max-w-full">
+                      {typeof log.value === 'object' ? JSON.stringify(log.value) : String(log.value)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
         {isLoading && (
           <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -954,6 +1079,7 @@ export const WidgetCard = memo(function WidgetCard({
   return (
     <>
       <motion.div
+        id={`widget-${config.id}`}
         ref={setNodeRef}
         layout
         layoutId={config.id}

@@ -182,6 +182,23 @@ export const restoreAllHistory = async (workspaceId?: string | null) => {
   localStorage.removeItem(getHistoryKey(workspaceId));
 };
 
+export const getWidgetHistoryLogs = async (widgetId: string) => {
+  try {
+    return await currentAdapter.getWidgetHistory(widgetId);
+  } catch (e) {
+    console.error("Failed to fetch widget history logs from adapter", e);
+    return [];
+  }
+};
+
+export const saveWidgetHistoryLogs = async (widgetId: string, historyLogs: {date: string, value: any}[]) => {
+  try {
+    await currentAdapter.saveWidgetHistory(widgetId, historyLogs);
+  } catch (e) {
+    console.error("Failed to save widget history logs to adapter", e);
+  }
+};
+
 export const clearHistory = (workspaceId?: string | null) => {
   localStorage.removeItem(getHistoryKey(workspaceId));
 };

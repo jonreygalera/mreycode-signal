@@ -4,5 +4,5 @@ export const SECURITY_CONFIG = {
   secretSequence: "123456789",
   
   // Flag to enable/disable security features globally
-  enabled: true,
+  enabled: false,
 };

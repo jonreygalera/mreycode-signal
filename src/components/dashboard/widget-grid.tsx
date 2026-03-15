@@ -28,6 +28,7 @@ export function WidgetGrid({
   onEdit, 
   onDelete,
   onCopy,
+  onAnalyze,
   maximizedWidgetId,
   onMaximizeChange,
   isEditMode = false
@@ -36,6 +37,7 @@ export function WidgetGrid({
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onCopy?: (config: WidgetConfig) => void;
+  onAnalyze?: (config: WidgetConfig) => void;
   maximizedWidgetId?: string | null;
   onMaximizeChange?: (id: string | null) => void;
   isEditMode?: boolean;
@@ -148,6 +150,7 @@ export function WidgetGrid({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onCopy={onCopy}
+                onAnalyze={onAnalyze}
                 isMaximized={config.id === maximizedWidgetId}
                 onMaximize={(max) => onMaximizeChange?.(typeof max === 'string' ? max : (max ? config.id : null))}
                 isEditMode={isEditMode}
