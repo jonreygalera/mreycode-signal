@@ -81,14 +81,19 @@ commit;`;
       const client = getSupabaseClient(url, key);
       if (!client) throw new Error("Failed to initialize client");
 
-      // Test connection by trying to fetch settings
-      const { data: settingsData, error: connError } = await client.from('app_settings').select('id').limit(1);
-      
-      if (connError) {
-        if (connError.code === '42P01') {
-          throw new Error("Tables not found. Please run the SQL query in Supabase first.");
+      // Test connection by trying to fetch from ALL required tables
+      const requiredTables = ['app_settings', 'workspaces', 'widgets', 'widget_data_history'];
+      const missingTables = [];
+
+      for (const table of requiredTables) {
+        const { error: tableError } = await client.from(table).select('count', { count: 'estimated', head: true });
+        if (tableError && tableError.code === '42P01') {
+          missingTables.push(table);
         }
-        throw new Error(connError.message);
+      }
+      
+      if (missingTables.length > 0) {
+        throw new Error(`The following tables are missing: ${missingTables.join(', ')}. Please run the SQL query in Supabase first.`);
       }
 
       // CHECK FOR EXISTING WORKSPACE DATA
@@ -108,48 +113,53 @@ commit;`;
   };
 
   const finalizeConnection = async (mode: 'pull' | 'sync' | 'scratch') => {
-    const supabaseConfig = {
-      url: encodeCredential(url),
-      key: encodeCredential(key),
-      isConfigured: true
-    };
+    try {
+      const supabaseConfig = {
+        url: encodeCredential(url),
+        key: encodeCredential(key),
+        isConfigured: true
+      };
 
-    // Temporarily set adapter to perform migration actions
-    const supabaseAdapter = new SupabaseAdapter();
-    const localAdapter = new LocalStorageAdapter();
+      // Temporarily set adapter to perform migration actions
+      const supabaseAdapter = new SupabaseAdapter();
+      const localAdapter = new LocalStorageAdapter();
 
-    if (mode === 'sync') {
-      // If remote data exists, we need to clear it first to avoid conflicts
-      if (hasRemoteData) {
-        const client = getSupabaseClient(url, key);
-        if (client) {
-          await client.from('workspaces').delete().neq('id', 'placeholder_to_force_delete_all');
+      if (mode === 'sync') {
+        // If remote data exists, we need to clear it first to avoid conflicts
+        if (hasRemoteData) {
+          const client = getSupabaseClient(url, key);
+          if (client) {
+            await client.from('workspaces').delete().neq('id', 'placeholder_to_force_delete_all');
+          }
+        }
+
+        const workspaces = await localAdapter.getWorkspaces();
+        for (const ws of workspaces) {
+          await supabaseAdapter.saveWorkspace(ws);
+          const widgets = await localAdapter.getWidgets(ws.id);
+          for (const w of widgets) {
+            await supabaseAdapter.saveWidget(w.config, w.afterId, ws.id);
+          }
+        }
+        // Also sync root widgets
+        const rootWidgets = await localAdapter.getWidgets(null);
+        for (const w of rootWidgets) {
+          await supabaseAdapter.saveWidget(w.config, w.afterId, null);
         }
       }
 
-      const workspaces = await localAdapter.getWorkspaces();
-      for (const ws of workspaces) {
-        await supabaseAdapter.saveWorkspace(ws);
-        const widgets = await localAdapter.getWidgets(ws.id);
-        for (const w of widgets) {
-          await supabaseAdapter.saveWidget(w.config, w.afterId, ws.id);
-        }
-      }
-      // Also sync root widgets
-      const rootWidgets = await localAdapter.getWidgets(null);
-      for (const w of rootWidgets) {
-        await supabaseAdapter.saveWidget(w.config, w.afterId, null);
-      }
+      updateSettings({
+        storageType: 'supabase',
+        supabaseConfig
+      });
+
+      setStorageAdapter(supabaseAdapter);
+      onClose();
+      window.location.href = window.location.origin;
+    } catch (err: any) {
+      setError(`Critical error during sync: ${err.message}`);
+      setStep('form');
     }
-
-    updateSettings({
-      storageType: 'supabase',
-      supabaseConfig
-    });
-
-    setStorageAdapter(supabaseAdapter);
-    onClose();
-    window.location.href = window.location.origin;
   };
 
   return (
@@ -333,8 +343,8 @@ commit;`;
                   </div>
 
                   <p className="text-[10px] text-muted leading-relaxed">
-                    Connecting to Supabase will store your workspaces and active widgets in the cloud. 
-                    <br />Widget history will continue to reside in your browser's local storage.
+                    Connecting to Supabase will store your workspaces, active widgets, and <strong>Widget Data Logs</strong> in the cloud. 
+                    <br />Deleted widgets ("Recycle Bin") will continue to reside in your browser's local storage.
                   </p>
                 </div>
               )}

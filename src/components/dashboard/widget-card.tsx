@@ -368,7 +368,11 @@ export const WidgetCard = memo(function WidgetCard({
       if (remoteHistory && remoteHistory.length > 0 && mounted) {
         setHistoryLogs(remoteHistory);
         // Sync back local cache
-        localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(remoteHistory));
+        try {
+          localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(remoteHistory));
+        } catch (e) {
+          console.warn("Could not save history to local storage (quota exceeded)", e);
+        }
       }
     };
 
@@ -399,7 +403,11 @@ export const WidgetCard = memo(function WidgetCard({
       
       // Save to fast local cache
       if (typeof window !== 'undefined') {
-        localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(newHistory));
+        try {
+          localStorage.setItem(`signal-widget-history-${config.id}`, JSON.stringify(newHistory));
+        } catch (e) {
+          console.warn("Could not save history to local storage (quota exceeded)", e);
+        }
       }
       
       // Save to remote/adapter asynchronously

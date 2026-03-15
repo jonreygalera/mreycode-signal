@@ -87,7 +87,11 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async saveWidgetHistory(widgetId: string, history: {date: string, value: any}[]): Promise<void> {
     if (typeof window === "undefined") return;
-    localStorage.setItem(`signal-widget-history-${widgetId}`, JSON.stringify(history));
+    try {
+      localStorage.setItem(`signal-widget-history-${widgetId}`, JSON.stringify(history));
+    } catch (e) {
+      console.warn("Could not save widget history to local storage", e);
+    }
   }
 
   async getSettings(): Promise<Partial<AppSettings>> {
